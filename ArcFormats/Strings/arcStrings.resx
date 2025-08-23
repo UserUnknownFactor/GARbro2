@@ -1,0 +1,408 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMIBaseArchive" xml:space="preserve">
+    <value>Base archive</value>
+  </data>
+  <data name="AMIBaseTooltip" xml:space="preserve">
+    <value>New archive will also contain entries from the base archive.</value>
+  </data>
+  <data name="AMIChooseBase" xml:space="preserve">
+    <value>Select base archive</value>
+  </data>
+  <data name="AMIDescription" xml:space="preserve">
+    <value>Amaterasu Translations Muv-Luv archive</value>
+  </data>
+  <data name="AMINoFiles" xml:space="preserve">
+    <value>No files suitable for AMI archive found.</value>
+  </data>
+  <data name="ArcEncryptedNotice" xml:space="preserve">
+    <value>Archive content is encrypted.
+Choose appropriate encryption scheme.</value>
+  </data>
+  <data name="ArcNoEncryption" xml:space="preserve">
+    <value>no encryption</value>
+  </data>
+  <data name="ArcReset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="GRPDescription" xml:space="preserve">
+    <value>âge proprietary image format</value>
+  </data>
+  <data name="GSCDescription" xml:space="preserve">
+    <value>Liar-soft proprietary script format</value>
+  </data>
+  <data name="INTCreationNotice" xml:space="preserve">
+    <value>Encrypted archives creation is not implemented.</value>
+  </data>
+  <data name="INTDescription" xml:space="preserve">
+    <value>CatSystem2 engine resource archive</value>
+  </data>
+  <data name="INTKeyRequirement" xml:space="preserve">
+    <value>Numeric key should be a 32-bit hexadecimal integer</value>
+  </data>
+  <data name="INTLabelNumericKey" xml:space="preserve">
+    <value>Numeric key</value>
+  </data>
+  <data name="INTNotice" xml:space="preserve">
+    <value>Archive directory is encrypted.</value>
+  </data>
+  <data name="KogadoDescription" xml:space="preserve">
+    <value>Kogado game engine resource archive</value>
+  </data>
+  <data name="LabelPassphrase" xml:space="preserve">
+    <value>Passphrase</value>
+  </data>
+  <data name="LabelScheme" xml:space="preserve">
+    <value>Scheme</value>
+  </data>
+  <data name="LWGDescription" xml:space="preserve">
+    <value>Liar-soft image archive</value>
+  </data>
+  <data name="MsgAddingFile" xml:space="preserve">
+    <value>Adding file</value>
+  </data>
+  <data name="MsgCalculatingChecksum" xml:space="preserve">
+    <value>Calculating checksum...</value>
+  </data>
+  <data name="MsgCompressingIndex" xml:space="preserve">
+    <value>Compressing index...</value>
+  </data>
+  <data name="MsgCreationKeyRequired" xml:space="preserve">
+    <value>Encryption key required for archive creation.</value>
+  </data>
+  <data name="MsgEncNotImplemented" xml:space="preserve">
+    <value>Encryption method not implemented</value>
+  </data>
+  <data name="MsgExtensionTooLong" xml:space="preserve">
+    <value>File name extension too long.</value>
+  </data>
+  <data name="MsgFileNameTooLong" xml:space="preserve">
+    <value>File name is too long</value>
+  </data>
+  <data name="MsgIllegalCharacters" xml:space="preserve">
+    <value>File name contains illegal characters</value>
+  </data>
+  <data name="MsgInvalidImageFormat" xml:space="preserve">
+    <value>{0}: image format not recognized.</value>
+  </data>
+  <data name="MsgInvalidVersion" xml:space="preserve">
+    <value>Invalid archive version specified.</value>
+  </data>
+  <data name="MsgNoExtension" xml:space="preserve">
+    <value>File name without extension.</value>
+  </data>
+  <data name="MsgTooManyFiles" xml:space="preserve">
+    <value>Number of files exceedes archive limit.</value>
+  </data>
+  <data name="MsgUpdatingIndex" xml:space="preserve">
+    <value>Updating index...</value>
+  </data>
+  <data name="MsgWritingIndex" xml:space="preserve">
+    <value>Writing index...</value>
+  </data>
+  <data name="NPACompressContents" xml:space="preserve">
+    <value>Compress contents</value>
+  </data>
+  <data name="NPADescription" xml:space="preserve">
+    <value>Nitro+ resource archive</value>
+  </data>
+  <data name="NPAKeys" xml:space="preserve">
+    <value>Encryption keys
+(required even if contents is not encrypted)</value>
+  </data>
+  <data name="NPASteinsGateDescription" xml:space="preserve">
+    <value>Nitro+ Steins;Gate resource archive</value>
+  </data>
+  <data name="NSADescription" xml:space="preserve">
+    <value>NScripter game engine resource archive</value>
+  </data>
+  <data name="ONSArchiveType" xml:space="preserve">
+    <value>Archive type</value>
+  </data>
+  <data name="ONSCompression" xml:space="preserve">
+    <value>Compression</value>
+  </data>
+  <data name="ONSCompressionNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="PDDescription" xml:space="preserve">
+    <value>Flying Shine resource archive</value>
+  </data>
+  <data name="PDScrambleContents" xml:space="preserve">
+    <value>Scramble contents</value>
+  </data>
+  <data name="RPADescription" xml:space="preserve">
+    <value>Ren'Py game engine archive</value>
+  </data>
+  <data name="RPALabelKey" xml:space="preserve">
+    <value>32-bit key</value>
+  </data>
+  <data name="SCRDescription" xml:space="preserve">
+    <value>Amaterasu Translations Muv-Luv script file</value>
+  </data>
+  <data name="SGLabelEncoding" xml:space="preserve">
+    <value>Filename encoding</value>
+  </data>
+  <data name="TooltipHex" xml:space="preserve">
+    <value>Hex number</value>
+  </data>
+  <data name="WARCLabelLength" xml:space="preserve">
+    <value>Maximum file name length
+(not including extension)</value>
+  </data>
+  <data name="XFLDescription" xml:space="preserve">
+    <value>Liar-soft game resource archive</value>
+  </data>
+  <data name="XP3CompressContents" xml:space="preserve">
+    <value>Compress contents</value>
+  </data>
+  <data name="XP3CompressHeader" xml:space="preserve">
+    <value>Compress directory</value>
+  </data>
+  <data name="XP3Description" xml:space="preserve">
+    <value>KiriKiri game engine resource archive</value>
+  </data>
+  <data name="XP3LabelVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="XP3RetainStructure" xml:space="preserve">
+    <value>Retain directory structure</value>
+  </data>
+  <data name="YPFDescription" xml:space="preserve">
+    <value>Yu-Ris game engine resource archive</value>
+  </data>
+  <data name="YPFLabelKey" xml:space="preserve">
+    <value>8-bit encryption key</value>
+  </data>
+  <data name="YPFLabelVersion" xml:space="preserve">
+    <value>Archive version</value>
+  </data>
+  <data name="YPFNotice" xml:space="preserve">
+    <value>Archive directory is encrypted.
+Choose appropriate encryption scheme.</value>
+  </data>
+  <data name="LabelEncScheme" xml:space="preserve">
+    <value>Encryption scheme</value>
+  </data>
+  <data name="DPKKeys" xml:space="preserve">
+    <value>Encryption keys</value>
+  </data>
+  <data name="ArcDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="ArcHex32Bit" xml:space="preserve">
+    <value>32-bit hex number</value>
+  </data>
+  <data name="KCAPDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="MBLNotice" xml:space="preserve">
+    <value>Archive contains encrypted scripts.
+Choose encryption scheme or enter a passphrase.</value>
+  </data>
+  <data name="ArcTitleOrPassword" xml:space="preserve">
+    <value>Choose title or enter a password</value>
+  </data>
+  <data name="RPMEncryptedNotice" xml:space="preserve">
+    <value>File resembles RPM resource archive,
+but encryption key guess failed.
+Choose appropriate encryption scheme.</value>
+  </data>
+  <data name="QLIEDefaultScheme" xml:space="preserve">
+    <value>Use default encryption scheme</value>
+  </data>
+  <data name="INTChooseExe" xml:space="preserve">
+    <value>Choose game executable file</value>
+  </data>
+  <data name="INTExeButton" xml:space="preserve">
+    <value>Check EXE</value>
+  </data>
+  <data name="INTExeFiles" xml:space="preserve">
+    <value>Executable Files</value>
+  </data>
+  <data name="INTMessage1" xml:space="preserve">
+    <value>Press "Check EXE" button to look for key within game executable file.</value>
+  </data>
+  <data name="INTMessage2" xml:space="preserve">
+    <value>Alternatively, enter archive encryption key or choose one of the predefined encryption schemes.</value>
+  </data>
+  <data name="INTKeyNotFound" xml:space="preserve">
+    <value>Key not found within {0}.</value>
+  </data>
+  <data name="ArcIgnoreEncryption" xml:space="preserve">
+    <value>Ignore encryption</value>
+  </data>
+  <data name="ArcImageEncrypted" xml:space="preserve">
+    <value>Image is encrypted.</value>
+  </data>
+  <data name="MCGChoose" xml:space="preserve">
+    <value>Choose title or enter a key</value>
+  </data>
+  <data name="MCGLabelKey" xml:space="preserve">
+    <value>8-bit encryption key</value>
+  </data>
+  <data name="MCAEncryptedNotice" xml:space="preserve">
+    <value>Archive content is encrypted.</value>
+  </data>
+  <data name="YPFTryGuess" xml:space="preserve">
+    <value>Try to guess</value>
+  </data>
+  <data name="AGSMightBeEncrypted" xml:space="preserve">
+    <value>Archive contents might be encrypted,
+choose appropriate encryption scheme.</value>
+  </data>
+  <data name="XP3EncryptedNotice" xml:space="preserve">
+    <value>Archive content could be encrypted.
+Choose appropriate encryption scheme.</value>
+  </data>
+  <data name="GALChoose" xml:space="preserve">
+    <value>Choose title or enter a key</value>
+  </data>
+  <data name="GYUImageEncrypted" xml:space="preserve">
+    <value>Image is encrypted.
+Choose appropriate encryption scheme.</value>
+  </data>
+  <data name="FJSYSNotice" xml:space="preserve">
+    <value>Archive contains encrypted scripts.
+Choose encryption scheme or enter a passphrase.</value>
+  </data>
+  <data name="RCTApplyMask" xml:space="preserve">
+    <value>Load transparency data from RC8 bitmap</value>
+  </data>
+  <data name="RCTOverlayFrames" xml:space="preserve">
+    <value>Automatically combine incremental frames</value>
+  </data>
+  <data name="ZIPEncryptedNotice" xml:space="preserve">
+    <value>Archive content is encrypted.</value>
+  </data>
+  <data name="OGGFixCrc" xml:space="preserve">
+    <value>Fix Ogg files checksums</value>
+  </data>
+  <data name="DefaultEncoding" xml:space="preserve">
+    <value>Default file names encoding</value>
+  </data>
+  <data name="ODNAudioSampleRate" xml:space="preserve">
+    <value>Default audio sampling rate</value>
+  </data>
+  <data name="Tim2AlphaFormat" xml:space="preserve">
+    <value>Choose Tim2 image alpha format.
+It can't be read correctly from the file.</value>
+  </data>
+</root>
