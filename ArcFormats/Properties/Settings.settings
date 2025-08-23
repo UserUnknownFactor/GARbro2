@@ -122,6 +122,15 @@
     <Setting Name="ZIPEncodingCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
     </Setting>
+    <Setting Name="DiscImageFileNameCP" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">932</Value>
+    </Setting>
+    <Setting Name="SevenZipNamesSrcCP" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="SevenZipNamesDstCP" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">932</Value>
+    </Setting>
     <Setting Name="AZScriptScheme" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
@@ -200,14 +209,26 @@
     <Setting Name="AFAEncodingCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
     </Setting>
-    <Setting Name="DXAPassword" Type="System.String" Scope="User">
+    <Setting Name="DXA_Password" Type="System.String" Scope="User">
       <Value Profile="(Default)">DXARC</Value>
+    </Setting>
+    <Setting Name="DXA_PasswordHistory" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
     </Setting>
     <Setting Name="NexasEncodingCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
     </Setting>
     <Setting Name="TIM2AlphaFormat" Type="System.String" Scope="User">
       <Value Profile="(Default)">RGBA</Value>
+    </Setting>
+    <Setting Name="PakUE_Password" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="Password" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TLGVersion" Type="System.String" Scope="User">
+      <Value Profile="(Default)">TLG6 (Golomb)</Value
     </Setting>
   </Settings>
 </SettingsFile>

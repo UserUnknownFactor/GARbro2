@@ -1,0 +1,123 @@
+<Window x:Class="SchemeEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Scheme Editor" Height="600" Width="1200"
+        Background="#FFFFFF">
+    <Window.Resources>
+        <Style TargetType="Expander">
+            <Setter Property="BorderBrush" Value="LightGray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,2,0,2"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style x:Key="EditedBorder" TargetType="Border">
+            <Setter Property="BorderBrush" Value="Orange"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style x:Key="ConfirmedBorder" TargetType="Border">
+            <Setter Property="BorderBrush" Value="Green"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="{x:Null}">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open Scheme..." Click="OpenScheme_Click"/>
+                <MenuItem Header="_Close Scheme" Click="CloseFile_Click"/>
+                <MenuItem x:Name="SaveSchemeMenuItem" Header="_Save Scheme" Click="SaveScheme_Click"/>
+                <MenuItem Header="Save Scheme _As..." Click="SaveSchemeAs_Click"/>
+                <Separator/>
+                <MenuItem Header="_Export to JSON..." Click="ExportJson_Click"/>
+                <MenuItem Header="_Import from JSON..." Click="ImportJson_Click"/>
+                <Separator/>
+                <MenuItem x:Name="RecentFilesMenuItem" Header="_Recent Files">
+                    <MenuItem Header="(No recent files)" IsEnabled="False"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="Exit_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Panel - Scheme List -->
+            <GroupBox Grid.Column="0" Header="Schemes" Margin="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <ListBox x:Name="SchemeListBox" Grid.Row="0" 
+                             SelectionChanged="SchemeListBox_SelectionChanged"
+                             DisplayMemberPath="Key"
+                             Background="White" BorderBrush="{x:Null}"/>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                        <Button x:Name="AddSchemeButton" Content="Add" Width="60" Margin="0,0,5,0" Click="AddScheme_Click"/>
+                        <Button x:Name="RemoveSchemeButton" Content="Remove" Width="60" Click="RemoveScheme_Click"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+
+            <!-- Right Panel - Field Editor -->
+            <GroupBox Grid.Column="1" Header="Fields" Margin="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Background="White">
+                        <StackPanel x:Name="FieldsPanel" Margin="5" Background="White">
+                            <!-- Dynamic fields will be added here -->
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                        <Button x:Name="AddFieldButton" Content="Add Field" Width="80" Margin="0,0,5,0" Click="AddField_Click"/>
+                        <!--Button x:Name="ApplyChangesButton" Content="Apply Changes" Width="100" Click="ApplyChanges_Click">
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <TextBlock>
+                                        Apply all changes to the scheme.
+                                        <LineBreak/>
+                                        Orange borders indicate edited fields.
+                                        <LineBreak/>
+                                        Green borders indicate confirmed changes.
+                                    </TextBlock>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button-->
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2" Background="{x:Null}">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Ready"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

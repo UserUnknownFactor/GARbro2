@@ -1,0 +1,353 @@
+Original→Singular→Plural1→Plural2→Plural3
+// ArcFormats strings  
+AMIBaseArchive→기본 아카이브→→→
+AMIBaseTooltip→새 아카이브에는 기본 아카이브의 항목도 포함됩니다.→→→
+AMIChooseBase→기본 아카이브 선택→→→
+AMIDescription→Amaterasu Translations 무브러브 아카이브→→→
+AMINoFiles→AMI 아카이브에 적합한 파일을 찾을 수 없습니다.→→→
+ArcEncryptedNotice→아카이브 내용이 암호화되어 있습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+ArcNoEncryption→암호화 없음→→→
+ArcReset→재설정→→→
+GRPDescription→âge 독점 이미지 형식→→→
+GSCDescription→Liar-soft 독점 스크립트 형식→→→
+INTCreationNotice→암호화된 아카이브 생성이 구현되지 않았습니다.→→→
+INTDescription→CatSystem2 엔진 리소스 아카이브→→→
+INTKeyRequirement→숫자 키는 32비트 16진수 정수여야 합니다→→→
+INTLabelNumericKey→숫자 키→→→
+INTNotice→아카이브 디렉터리가 암호화되어 있습니다.→→→
+KogadoDescription→Kogado 게임 엔진 리소스 아카이브→→→
+LabelPassphrase→암호:→→→
+LabelScheme→방식→→→
+LWGDescription→Liar-soft 이미지 아카이브→→→
+MsgAddingFile→파일 추가 중→→→
+MsgCalculatingChecksum→체크섬 계산 중...→→→
+MsgCompressingIndex→색인 압축 중...→→→
+MsgCreationKeyRequired→아카이브 생성에는 암호화 키가 필요합니다.→→→
+MsgEncNotImplemented→암호화 방법이 구현되지 않음→→→
+MsgExtensionTooLong→파일 이름 확장자가 너무 깁니다.→→→
+MsgFileNameTooLong→파일 이름이 너무 깁니다→→→
+MsgIllegalCharacters→파일 이름에 잘못된 문자가 포함되어 있습니다→→→
+MsgInvalidImageFormat→{0}: 이미지 형식을 인식할 수 없습니다.→→→
+MsgInvalidVersion→잘못된 아카이브 버전이 지정되었습니다.→→→
+MsgNoExtension→확장자가 없는 파일 이름.→→→
+MsgTooManyFiles→파일 수가 아카이브 제한을 초과합니다.→→→
+MsgUpdatingIndex→색인 업데이트 중...→→→
+MsgWritingIndex→색인 쓰기 중...→→→
+NPACompressContents→내용 압축→→→
+NPADescription→Nitro+ 리소스 아카이브→→→
+NPAKeys→암호화 키¶
+(내용이 암호화되지 않은 경우에도 필요)→→→
+NPASteinsGateDescription→Nitro+ Steins;Gate 리소스 아카이브→→→
+NSADescription→NScripter 게임 엔진 리소스 아카이브→→→
+ONSArchiveType→아카이브 유형→→→
+ONSCompression→압축→→→
+ONSCompressionNone→없음→→→
+PDDescription→Flying Shine 리소스 아카이브→→→
+PDScrambleContents→내용 스크램블→→→
+RPADescription→Ren'Py 게임 엔진 아카이브→→→
+RPALabelKey→32비트 키→→→
+SCRDescription→Amaterasu Translations 무브러브 스크립트 파일→→→
+SGLabelEncoding→파일명 인코딩→→→
+TooltipHex→16진수→→→
+WARCLabelLength→최대 파일 이름 길이¶
+(확장자 제외)→→→
+XFLDescription→Liar-soft 게임 리소스 아카이브→→→
+XP3CompressContents→내용 압축→→→
+XP3CompressHeader→디렉터리 압축→→→
+XP3Description→KiriKiri 게임 엔진 리소스 아카이브→→→
+XP3LabelVersion→버전→→→
+XP3RetainStructure→디렉터리 구조 유지→→→
+YPFDescription→Yu-Ris 게임 엔진 리소스 아카이브→→→
+YPFLabelKey→8비트 암호화 키→→→
+YPFLabelVersion→아카이브 버전→→→
+YPFNotice→아카이브 디렉터리가 암호화되어 있습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+LabelEncScheme→암호화 방식→→→
+DPKKeys→암호화 키→→→
+ArcDefault→기본값→→→
+ArcHex32Bit→32비트 16진수→→→
+KCAPDefault→기본값→→→
+MBLNotice→아카이브에 암호화된 스크립트가 포함되어 있습니다.¶
+암호화 방식을 선택하거나 암호를 입력하세요.→→→
+ArcTitleOrPassword→제목을 선택하거나 암호를 입력→→→
+RPMEncryptedNotice→파일이 RPM 리소스 아카이브와 유사하지만¶
+암호화 키 추측에 실패했습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+QLIEDefaultScheme→기본 암호화 방식 사용→→→
+INTChooseExe→게임 실행 파일 선택→→→
+INTExeButton→EXE 확인→→→
+INTExeFiles→실행 파일→→→
+INTMessage1→"EXE 확인" 버튼을 눌러 게임 실행 파일 내에서 키를 찾으세요.→→→
+INTMessage2→또는 아카이브 암호화 키를 입력하거나 사전 정의된 암호화 방식 중 하나를 선택하세요.→→→
+INTKeyNotFound→{0}에서 키를 찾을 수 없습니다.→→→
+ArcIgnoreEncryption→암호화 무시→→→
+ArcImageEncrypted→이미지가 암호화되어 있습니다.→→→
+MCGChoose→제목을 선택하거나 키를 입력→→→
+MCGLabelKey→8비트 암호화 키→→→
+MCAEncryptedNotice→아카이브 내용이 암호화되어 있습니다.→→→
+YPFTryGuess→추측 시도→→→
+AGSMightBeEncrypted→아카이브 내용이 암호화되어 있을 수 있습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+XP3EncryptedNotice→아카이브 내용이 암호화되어 있을 수 있습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+GALChoose→제목을 선택하거나 키를 입력→→→
+GYUImageEncrypted→이미지가 암호화되어 있습니다.¶
+적절한 암호화 방식을 선택하세요.→→→
+FJSYSNotice→아카이브에 암호화된 스크립트가 포함되어 있습니다.¶
+암호화 방식을 선택하거나 암호를 입력하세요.→→→
+RCTApplyMask→RC8 비트맵에서 투명도 데이터 로드→→→
+RCTOverlayFrames→증분 프레임 자동 결합→→→
+ZIPEncryptedNotice→아카이브 내용이 암호화되어 있습니다.→→→
+OGGFixCrc→Ogg 파일 체크섬 수정→→→
+DefaultEncoding→기본 파일 이름 인코딩→→→
+ODNAudioSampleRate→기본 오디오 샘플링 속도→→→
+Tim2AlphaFormat→Tim2 이미지 알파 형식을 선택하세요.¶
+파일에서 올바르게 읽을 수 없습니다.→→→
+// GUI strings
+ButtonCancel→취소→→→
+ButtonExtract→추출→→→
+ButtonOK→확인→→→
+CtxMenuClose→닫기(_C)→→→
+CtxMenuCopy→복사→→→
+CtxMenuCreate→아카이브 만들기...→→→
+CtxMenuCut→잘라내기→→→
+CtxMenuDelete→삭제(_D)→→→
+CtxMenuExplorer→탐색기에서 찾아보기(_E)→→→
+CtxMenuExtract→추출→→→
+CtxMenuOpen→열기→→→
+CtxMenuPaste→붙여넣기→→→
+CtxMenuRefresh→새로 고침→→→
+CtxMenuRename→이름 바꾸기(_R)→→→
+CtxMenuSortBy→정렬 기준→→→
+CtxMenuSortByName→이름→→→
+CtxMenuSortBySize→크기→→→
+CtxMenuSortByType→유형→→→
+CtxMenuUnsorted→정렬 안 함→→→
+HeaderName→이름→→→
+HeaderSize→크기→→→
+HeaderType→유형→→→
+LabelArchiveFormat→아카이브 형식→→→
+LabelArchiveName→아카이브 이름→→→
+LabelArchiveOptions→아카이브 옵션→→→
+LabelExtractAllTo→{0}에서 파일 추출 위치→→→
+LabelExtractFileTo→{0} 추출 위치→→→
+MenuAbout→Game Resource browser 정보→→→
+MsgDeletedItem→{0} 삭제됨→→→
+MsgDirectoryNotFound→디렉터리를 찾을 수 없음→→→
+MsgEmptyArchive→아카이브가 비어 있음→→→
+MsgErrorExtracting→파일 추출 오류→→→
+MsgErrorOpening→파일 열기 오류→→→
+MsgExtractComplete→{0}을(를) {1}에 추출함→→→
+MsgExtractedFiles→{0}개 파일 추출됨→→→
+MsgExtractingArchive→{0}에서 파일 추출 중→→→
+MsgExtractingFile→{0}에서 파일 추출 중→→→
+MsgExtractingTo→{0}에서 {1}(으)로 파일 추출 중→→→
+MsgImageSize→ {0} x {1} x {2}bpp{3}→→→
+MsgBPP→ x {0}bpp→→→
+MsgNoFiles→추출할 파일 없음→→→
+MsgReady→준비→→→
+MsgUnableInterpretImage→이미지 형식을 해석할 수 없음→→→
+MsgVersion→버전 {0}→→→
+TextAboutBuiltin→[내장]→→→
+TextAboutArchives→아카이브→→→
+TextAboutImages→이미지→→→
+TextAboutTitle→Game Resource browser 정보→→→
+TextAllFiles→모든 파일→→→
+TextAsIs→그대로→→→
+TextChooseArchive→아카이브 위치 선택→→→
+TextChooseDestDir→대상 디렉터리 선택→→→
+TextCreateArchive→아카이브 만들기→→→
+TextCreateArchiveError→아카이브 생성 오류→→→
+Type_directory→<디렉터리>→→→
+TextEncoding→텍스트 인코딩→→→
+TextExtractImages→이미지 추출→→→
+TextExtractText→텍스트 추출→→→
+TextExtractTitle→아카이브에서 추출→→→
+TextParametersTitle→아카이브 매개변수→→→
+TextSaveAs→다른 이름으로 저장→→→
+TextSaveImagesAs→이미지를 다른 이름으로 저장→→→
+TextTitle→Game Resource browser→→→
+TooltipBack→뒤로→→→
+TooltipForward→앞으로→→→
+MsgOverwrite→파일 {0}이(가)¶
+이미 있습니다.¶
+¶
+덮어쓰시겠습니까?→→→
+TextConfirmOverwrite→덮어쓰기 확인→→→
+MsgCreatingArchive→아카이브 {0} 만드는 중→→→
+MenuOpen→열기...→→→
+MenuRecent→최근 파일→→→
+MsgChooseFiles→추출할 파일 선택→→→
+MenuExit→종료(_X)→→→
+MenuFile→파일(_F)→→→
+MenuHelp→도움말(_H)→→→
+MsgFiles→{0}개 파일→→→
+MsgConfirmDeleteFiles→이 파일들을 삭제하시겠습니까?→→→
+TextDeleteFiles→파일 삭제→→→
+MsgDeletedItems→{0}개 파일 삭제됨→→→
+MenuFitWindow→미리보기 창을 이미지에 맞춤(_W)→→→
+MenuToggleMenuBar→주 메뉴 표시줄 표시/숨기기(_M)→→→
+MenuToggleStatusBar→상태 표시줄 표시/숨기기(_S)→→→
+MenuToggleToolBar→도구 모음 표시/숨기기(_T)→→→
+MenuView→보기(_V)→→→
+CtxMenuConvert→멀티미디어 변환...→→→
+ButtonConvert→변환→→→
+LabelImageDestinationFormat→이미지의 대상 형식 선택:→→→
+LabelAudioDestinationFormat→오디오의 대상 형식 선택:→→→
+TextConvertMedia→미디어 변환→→→
+MsgConvertingFile→파일 {0} 변환 중→→→
+TextMediaConvertError→멀티미디어 변환 오류→→→
+LabelEncoding→인코딩→→→
+TextConvertAudio→오디오를 일반 형식으로 변환→→→
+TextExtractAudio→오디오 추출→→→
+TooltipAudioFormats→WAV, MP3 또는 OGG→→→
+TextAboutAudio→오디오→→→
+TextAboutLicense→라이센스→→→
+MsgUnableInterpretAudio→오디오 형식을 해석할 수 없음→→→
+MsgNoMediaFiles→선택된 미디어 파일이 없습니다.→→→
+LabelSkipFailures→변환할 수 없는 파일 건너뛰기→→→
+LabelForceConversion→형식 변환 강제→→→
+MsgNoMatching→"{0}"과(와) 일치하는 항목 없음→→→
+MsgSelectedFiles1→{0}개 파일이 선택에 추가됨→→→
+MsgSelectedFiles2→{0}개 파일이 선택에 추가됨→→→
+LabelEnterMask→와일드카드 마스크 입력→→→
+TextSelectFiles→파일 선택→→→
+TextErrorExtracting→파일 추출 중 오류 발생¶
+{0}¶
+{1}→→→
+CtxMenuFileType→파일 유형 할당→→→
+Type_archive→아카이브→→→
+Type_image→이미지→→→
+Type_script→스크립트→→→
+Type_audio→오디오→→→
+Type_video→비디오→→→
+Type_NONE→없음→→→
+LabelDestinationDir→대상 디렉터리:→→→
+LabelDevSite→개발 사이트→→→
+CtxMenuSelectByMask→마스크로 파일 선택...→→→
+ButtonAbort→중단(_A)→→→
+ButtonContinue→계속(_C)→→→
+LabelIgnoreErrors→이후 오류 무시(_I)→→→
+TextExtractionError→파일 추출 오류→→→
+ButtonOverwrite→덮어쓰기(_O)→→→
+ButtonRename→이름 바꾸기(_R)→→→
+ButtonSkip→건너뛰기(_S)→→→
+LabelApplyToAll→모든 중복 파일에 적용(_P)→→→
+LabelDuplicateFileQuestion→어떻게 하시겠습니까?→→→
+TextErrorConverting→파일 변환 중 오류 발생¶
+{0}¶
+{1}→→→
+TextFileAlreadyExists→파일 {0}이(가) 대상 폴더에 이미 있습니다.→→→
+ButtonDownload→다운로드(_D)→→→
+LabelReleaseNotes→릴리스 노트→→→
+MenuCheckUpdates→업데이트 확인(_C)...→→→
+MsgNoUpdates→현재 사용 가능한 업데이트가 없습니다.→→→
+MsgUpdateAvailable→형식 데이터베이스 업데이트를 사용할 수 있습니다.→→→
+MsgUpdateComplete→형식 데이터베이스가 업데이트되었습니다.→→→
+MsgUpdateFailed→업데이트 확인 실패.→→→
+MsgUpToDate→GARbro 버전이 최신입니다.→→→
+TextNewVersion→새 버전 사용 가능:→→→
+TextUpdateTitle→응용 프로그램 업데이트→→→
+TextVisitPage→다운로드 페이지 방문→→→
+MsgDownloadFailed→업데이트 다운로드 실패.→→→
+ButtonApply→적용→→→
+MenuPreferences→기본 설정(_P)→→→
+TextFormats→형식→→→
+TextPreferences→기본 설정→→→
+TextViewer→이미지 뷰어→→→
+winDownScaleImage→큰 이미지를 창에 맞게 축소→→→
+MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
+TooltipStop→중지→→→
+TooltipPause→일시 정지→→→
+TooltipResume→다시 시작→→→
+TooltipCycleOn→순환 재생 (켜짐)→→→
+TooltipCycleOff→순환 재생 (꺼짐)→→→
+TooltipAutoOn→자동 재생 (켜짐)→→→
+TooltipAutoOff→자동 재생 (꺼짐)→→→
+MsgReachedLastAudio→마지막 오디오 파일에 도달했습니다.→→→
+TooltipVolume→볼륨→→→
+Manual→수동→→→
+RepeatFile→반복 (파일)→→→
+AutoDir→자동 (디렉터리)→→→
+RepeatDir→반복 (디렉터리)→→→
+NoVideoDataAvailable→사용 가능한 비디오 데이터 없음→→→
+ErrorLoadingVideo→비디오 로드 오류: {0}→→→
+Stream→스트림→→→
+VideoInfo→비디오: {0}→→→
+VideoCodecInfo→비디오: {0} | 코덱: {1} | 해상도: {2}x{3} | FPS: {4:F1}→→→
+VideoPlaybackErrorText→내부 플레이어로 비디오를 재생할 수 없습니다: {0}. 기본 비디오 플레이어로 열시겠습니까?→→→
+VideoPlaybackError→비디오 재생 오류→→→
+MediaFailedToLoad→미디어 로드 실패→→→
+AdditionalCodecsNeeded→이 비디오 형식은 시스템에 추가 코덱을 설치해야 합니다. K-Lite Codec Pack과 같은 코덱 팩 설치를 고려하세요.→→→
+Unknown→알 수 없음→→→
+FailedToGenerateHexDump→16진수 덤프 생성 실패: →→→
+HexHeader0→ 오프셋   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
+HexHeader1→--------  -----------------------------------------------  | ----------------→→→
+FailedToOpenExternalPlayer→외부 플레이어 열기 실패: {0}→→→
+BinaryFileTooLarge→미리보기에는 너무 큰 바이너리 파일 ({0:N0}바이트)→→→
+HexDumpOf→{0}의 16진수 덤프 ({1:N0}바이트)→→→
+Archive name is empty→아카이브 이름이 비어 있습니다→→→
+Format is not selected→형식이 선택되지 않았습니다→→→
+Converted→{0} 변환됨→→→
+FilterItems→필터: {1}개 항목 중 {0}→→→
+PlayAnimation→애니메이션 재생→→→
+PauseAnimation→애니메이션 일시 정지→→→
+SpriteSheetFrames→스프라이트 시트: {0}프레임 추출됨→→→
+AutoDetectedGrid→자동 감지: {2}x{3} 이미지의 {0}x{1} 그리드→→→
+CouldNotDetectSprite→스프라이트 레이아웃을 감지할 수 없음→→→
+LoadingFile→{0} 로드 중...→→→
+LoadingFailure→{0}을(를) 로드하는 데 실패했습니다: {1}→→→
+NoImagesSelected→선택된 이미지가 없습니다→→→
+AnimationText→애니메이션:→→→
+ImageMode→모드:→→→
+ImageModeTooltip→이 이미지에서 스프라이트가 배열된 방식→→→
+ImageModeStatic→정적 이미지→→→
+ImageModeOverlay→오버레이 이미지→→→
+ImageModeGrid→그리드 레이아웃→→→
+AddSelectionText→선택 추가→→→
+AddToOverlayTooltip→선택한 이미지를 오버레이에 추가→→→
+ClearAllOverlaysText→지우기→→→
+ClearAllOverlaysTooltip→모든 오버레이 레이어 지우기→→→
+ExportOverlayText→내보내기→→→
+ExportOverlayTooltip→합성 이미지 내보내기→→→
+GridDimensions→그리드:→→→
+NumberOfColumnsTooltip→열 수→→→
+NumberOfRowsTooltip→행 수→→→
+FrameDelayText→지연:→→→
+FrameDelayTooltip→프레임 간 지연(밀리초)→→→
+UNIT_ms→밀리초→→→
+AutodetectText→자동→→→
+AutodetectGridTooltip→스프라이트 레이아웃 자동 감지 시도→→→
+ParametersText→매개변수→→→
+NoExportLayers→내보낼 레이어가 없습니다→→→
+ImageSaveFilter→PNG 이미지|*.png|BMP 이미지|*.bmp|JPEG 이미지|*.jpg→→→
+MsgExportedTo→{0}로 내보냈습니다→→→
+MsgExportFail→내보내기 실패: {0}→→→
+SelectOverlayImages→오버레이할 이미지를 선택하세요→→→
+OverlayLayers→오버레이 모드: {0}개 레이어→→→
+nth_layer→{0}개 레이어→→→
+n_frames→ ({0} 프레임)→→→
+Real encoding→실제 인코딩→→→
+Assumed encoding→가정 인코딩→→→
+ISO filename encoding→ISO 파일 이름 인코딩→→→
+DropImagesHere→레이어를 추가하려면 ¶
+이미지를 여기에 놓으세요.→→→
+MoveLayerUp→레이어를 위로 이동→→→
+MoveLayerDown→레이어를 아래로 이동→→→
+RemoveLayer→레이어 제거→→→
+Overlays→오버레이→→→
+Opacity→불투명도:→→→
+KnownPasswords→--- 알려진 비밀번호 ---→→→
+// GameRes strings
+BMPExtensionsDesc→투명도 지원과 같은¶
+다양한 확장을 활성화합니다.→→→
+BMPExtensionsText→BMP 형식 확장 활성화→→→
+JPEGQualityText→JPEG 압축 품질→→→
+MsgFileIsEmpty→파일이 비어 있음→→→
+MsgFileTooLarge→파일이 너무 큼→→→
+MsgInvalidEncryption→부적절한 암호화 방식→→→
+MsgInvalidFileName→잘못된 파일 이름→→→
+MsgInvalidFormat→잘못된 파일 형식→→→
+MsgUnknownEncryption→알 수 없는 암호화 방식→→→
+MsgUnknownFormat→파일을 리소스 아카이브로 열 수 없음→→→

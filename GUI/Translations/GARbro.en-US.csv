@@ -1,0 +1,355 @@
+Original→Singular→Plural1→Plural2→Plural3
+// ArcFormats strings
+AMIBaseArchive→Base archive→→→
+AMIBaseTooltip→New archive will also contain entries from the base archive.→→→
+AMIChooseBase→Select base archive→→→
+AMIDescription→Amaterasu Translations Muv-Luv archive→→→
+AMINoFiles→No files suitable for AMI archive found.→→→
+ArcEncryptedNotice→Archive content is encrypted.¶
+Choose appropriate encryption scheme.→→→
+ArcNoEncryption→no encryption→→→
+ArcReset→Reset→→→
+GRPDescription→Age proprietary image format→→→
+GSCDescription→Liar-soft proprietary script format→→→
+INTCreationNotice→Encrypted archives creation is not implemented.→→→
+INTDescription→CatSystem2 engine resource archive→→→
+INTKeyRequirement→Numeric key should be a 32-bit hexadecimal integer→→→
+INTLabelNumericKey→Numeric key→→→
+INTNotice→Archive directory is encrypted.→→→
+KogadoDescription→Kogado game engine resource archive→→→
+LabelPassphrase→Password:→→→
+LabelScheme→Scheme→→→
+LWGDescription→Liar-soft image archive→→→
+MsgAddingFile→Adding file→→→
+MsgCalculatingChecksum→Calculating checksum...→→→
+MsgCompressingIndex→Compressing index...→→→
+MsgCreationKeyRequired→Encryption key required for archive creation.→→→
+MsgEncNotImplemented→Encryption method not implemented→→→
+MsgExtensionTooLong→File name extension too long.→→→
+MsgFileNameTooLong→File name is too long→→→
+MsgIllegalCharacters→File name contains illegal characters→→→
+MsgInvalidImageFormat→{0}: image format not recognized.→→→
+MsgInvalidVersion→Invalid archive version specified.→→→
+MsgNoExtension→File name without extension.→→→
+MsgTooManyFiles→Number of files exceeds archive limit.→→→
+MsgUpdatingIndex→Updating index...→→→
+MsgWritingIndex→Writing index...→→→
+NPACompressContents→Compress contents→→→
+NPADescription→Nitro+ resource archive→→→
+NPAKeys→Encryption keys¶
+(required even if contents is not encrypted)→→→
+NPASteinsGateDescription→Nitro+ Steins;Gate resource archive→→→
+NSADescription→NScripter game engine resource archive→→→
+ONSArchiveType→Archive type→→→
+ONSCompression→Compression→→→
+ONSCompressionNone→None→→→
+PDDescription→Flying Shine resource archive→→→
+PDScrambleContents→Scramble contents→→→
+RPADescription→Ren'Py game engine archive→→→
+RPALabelKey→32-bit key→→→
+SCRDescription→Amaterasu Translations Muv-Luv script file→→→
+SGLabelEncoding→Filename encoding→→→
+TooltipHex→Hex number→→→
+WARCLabelLength→Maximum file name length¶
+(not including extension)→→→
+XFLDescription→Liar-soft game resource archive→→→
+XP3CompressContents→Compress contents→→→
+XP3CompressHeader→Compress directory→→→
+XP3Description→KiriKiri game engine resource archive→→→
+XP3LabelVersion→Version→→→
+XP3RetainStructure→Retain directory structure→→→
+YPFDescription→Yu-Ris game engine resource archive→→→
+YPFLabelKey→8-bit encryption key→→→
+YPFLabelVersion→Archive version→→→
+YPFNotice→Archive directory is encrypted.¶
+Choose appropriate encryption scheme.→→→
+LabelEncScheme→Encryption scheme→→→
+DPKKeys→Encryption keys→→→
+ArcDefault→Default→→→
+ArcHex32Bit→32-bit hex number→→→
+KCAPDefault→Default→→→
+MBLNotice→Archive contains encrypted scripts.¶
+Choose encryption scheme or enter a passphrase.→→→
+ArcTitleOrPassword→Choose title or enter a password→→→
+RPMEncryptedNotice→File resembles RPM resource archive,¶
+but encryption key guess failed.¶
+Choose appropriate encryption scheme.→→→
+QLIEDefaultScheme→Use default encryption scheme→→→
+INTChooseExe→Choose game executable file→→→
+INTExeButton→Check EXE→→→
+INTExeFiles→Executable Files→→→
+INTMessage1→Press "Check EXE" button to look for key within game executable file.→→→
+INTMessage2→Alternatively, enter archive encryption key or choose one of the predefined encryption schemes.→→→
+INTKeyNotFound→Key not found within {0}.→→→
+ArcIgnoreEncryption→Ignore encryption→→→
+ArcImageEncrypted→Image is encrypted.→→→
+MCGChoose→Choose title or enter a key→→→
+MCGLabelKey→8-bit encryption key→→→
+MCAEncryptedNotice→Archive content is encrypted.→→→
+YPFTryGuess→Try to guess→→→
+AGSMightBeEncrypted→Archive contents might be encrypted,¶
+choose appropriate encryption scheme.→→→
+XP3EncryptedNotice→Archive content could be encrypted.¶
+Choose appropriate encryption scheme.→→→
+GALChoose→Choose title or enter a key→→→
+GYUImageEncrypted→Image is encrypted.¶
+Choose appropriate encryption scheme.→→→
+FJSYSNotice→Archive contains encrypted scripts.¶
+Choose encryption scheme or enter a passphrase.→→→
+RCTApplyMask→Load transparency data from RC8 bitmap→→→
+RCTOverlayFrames→Automatically combine incremental frames→→→
+ZIPEncryptedNotice→Archive content is encrypted.→→→
+OGGFixCrc→Fix Ogg files checksums→→→
+DefaultEncoding→Default file names encoding→→→
+ODNAudioSampleRate→Default audio sampling rate→→→
+Tim2AlphaFormat→Choose Tim2 image alpha format.¶
+It can't be read correctly from the file.→→→
+// GUI strings
+ButtonCancel→Cancel→→→
+ButtonExtract→Extract→→→
+ButtonOK→OK→→→
+CtxMenuClose→_Close→→→
+CtxMenuCopy→Copy→→→
+CtxMenuCreate→Create archive...→→→
+CtxMenuCut→Cut→→→
+CtxMenuDelete→_Delete→→→
+CtxMenuExplorer→Browse in _Explorer→→→
+CtxMenuExtract→Extract→→→
+CtxMenuOpen→Open→→→
+CtxMenuPaste→Paste→→→
+CtxMenuRefresh→Refresh→→→
+CtxMenuRename→_Rename→→→
+CtxMenuSortBy→Sort by→→→
+CtxMenuSortByName→Name→→→
+CtxMenuSortBySize→Size→→→
+CtxMenuSortByType→Type→→→
+CtxMenuUnsorted→Unsorted→→→
+HeaderName→Name→→→
+HeaderSize→Size→→→
+HeaderType→Type→→→
+LabelArchiveFormat→Archive format→→→
+LabelArchiveName→Archive name→→→
+LabelArchiveOptions→Archive options→→→
+LabelExtractAllTo→Extract files from {0} to→→→
+LabelExtractFileTo→Extract {0} to→→→
+MenuAbout→About Game Resource browser→→→
+MsgDeletedItem→Deleted {0}→→→
+MsgDirectoryNotFound→directory not found→→→
+MsgEmptyArchive→archive is empty→→→
+MsgErrorExtracting→Error extracting file→→→
+MsgErrorOpening→Error opening file→→→
+MsgExtractComplete→Extracted {0} into {1}→→→
+MsgExtractedFiles→Extracted {0} file→Extracted {0} files→→
+MsgExtractingArchive→Extracting files from {0}→→→
+MsgExtractingFile→Extracting file from {0}→→→
+MsgExtractingTo→Extracting files from {0} to {1}→→→
+MsgImageSize→ {0} x {1} x {2}bpp{3}→→→
+MsgBPP→ x {0}bpp→→→
+MsgNoFiles→No files to extract→→→
+MsgReady→Ready→→→
+MsgUnableInterpretImage→unable to interpret image format→→→
+MsgVersion→Version {0}→→→
+TextAboutBuiltin→[builtin]→→→
+TextAboutArchives→Archives→→→
+TextAboutImages→Images→→→
+TextAboutTitle→About Game Resource browser→→→
+TextAllFiles→All Files→→→
+TextAsIs→as is→→→
+TextChooseArchive→Choose archive location→→→
+TextChooseDestDir→Choose destination directory→→→
+TextCreateArchive→Create archive→→→
+TextCreateArchiveError→Archive creation error→→→
+Type_directory→<DIR>→→→
+TextEncoding→Text encoding→→→
+TextExtractImages→Extract images→→→
+TextExtractText→Extract text→→→
+TextExtractTitle→Extract from archive→→→
+TextParametersTitle→Archive parameters→→→
+TextSaveAs→Save as→→→
+TextSaveImagesAs→Save images as→→→
+TextTitle→Game Resource browser→→→
+TooltipBack→Back→→→
+TooltipForward→Forward→→→
+MsgOverwrite→File {0}¶
+already exists.¶
+¶
+Overwrite?→→→
+TextConfirmOverwrite→Confirm overwrite→→→
+MsgCreatingArchive→Creating archive {0}→→→
+MenuOpen→Open...→→→
+MenuRecent→Recent files→→→
+MsgChooseFiles→Choose files to extract→→→
+MenuExit→E_xit→→→
+MenuFile→_File→→→
+MenuHelp→_Help→→→
+MsgFiles→{0} file→{0} files→→
+MsgConfirmDeleteFiles→Are you sure you want to delete these files?→→→
+TextDeleteFiles→Delete files→→→
+MsgDeletedItems→Deleted {0} file→Deleted {0} files→→
+MenuFitWindow→Fit preview _window to image→→→
+MenuToggleMenuBar→Show/hide main _menu bar→→→
+MenuToggleStatusBar→Show/hide _status bar→→→
+MenuToggleToolBar→Show/hide _toolbar→→→
+MenuView→_View→→→
+CtxMenuConvert→Convert multimedia...→→→
+ButtonConvert→Convert→→→
+LabelImageDestinationFormat→Choose destination format for images:→→→
+LabelAudioDestinationFormat→Choose destination format for audio:→→→
+TextConvertMedia→Media conversion→→→
+MsgConvertingFile→Converting file {0}→→→
+TextMediaConvertError→Multimedia conversion error→→→
+LabelEncoding→Encoding→→→
+TextConvertAudio→Convert audio to common format→→→
+TextExtractAudio→Extract audio→→→
+TooltipAudioFormats→Either WAV, MP3 or OGG→→→
+TextAboutAudio→Audio→→→
+TextAboutLicense→License→→→
+MsgUnableInterpretAudio→unable to interpret audio format→→→
+MsgNoMediaFiles→No media files selected.→→→
+LabelSkipFailures→Skip incovertible files→→→
+LabelForceConversion→Force format conversion→→→
+MsgNoMatching→No entries matching "{0}"→→→
+MsgSelectedFiles1→{0} file added to selection→{0} files added to selection→→
+MsgSelectedFiles2→{0} files added to selection→→→
+LabelEnterMask→Enter wildcard mask→→→
+TextSelectFiles→Select files→→→
+TextErrorExtracting→Error occured while extracting file¶
+{0}¶
+{1}→→→
+CtxMenuFileType→Assign file type→→→
+Type_archive→archive→→→
+Type_image→image→→→
+Type_script→script→→→
+Type_audio→audio→→→
+Type_video→video→→→
+Type_NONE→none→→→
+LabelDestinationDir→Destination directory:→→→
+LabelDevSite→Development site→→→
+CtxMenuSelectByMask→Select files by mask...→→→
+ButtonAbort→_Abort→→→
+ButtonContinue→_Continue→→→
+LabelIgnoreErrors→_Ignore further errors→→→
+TextExtractionError→File extraction error→→→
+ButtonOverwrite→_Overwrite→→→
+ButtonRename→_Rename→→→
+ButtonSkip→_Skip→→→
+LabelApplyToAll→A_pply to all duplicate files→→→
+LabelDuplicateFileQuestion→What should be done?→→→
+TextErrorConverting→Error occured while converting file¶
+{0}¶
+{1}→→→
+TextFileAlreadyExists→File {0} already exists in the destination folder.→→→
+ButtonDownload→_Download→→→
+LabelReleaseNotes→Release notes→→→
+MenuCheckUpdates→_Check for updates...→→→
+MsgNoUpdates→No updates currently available.→→→
+MsgUpdateAvailable→Formats database update available.→→→
+MsgUpdateComplete→Formats database updated.→→→
+MsgUpdateFailed→Update check failed.→→→
+MsgUpToDate→GARbro version is up to date.→→→
+TextNewVersion→New version available:→→→
+TextUpdateTitle→Application update→→→
+TextVisitPage→Visit download page→→→
+MsgDownloadFailed→Update download failed.→→→
+ButtonApply→Apply→→→
+MenuPreferences→_Preferences→→→
+TextFormats→Formats→→→
+TextPreferences→Preferences→→→
+TextViewer→Image viewer→→→
+winDownScaleImage→Scale large images to fit window→→→
+MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
+TooltipStop→Stop→→→
+TooltipPause→Pause→→→
+TooltipResume→Resume→→→
+TooltipCycleOn→Cycle Playback (On)→→→
+TooltipCycleOff→Cycle Playback (Off)→→→
+TooltipAutoOn→Auto Playback (On)→→→
+TooltipAutoOff→Auto Playback (Off)→→→
+MsgReachedLastAudio→Reached the last audio file.→→→
+TooltipVolume→Volume→→→
+Manual→Manual→→→
+RepeatFile→Repeat (File)→→→
+AutoDir→Auto (Dir)→→→
+RepeatDir→Repeat (Dir)→→→
+NoVideoDataAvailable→No video data available→→→
+ErrorLoadingVideo→Error loading video: {0}→→→
+Stream→Stream→→→
+VideoInfo→Video: {0}→→→
+VideoCodecInfo→Video: {0} | Codec: {1} | Resolution: {2}x{3} | FPS: {4:F1}→→→
+VideoPlaybackErrorText→Failed to play video with internal player: {0}. Would you like to open it with your default video player?→→→
+VideoPlaybackError→Video Playback Error→→→
+MediaFailedToLoad→Media failed to load→→→
+AdditionalCodecsNeeded→This video format requires additional codecs to be installed on your system. Consider installing a codec pack like K-Lite Codec Pack.→→→
+Unknown→Unknown→→→
+FailedToGenerateHexDump→Failed to generate hex dump: →→→
+HexHeader0→ Offset   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
+HexHeader1→--------  -----------------------------------------------  | ----------------→→→
+FailedToOpenExternalPlayer→Failed to open external player: {0}→→→
+BinaryFileTooLarge→Binary file too large for preview ({0:N0} bytes)→→→
+HexDumpOf→Hex dump of {0} ({1:N0} bytes)→→→
+Archive name is empty→Archive name is empty→→→
+Format is not selected→Format is not selected→→→
+Converted→Converted {0}→→→
+FilterItems→Filter: {0} of {1} items→→→
+FilterNoMatchingEntries→No matching entries→→→
+DeleteFailed→Delete operation failed.→→→
+PlayAnimation→Play Animation→→→
+PauseAnimation→Pause Animation→→→
+SpriteSheetFrames→Sprite sheet: {0} frames extracted→→→
+AutoDetectedGrid→Auto-detected: {0}x{1} grid of {2}x{3} images→→→
+CouldNotDetectSprite→Could not detect sprite layout→→→
+LoadingFile→Loading {0}...→→→
+LoadingFailure→Failed to load {0}: {1}→→→
+NoImagesSelected→No images selected→→→
+AnimationText→Animation:→→→
+ImageMode→Mode:→→→
+ImageModeTooltip→How sprites are arranged in this image→→→
+ImageModeStatic→Static Image→→→
+ImageModeOverlay→Overlay Images→→→
+ImageModeGrid→Grid Layout→→→
+AddSelectionText→Add Selected→→→
+AddToOverlayTooltip→Add selected images to overlay→→→
+ClearAllOverlaysText→Clear→→→
+ClearAllOverlaysTooltip→Clear all overlay layers→→→
+ExportOverlayText→Export→→→
+ExportOverlayTooltip→Export composite image→→→
+GridDimensions→Grid:→→→
+NumberOfColumnsTooltip→Number of columns→→→
+NumberOfRowsTooltip→Number of rows→→→
+FrameDelayText→Delay:→→→
+FrameDelayTooltip→Delay between frames (ms)→→→
+UNIT_ms→ms→→→
+AutodetectText→Auto→→→
+AutodetectGridTooltip→Try to auto-detect sprite layout→→→
+ParametersText→Parameters→→→
+NoExportLayers→No layers to export→→→
+ImageSaveFilter→PNG Image|*.png|BMP Image|*.bmp|JPEG Image|*.jpg→→→
+MsgExportedTo→Exported to {0}→→→
+MsgExportFail→Export failed: {0}→→→
+SelectOverlayImages→Select images to overlay→→→
+OverlayLayers→Overlay mode: {0} layer→Overlay mode: {0} layers→→
+nth_layer→{0} layer→{0} layers→→
+n_frames→ ({0} frame)→ ({0} frames)→→
+Real encoding→Real encoding→→→
+Assumed encoding→Assumed encoding→→→
+ISO filename encoding→ISO filename encoding→→→
+DropImagesHere→Drop images here¶
+to add layers→→→
+MoveLayerUp→Move layer up→→→
+MoveLayerDown→Move layer down→→→
+RemoveLayer→Remove layer→→→
+Overlays→Overlays→→→
+Opacity→Opacity:→→→
+KnownPasswords→--- Known Passwords ---→→→
+// GameRes strings
+BMPExtensionsDesc→Enables various extensions,¶
+such as transparency support→→→
+BMPExtensionsText→Enables BMP format extensions→→→
+JPEGQualityText→JPEG compression quality→→→
+MsgFileIsEmpty→File is empty→→→
+MsgFileTooLarge→File is too large→→→
+MsgInvalidEncryption→Inappropriate encryption scheme→→→
+MsgInvalidFileName→Invalid file name→→→
+MsgInvalidFormat→Invalid file format→→→
+MsgUnknownEncryption→Unknown encryption scheme→→→
+MsgUnknownFormat→file could not be opened as resource archive→→→

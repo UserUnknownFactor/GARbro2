@@ -1,8 +1,8 @@
 ﻿<w:ModalWindow x:Class="GARbro.GUI.FileErrorDialog"
-               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-               xmlns:w="clr-namespace:Rnd.Windows"
-               xmlns:s="clr-namespace:GARbro.GUI.Strings"
+                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                       xmlns:w="clr-namespace:Rnd.Windows"
+                       xmlns:gre="clr-namespace:GameRes.Extensions;assembly=GameRes"
                Title="{Binding Title}" ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
                ResizeMode="NoResize" SizeToContent="WidthAndHeight" ShowActivated="True"
                FocusManager.FocusedElement="{Binding ElementName=FirstButton}"
@@ -14,9 +14,9 @@
             <TextBox x:Name="ErrorText" Text="{Binding Text}" IsReadOnly="True" Background="Transparent" TextWrapping="Wrap" BorderThickness="0" Margin="0,10,10,10" MaxWidth="400"/>
             <Separator/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <CheckBox x:Name="IgnoreErrors" Content="{x:Static s:guiStrings.LabelIgnoreErrors}" Margin="0,10,10,10" VerticalAlignment="Center"/>
-                <Button Content="{x:Static s:guiStrings.ButtonContinue}" Margin="10" MinWidth="75" Height="25" IsDefault="True" Click="ContinueButton_Click" x:Name="FirstButton"/>
-                <Button Content="{x:Static s:guiStrings.ButtonAbort}" Margin="10" MinWidth="75" Height="25" IsCancel="True" Click="AbortButton_Click"/>
+                <CheckBox x:Name="IgnoreErrors" Content="{gre:Localize LabelIgnoreErrors}" Margin="0,10,10,10" VerticalAlignment="Center"/>
+                <Button Content="{gre:Localize ButtonContinue}" Margin="10" MinWidth="75" Height="25" IsDefault="True" Click="ContinueButton_Click" x:Name="FirstButton"/>
+                <Button Content="{gre:Localize ButtonAbort}" Margin="10" MinWidth="75" Height="25" IsCancel="True" Click="AbortButton_Click"/>
             </StackPanel>
         </StackPanel>
     </StackPanel>

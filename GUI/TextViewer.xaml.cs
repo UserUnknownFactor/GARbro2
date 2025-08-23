@@ -1,29 +1,4 @@
-﻿//! \file       TextViewer.cs
-//! \date       Mon May 11 23:24:33 2015
-//! \brief      Text file viewer widget.
-//
-// Copyright (C) 2015 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -31,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
+using GameRes;
 
 namespace JustView
 {
@@ -90,6 +66,8 @@ namespace JustView
         {
             if (file.Length > 0xffffff)
                 throw new ApplicationException ("File is too long");
+
+            this.Document.Background = new SolidColorBrush(Colors.White);
             ReadStream (file, enc);
             var sv = FindScrollViewer();
             if (sv != null)
@@ -111,16 +89,7 @@ namespace JustView
 
         public Encoding GuessEncoding (Stream file)
         {
-            var enc = Encoding.Default;
-            if (3 == file.Read (m_test_buf, 0, 3))
-            {
-                if (IsUTF8())
-                    enc = Encoding.UTF8;
-                else if (IsUTF16BE())
-                    enc = Encoding.BigEndianUnicode;
-                else if (IsUTF16LE())
-                    enc = Encoding.Unicode;
-            }
+            var enc = ScriptFormat.DetectEncoding(file, 1024);
             file.Position = 0;
             return enc;
         }

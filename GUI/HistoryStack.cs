@@ -1,109 +1,149 @@
-//! \file       HistoryStack.cs
-//! \date       Sun Aug 21 01:06:53 2011
-//! \brief      action history stack interface (undo/redo).
-//
-// Copyright (C) 2011 by poddav
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Rnd.Windows
+namespace GARbro.GUI.History
 {
-    public class HistoryStack<State>
+    /// <summary>
+    /// Graph-based navigation history
+    /// </summary>
+    public class NavigationHistory<TState> where TState : class
     {
-        private List<State>     m_back    = new List<State>();
-        private Stack<State>    m_forward = new Stack<State>();
+        private readonly List<TState>              m_history = new List<TState>();
+        private int                                m_currentIndex = -1;
+        private readonly IEqualityComparer<TState> m_comparer;
+        private bool                               m_hasInitialState = false;
+
+        public int                 CurrentIndex => m_currentIndex;
 
         public int Limit { get; set; }
 
-        public IEnumerable<State> UndoStack { get { return m_back; } }
-        public IEnumerable<State> RedoStack { get { return m_forward; } }
-
-        public HistoryStack (int limit = 50)
+        public NavigationHistory (int limit = 50, IEqualityComparer<TState> comparer = null)
         {
-            Limit = limit;
+            Limit      = limit;
+            m_comparer = comparer ?? EqualityComparer<TState>.Default;
         }
 
-        public State Undo (State current)
+        public void NavigateTo (TState state)
         {
-            if (!CanUndo())
-                return default(State);
+            if (state == null)
+                return;
 
-            m_forward.Push (current);
-            current = m_back.Last();
-            m_back.RemoveAt (m_back.Count - 1);
-            OnStateChanged();
-
-            return current;
-        }
-
-        public State Redo (State current)
-        {
-            if (!CanRedo())
-                return default(State);
-
-            m_back.Add (current);
-            current = m_forward.Pop();
-            OnStateChanged();
-
-            return current;
-        }
-
-        public bool CanUndo ()
-        {
-            return m_back.Any();
-        }
-
-        public bool CanRedo ()
-        {
-            return m_forward.Any();
-        }
-
-        public void Push (State current)
-        {
-            m_back.Add (current);
-            if (m_back.Count > Limit)
-                m_back.RemoveRange (0, m_back.Count - Limit);
-
-            m_forward.Clear();
-            OnStateChanged();
-        }
-
-        public void Clear ()
-        {
-            if (m_back.Any() || m_forward.Any())
+            // Special handling for first (initial) state
+            if (!m_hasInitialState && m_currentIndex == -1)
             {
-                m_back.Clear();
-                m_forward.Clear();
+                m_history.Add (state);
+                m_currentIndex = 0;
+                m_hasInitialState = true;
                 OnStateChanged();
+                return;
             }
+
+            if (m_currentIndex >= 0 && m_comparer.Equals(m_history[m_currentIndex], state))
+            {
+                m_history[m_currentIndex] = state;
+                OnStateChanged();
+                return;
+            }
+
+            // Check if this state already exists in future history
+            int existingIndex = -1;
+            for (int i = m_currentIndex + 1; i < m_history.Count; i++)
+            {
+                if (m_comparer.Equals (m_history[i], state))
+                {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0)
+            {
+                // State exists in future - just move to it
+                m_currentIndex = existingIndex;
+            }
+            else
+            {
+                // New state - add it after current position
+                // Remove any forward history
+                if (m_currentIndex < m_history.Count - 1)
+                    m_history.RemoveRange (m_currentIndex + 1, m_history.Count - m_currentIndex - 1);
+
+                m_history.Add (state);
+                m_currentIndex = m_history.Count - 1;
+
+                if (m_history.Count > Limit)
+                {
+                    int removeCount = m_history.Count - Limit;
+                    m_history.RemoveRange (0, removeCount);
+                    m_currentIndex -= removeCount;
+                }
+            }
+
+            OnStateChanged();
         }
+
+        /// <summary>
+        /// Search for a state in history without changing current position
+        /// </summary>
+        public int FindState(TState state)
+        {
+            if (state == null)
+                return -1;
+
+            for (int i = 0; i < m_history.Count; i++)
+            {
+                if (m_comparer.Equals(m_history[i], state))
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Navigate to a specific index in history
+        /// </summary>
+        public TState NavigateToIndex(int index)
+        {
+            if (index < 0 || index >= m_history.Count)
+                return null;
+
+            m_currentIndex = index;
+            OnStateChanged();
+            return m_history[index];
+        }
+
+        public TState GoBack ()
+        {
+            if (CanGoBack())
+            {
+                m_currentIndex--;
+                OnStateChanged();
+                return m_history[m_currentIndex];
+            }
+            return null;
+        }
+
+        public TState GoForward ()
+        {
+            if (CanGoForward())
+            {
+                m_currentIndex++;
+                OnStateChanged();
+                return m_history[m_currentIndex];
+            }
+            return null;
+        }
+
+        public bool CanGoBack()    => m_currentIndex > 0;
+        public bool CanGoForward() => m_currentIndex < m_history.Count - 1;
+
+        public TState Current => m_currentIndex >= 0 ? m_history[m_currentIndex] : null;
 
         public event EventHandler StateChanged;
 
         private void OnStateChanged ()
         {
-            if (StateChanged != null)
-                StateChanged (this, EventArgs.Empty);
+            StateChanged?.Invoke (this, EventArgs.Empty);
         }
     }
 }

@@ -1,35 +1,15 @@
-﻿<!-- Game Resource browser
-
-Copyright (C) 2018 by morkt
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
--->
-<Window x:Class="GARbro.GUI.SettingsWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:s="clr-namespace:GARbro.GUI.Strings"
-        xmlns:local="clr-namespace:GARbro.GUI"
-        Title="{x:Static s:guiStrings.TextPreferences}" ShowInTaskbar="False" ResizeMode="NoResize"
+﻿<Window x:Class="GARbro.GUI.SettingsWindow"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:local="clr-namespace:GARbro.GUI"
+            xmlns:gre="clr-namespace:GameRes.Extensions;assembly=GameRes"
+        Title="{gre:Localize TextPreferences}" ShowInTaskbar="False" ResizeMode="NoResize"
         FocusManager.FocusedElement="{Binding ElementName=SectionsPane}"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        Height="400" Width="500" WindowStartupLocation="CenterOwner">
+        Height="400" Width="650" WindowStartupLocation="CenterOwner">
     <Window.Resources>
+        <gre:LocalizeConverter x:Key="LocalizeConverter"/>
+
         <LinearGradientBrush x:Key="SectionTitleBackground" StartPoint="0,0" EndPoint="1,0">
             <GradientStop Color="#FFA0A0FF" Offset="0"/>
             <GradientStop Color="#FFE0E0FF" Offset="1"/>
@@ -42,29 +22,102 @@ IN THE SOFTWARE.
             <GradientStop Color="#FFA4B0DB" Offset="0"/>
             <GradientStop Color="#FF91A2C4" Offset="1"/>
         </LinearGradientBrush>
+
+        <!-- Control Templates for Settings Widgets -->
         <ControlTemplate x:Key="BoundCheckBox" TargetType="CheckBox">
             <CheckBox DataContext="{TemplateBinding DataContext}" IsChecked="{Binding Value}"
-                      Content="{Binding Text}" ToolTip="{Binding Description}" Margin="2"/>
+                      Content="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" Margin="2"/>
         </ControlTemplate>
+
         <ControlTemplate x:Key="BoundSlider" TargetType="Slider">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0" VerticalAlignment="Center">
                     <Slider Orientation="Horizontal" IsSnapToTickEnabled="True" Width="120" x:Name="GaugeSlider"
                             TickPlacement="BottomRight" Ticks="{TemplateBinding Ticks}"
                             Minimum="{Binding Path=Source.Min}" Maximum="{Binding Path=Source.Max}"
                             Value="{Binding Value}"/>
-                    <TextBlock Text="{Binding ElementName=GaugeSlider,Path=Value}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" Margin="2,0,0,0"/>
+                    <TextBlock Text="{Binding ElementName=GaugeSlider,Path=Value}" 
+                               Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" 
+                               Margin="2,0,0,0"/>
                 </StackPanel>
             </StackPanel>
         </ControlTemplate>
+
         <ControlTemplate x:Key="BoundDropDownList" TargetType="ComboBox">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
-                <ComboBox ItemsSource="{Binding Path=Source.ValuesSet}" SelectedItem="{Binding Value, Mode=TwoWay}" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <ComboBox ItemsSource="{Binding Path=Source.ValuesSet}" 
+                          SelectedItem="{Binding Value, Mode=TwoWay}" 
+                          Margin="0,4,0,0"/>
             </StackPanel>
         </ControlTemplate>
 
+        <ControlTemplate x:Key="BoundEncodingSelector" TargetType="ContentControl">
+            <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <ComboBox ItemsSource="{Binding EncodingList}" 
+                          SelectedItem="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          DisplayMemberPath="EncodingName"
+                          ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}"
+                          Margin="0,4,0,0"/>
+            </StackPanel>
+        </ControlTemplate>
+
+        <!-- TextBox Template for string/number input -->
+        <ControlTemplate x:Key="BoundTextBox" TargetType="ContentControl">
+            <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         Margin="0,4,0,0" Width="200" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </ControlTemplate>
+
+        <!-- NumericUpDown Template for integer input -->
+        <ControlTemplate x:Key="BoundNumericBox" TargetType="ContentControl">
+            <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Grid Margin="0,4,0,0" Width="120" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="NumericInput" Grid.Column="0"
+                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewTextInput="NumericTextBox_PreviewTextInput"/>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <RepeatButton Grid.Row="0" Content="▲" FontSize="8" Padding="4,0" 
+                                      Click="NumericUpButton_Click" Tag="{Binding}"/>
+                        <RepeatButton Grid.Row="1" Content="▼" FontSize="8" Padding="4,0" 
+                                      Click="NumericDownButton_Click" Tag="{Binding}"/>
+                    </Grid>
+                </Grid>
+            </StackPanel>
+        </ControlTemplate>
+
+        <!-- Enum ComboBox Template -->
+        <ControlTemplate x:Key="BoundEnumSelector" TargetType="ComboBox">
+            <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
+                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                           Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <ComboBox ItemsSource="{Binding EnumValues}" 
+                          SelectedItem="{Binding Value, Mode=TwoWay}"
+                          DisplayMemberPath="Display"
+                          SelectedValuePath="Value"
+                          Margin="0,4,0,0"/>
+            </StackPanel>
+        </ControlTemplate>
+
+        <!-- TreeView Styles -->
         <Style x:Key="ExpandCollapseToggleStyle" TargetType="ToggleButton">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
@@ -99,6 +152,7 @@ IN THE SOFTWARE.
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style x:Key="{x:Type TreeViewItem}" TargetType="{x:Type TreeViewItem}">
             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
             <Setter Property="IsExpanded" Value="True"/>
@@ -170,9 +224,15 @@ IN THE SOFTWARE.
 
     <DockPanel Margin="8">
         <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            <Button Width="75" Height="25" Margin="0,0,10,0" Content="{x:Static s:guiStrings.ButtonOK}" IsDefault="True" Click="Button_ClickOk"/>
-            <Button Width="75" Height="25" Margin="0,0,10,0" Content="{x:Static s:guiStrings.ButtonCancel}" IsCancel="True"/>
-            <Button Width="75" Height="25" Margin="0" Content="{x:Static s:guiStrings.ButtonApply}" Click="Button_ClickApply" IsEnabled="{Binding HasChanges}"/>
+            <Button Width="75" Height="25" Margin="0,0,10,0" 
+                Content="{gre:Localize ButtonOK}" 
+                IsDefault="True" Click="Button_ClickOk"/>
+            <Button Width="75" Height="25" Margin="0,0,10,0" 
+                Content="{gre:Localize ButtonCancel}" 
+                IsCancel="True"/>
+            <Button Width="75" Height="25" Margin="0" 
+                Content="{gre:Localize ButtonApply}" 
+                Click="Button_ClickApply" IsEnabled="{Binding HasChanges}"/>
         </StackPanel>
         <TreeView x:Name="SectionsPane" DockPanel.Dock="Left" Padding="4" ItemsSource="{Binding Root}"
                   TreeViewItem.Selected="OnSectionChanged">

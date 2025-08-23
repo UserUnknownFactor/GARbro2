@@ -1,18 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Main project properties -->
   <PropertyGroup>
+    <AssemblyTitle>GARbro legacy formats support library</AssemblyTitle>
+    <AssemblyName>Legacy</AssemblyName>
+    <Copyright>morkt, crskycode and other contributors</Copyright>
+    <Description>GARbro legacy formats support library</Description>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>$([System.DateTime]::Today.ToString('yy.MM.dd'))</AssemblyVersion>
+
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C79E82A8-8D32-485D-8442-2D4F71FBB5D5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>GameRes.Legacy</RootNamespace>
     <AssemblyName>ArcLegacy</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFramework>net48</TargetFramework>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <RestorePackagesPath>$(ProjectDir)..\packages</RestorePackagesPath>
   </PropertyGroup>
+
+  <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -23,16 +30,19 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <!-- Release configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants />
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <!-- Prerelease configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prerelease|AnyCPU'">
     <OutputPath>bin\Prerelease\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -43,324 +53,48 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <!-- NuGet packages -->
   <ItemGroup>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=1.3.3.11, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpZipLib.1.3.3\lib\net45\ICSharpCode.SharpZipLib.dll</HintPath>
-    </Reference>
     <Reference Include="PresentationCore" />
-    <Reference Include="System" />
-    <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
+    <PackageReference Include="SharpZipLib" Version="1.4.2" />
+    <PackageReference Include="System.Buffers" Version="4.6.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.6.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
   </ItemGroup>
+
+  <!-- Exclude specific files (as commented out in original) -->
   <ItemGroup>
-    <Compile Include="Aaru\ArcDL1.cs" />
-    <Compile Include="Aaru\ArcFL2.cs" />
-    <Compile Include="Aaru\ArcFL3.cs" />
-    <Compile Include="Aaru\ArcFL4.cs" />
-    <Compile Include="Aaru\AudioWV1.cs" />
-    <Compile Include="Aaru\ImageBM2.cs" />
-    <Compile Include="Acme\ImageARD.cs" />
-    <Compile Include="Acme\ImagePMG.cs" />
-    <Compile Include="ADVGSys\ImageBMP.cs" />
-    <Compile Include="Ags32i\AudioAGS.cs" />
-    <Compile Include="Ags32i\ImageGSS.cs" />
-    <Compile Include="Airyu\ArcCHR.cs" />
-    <Compile Include="Akatombo\ArcX.cs" />
-    <Compile Include="Akatombo\ImageFB.cs" />
-    <Compile Include="AlphaSystem\ArcPAK.cs" />
-    <Compile Include="AlphaSystem\ImageSFG.cs" />
-    <Compile Include="Alterna\ArcBIN.cs" />
-    <Compile Include="Adviz\ImageBIZ.cs" />
-    <Compile Include="Adviz\ImageGIZ.cs" />
-    <Compile Include="Adviz\ImageGIZ2.cs" />
-    <Compile Include="Aos\ArcDAT.cs" />
-    <Compile Include="Aquarium\ArcAAP.cs" />
-    <Compile Include="Aquarium\ArcCPA.cs" />
-    <Compile Include="Aquarium\ImageCP2.cs" />
-    <Compile Include="Ark\ImageCMP.cs" />
-    <Compile Include="Artel\ArcPFD.cs" />
-    <Compile Include="Artel\AudioMUW.cs" />
-    <Compile Include="Artel\ImageMRL.cs" />
-    <Compile Include="Asura\ArcPAK.cs" />
-    <Compile Include="Asura\ImageMTG.cs" />
-    <Compile Include="AyPio\ArcDLB.cs" />
-    <Compile Include="AyPio\PdtBitmap.cs" />
-    <Compile Include="AyPio\AudioVOC.cs" />
-    <Compile Include="AyPio\ImagePDT.cs" />
-    <Compile Include="AyPio\ImagePDT5.cs" />
-    <Compile Include="BlackButterfly\ArcDAT.cs" />
-    <Compile Include="Blucky\Aliases.cs" />
-    <Compile Include="Bom\ImageGRP.cs" />
-    <Compile Include="CottonClub\ImageLMG.cs" />
-    <Compile Include="Desire\ArcDSV.cs" />
-    <Compile Include="Desire\ImageDES.cs" />
-    <Compile Include="Desire\ImageDPC.cs" />
-    <Compile Include="Discovery\ImageAN1.cs" />
-    <Compile Include="Discovery\ImagePR1.cs" />
-    <Compile Include="DMotion\ArcDM.cs" />
-    <Compile Include="Grocer\ImagePIC.cs" />
-    <Compile Include="Gsx\ArcK5.cs" />
-    <Compile Include="Gsx\ImageK4.cs" />
-    <Compile Include="Harvest\ArcDAT.cs" />
-    <Compile Include="Harvest\AudioBGM.cs" />
-    <Compile Include="Harvest\AudioSED.cs" />
-    <Compile Include="Harvest\ImageUNH.cs" />
-    <Compile Include="Herb\ArcPAK.cs" />
-    <Compile Include="Herb\ImageGRP.cs" />
-    <Compile Include="HyperWorks\ImageG.cs" />
-    <Compile Include="Izumi\ImageMAI2.cs" />
-    <Compile Include="Izumi\ImageMAI3.cs" />
-    <Compile Include="James\ImageJMG.cs" />
-    <Compile Include="BRoom\ArcCPC.cs" />
-    <Compile Include="BRoom\ArcPK.cs" />
-    <Compile Include="BRoom\AudioEZS.cs" />
-    <Compile Include="BRoom\ImageERP.cs" />
-    <Compile Include="Brownie\ImageNGC.cs" />
-    <Compile Include="Brownie\ImageNGW.cs" />
-    <Compile Include="Dall\ArcPEL.cs" />
-    <Compile Include="DigitalMonkey\ArcDM.cs" />
-    <Compile Include="DigitalMonkey\ImagePKT.cs" />
-    <Compile Include="Electriciteit\ArcPKK.cs" />
-    <Compile Include="Eye\ImageCSF.cs" />
-    <Compile Include="FazeX\ImageFGP.cs" />
-    <Compile Include="Giga\ArcALL.cs" />
-    <Compile Include="HillField\ImageIMA.cs" />
-    <Compile Include="HillField\ImageIMG.cs" />
-    <Compile Include="hmp\ImageALP.cs" />
-    <Compile Include="hmp\ImageCBF.cs" />
-    <Compile Include="HyperWorks\ArcPAK.cs" />
-    <Compile Include="HyperWorks\ImageI24.cs" />
-    <Compile Include="Jam\ImageHTF.cs" />
-    <Compile Include="KApp\ArcASD.cs" />
-    <Compile Include="KApp\ArcCGD.cs" />
-    <Compile Include="KApp\ImageCGD.cs" />
-    <Compile Include="Kasane\ArcAR2.cs" />
-    <Compile Include="KeroQ\ArcDAT.cs" />
-    <Compile Include="KeroQ\ImageCBM.cs" />
-    <Compile Include="KeroQ\ImageKGD.cs" />
-    <Compile Include="KeroQ\ImageKGD1.cs" />
-    <Compile Include="Koei\ArcYK.cs" />
-    <Compile Include="Koei\YkTables.cs" />
-    <Compile Include="Kurumi\ImageGRA.cs" />
-    <Compile Include="Lazycrew\ArcDAT.cs" />
-    <Compile Include="Lazycrew\ImageDAT.cs" />
-    <Compile Include="Liddell\ArcFLK.cs" />
-    <Compile Include="Liddell\ImageBPA.cs" />
-    <Compile Include="Logg\ArcARF.cs" />
-    <Compile Include="Logg\ImageFRM.cs" />
-    <Compile Include="Mapl\ImageMI2.cs" />
-    <Compile Include="Melonpan\ArcTTD.cs" />
-    <Compile Include="Mermaid\AudioPWV.cs" />
-    <Compile Include="Mermaid\ImageGP1.cs" />
-    <Compile Include="Miami\ImageMIA.cs" />
-    <Compile Include="Mina\ArcPAK.cs" />
-    <Compile Include="Mink\ImageFC.cs" />
-    <Compile Include="Mink\ImageFD.cs" />
-    <Compile Include="Mmfass\ArcSDA.cs" />
-    <Compile Include="Nekotaro\ImageNCG.cs" />
-    <Compile Include="Neon\ArcAR2.cs" />
-    <Compile Include="Pias\EncryptedGraphDat.cs" />
-    <Compile Include="Ponytail\ArcBND.cs" />
-    <Compile Include="Ponytail\ImageTCZ.cs" />
-    <Compile Include="Ponytail\ImageTSZ.cs" />
-    <Compile Include="Nug\ArcDAT.cs" />
-    <Compile Include="Nyoken\ArcZLK.cs" />
-    <Compile Include="Omi\ArcDAT.cs" />
-    <Compile Include="Paprika\ArcPKDAT.cs" />
-    <Compile Include="Paprika\ImageNP.cs" />
-    <Compile Include="Pearl\ArcARY.cs" />
-    <Compile Include="Pearl\ImagePL4.cs" />
-    <Compile Include="PenguinWorks\ArcPAC.cs" />
-    <Compile Include="Pias\ArcDAT.cs" />
-    <Compile Include="PineSoft\ArcCMB.cs" />
-    <Compile Include="PineSoft\ArcVoice.cs" />
-    <Compile Include="PineSoft\AudioCMB.cs" />
-    <Compile Include="PineSoft\ImageBPD.cs" />
-    <Compile Include="Pochette\ArcPAC.cs" />
-    <Compile Include="Powerd\ImageNCL.cs" />
-    <Compile Include="PrimeSoft\ImageTHP.cs" />
-    <Compile Include="ProjectMyu\ImageGAM.cs" />
-    <Compile Include="Ransel\ArcBCD.cs" />
-    <Compile Include="Rare\ArcX.cs" />
-    <Compile Include="RedZone\ArcPAK.cs" />
-    <Compile Include="Adv98\ImageGPC.cs" />
-    <Compile Include="RedZone\ScriptQDO.cs" />
-    <Compile Include="Regrips\AudioWRG.cs" />
-    <Compile Include="Regrips\ImagePRG.cs" />
-    <Compile Include="Rhss\ArcCRG.cs" />
-    <Compile Include="Rina\ImageRAD.cs" />
-    <Compile Include="RSystem\ArcRAD.cs" />
-    <Compile Include="RSystem\ImageRSG.cs" />
-    <Compile Include="Brownie\ArcNAF.cs" />
-    <Compile Include="Brownie\AudioWAV.cs" />
-    <Compile Include="Discovery\ArcDAT.cs" />
-    <Compile Include="EbgSystem\ArcBIN.cs" />
-    <Compile Include="AnotherRoom\AudioWAZ.cs" />
-    <Compile Include="AnotherRoom\ImageGR1.cs" />
-    <Compile Include="ApplePie\ArcARC.cs" />
-    <Compile Include="ApplePie\ImageGT.cs" />
-    <Compile Include="Clio\ArcPAC.cs" />
-    <Compile Include="Clio\ImageEXP.cs" />
-    <Compile Include="CrossNet\AudioADP.cs" />
-    <Compile Include="CrossNet\ImageGRB.cs" />
-    <Compile Include="Dice\ArcRLZ.cs" />
-    <Compile Include="Dice\AudioKWF.cs" />
-    <Compile Include="Dice\ImageRBP.cs" />
-    <Compile Include="Electriciteit\ArcDAT.cs" />
-    <Compile Include="Eve\ArcGM.cs" />
-    <Compile Include="Eve\AudioWV.cs" />
-    <Compile Include="Force\ArcPAQ.cs" />
-    <Compile Include="Force\ImageDZP.cs" />
-    <Compile Include="Gaia\ImageJPG.cs" />
-    <Compile Include="GPlay\ArcYSK.cs" />
-    <Compile Include="Hdl\ArcHOT.cs" />
-    <Compile Include="Hdl\ImageHOT.cs" />
-    <Compile Include="Libido\ArcARC.cs" />
-    <Compile Include="Logg\ArcMBM.cs" />
-    <Compile Include="MayBeSoft\ImageHHP.cs" />
-    <Compile Include="Mermaid\ImageMG1.cs" />
-    <Compile Include="Mink\ImageDAT.cs" />
-    <Compile Include="Muse\ArcDAT.cs" />
-    <Compile Include="Ocarina\ImageRED.cs" />
-    <Compile Include="Pan\ArcPAN.cs" />
-    <Compile Include="Pan\AudioNSF.cs" />
-    <Compile Include="Pan\ImageTBL.cs" />
-    <Compile Include="Pinky\ArcA5R.cs" />
-    <Compile Include="Pisckiss\Audio0.cs" />
-    <Compile Include="Pisckiss\Image1.cs" />
-    <Compile Include="Rune\ArcYK.cs" />
-    <Compile Include="Sarang\ImageABC.cs" />
-    <Compile Include="Sogna\ArcSGS.cs" />
-    <Compile Include="Sophia\ArcNOR.cs" />
-    <Compile Include="SplushWave\ArcDAT.cs" />
-    <Compile Include="SplushWave\ImageSWG.cs" />
-    <Compile Include="SquadraD\ArcPLA.cs" />
-    <Compile Include="SquadraD\ArcSDA.cs" />
-    <Compile Include="StudioEbisu\ArcEP1.cs" />
-    <Compile Include="StudioFoma\ArcARC.cs" />
-    <Compile Include="System21\ImageTEX.cs" />
-    <Compile Include="System98\ArcLIB.cs" />
-    <Compile Include="System98\ImageG.cs" />
-    <Compile Include="Tako\ArcMPK.cs" />
-    <Compile Include="Tetratech\ArcBND.cs" />
-    <Compile Include="Tiare\ImageGRA.cs" />
-    <Compile Include="Tigerman\ArcCHR.cs" />
-    <Compile Include="Tigerman\ArcPAC.cs" />
-    <Compile Include="Tigerman\ImageCHR.cs" />
-    <Compile Include="Tobe\ImageWBI.cs" />
-    <Compile Include="Types\ArcARC.cs" />
-    <Compile Include="Types\ImageTPGF.cs" />
-    <Compile Include="Ucom\ImageUG.cs" />
-    <Compile Include="Uma\ArcCDT.cs" />
-    <Compile Include="Uma\ArcSDT.cs" />
-    <Compile Include="UMeSoft\AudioIKE.cs" />
-    <Compile Include="UMeSoft\AudioSTR.cs" />
-    <Compile Include="UMeSoft\ImageIKE.cs" />
-    <Compile Include="Unknown\ArcAQA.cs" />
-    <Compile Include="Unknown\AudioMSF.cs" />
-    <Compile Include="Unknown\ImageCTF.cs" />
-    <Compile Include="Uran\ImageDAR.cs" />
-    <Compile Include="Uran\ImageNCL.cs" />
-    <Compile Include="Wing\ImageGEM.cs" />
-    <Compile Include="Witch\ArcDAT.cs" />
-    <Compile Include="Witch\ArcPCD.cs" />
-    <Compile Include="Witch\ArcVBD.cs" />
-    <Compile Include="Yaneurao\ArcDAT.cs" />
-    <Compile Include="Factor\ArcRES.cs" />
-    <Compile Include="Gsx\ArcK3.cs" />
-    <Compile Include="Gsx\ImageK2.cs" />
-    <Compile Include="hmp\ImageMBP.cs" />
-    <Compile Include="Hyperspace\BmpExtension.cs" />
-    <Compile Include="Inspire\ArcIDA.cs" />
-    <Compile Include="Iris\ArcFPACK.cs" />
-    <Compile Include="Jupiter\ArcLB5.cs" />
-    <Compile Include="Lune\ArcPACK.cs" />
-    <Compile Include="Marron\ArcCPN.cs" />
-    <Compile Include="Mina\ArcML2.cs" />
-    <Compile Include="Mina\ImageMD.cs" />
-    <Compile Include="Mink\ArcMINK.cs" />
-    <Compile Include="Mutation\ArcDPF.cs" />
-    <Compile Include="Pinpai\ArcARC.cs" />
-    <Compile Include="Adviz\ImageBIZ2.cs" />
-    <Compile Include="UMeSoft\ArcBIN.cs" />
-    <Compile Include="Uncanny\AudioCWV.cs" />
-    <Compile Include="Uncanny\ImageCII.cs" />
-    <Compile Include="Kurumi\ArcMPK.cs" />
-    <Compile Include="Melody\ImageMGO.cs" />
-    <Compile Include="Mink\ImageGDF.cs" />
-    <Compile Include="Mutation\ImageRBM.cs" />
-    <Compile Include="Nabe\ImageYPF.cs" />
-    <Compile Include="Nekotaro\ArcNSC.cs" />
-    <Compile Include="Nekotaro\ImageGCmp.cs" />
-    <Compile Include="PlanTech\ArcPAC.cs" />
-    <Compile Include="Zenos\ImagePNX.cs" />
-    <Compile Include="Zone\ArcPKD.cs" />
-    <Compile Include="Zone\ImageBM_.cs" />
+    <Compile Remove="Formats\M\Mink\ImageMCP.cs" />
+  </ItemGroup>
+
+
+  <!-- Source files (explicitly included for metadata) -->
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+
+  <!-- Project references -->
+  <ItemGroup>
+    <ProjectReference Include="..\ArcFormats\ArcFormats.csproj" />
+    <ProjectReference Include="..\GameRes\GameRes.csproj" />
+  </ItemGroup>
+
+  <!-- Folders (optional, for Solution Explorer) -->
+
+  <!-- None items (configs, settings, etc.) -->
+  <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config" />
-    <None Include="PlanTech\ImagePAC.cs" />
-    <Compile Include="Pochette\ImageGDT.cs" />
-    <Compile Include="ProjectMyu\ImageKGR.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QSoft\ImageBPE.cs" />
-    <Compile Include="Rain\ArcBIN.cs" />
-    <Compile Include="Saiki\ImageJPX.cs" />
-    <Compile Include="Sceplay\ArcPAK.cs" />
-    <Compile Include="Sceplay\ImageG24.cs" />
-    <Compile Include="ShapeShifter\ArcBND.cs" />
-    <Compile Include="System21\ArcPAK.cs" />
-    <Compile Include="System21\ImageBET.cs" />
-    <Compile Include="SystemAqua\ArcDAT.cs" />
-    <Compile Include="Tsd\ArcMCD.cs" />
-    <Compile Include="Unison\ArcVCT.cs" />
-    <Compile Include="Unknown\ArcDAT.cs" />
-    <Compile Include="Uran\ArcNCL.cs" />
-    <Compile Include="Uran\ArcPHS.cs" />
-    <Compile Include="Weapon\ArcDAT.cs" />
-    <Compile Include="Weapon\ArcVoice.cs" />
-    <Compile Include="WestGate\ArcUCA.cs" />
-    <Compile Include="WestGate\ArcUSF.cs" />
-    <Compile Include="WestGate\ArcUWF.cs" />
-    <Compile Include="WestGate\ImageNBMP.cs" />
-    <Compile Include="Witch\ArcARC.cs" />
-    <Compile Include="Yaneurao\ArcSDA.cs" />
-    <Compile Include="Yaneurao\ImageGTO.cs" />
-    <Compile Include="Yaneurao\ImageYGA.cs" />
-    <Compile Include="YellowCap\ImageGEF.cs" />
-    <Compile Include="YellowCap\ImageGGF.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ArcFormats\ArcFormats.csproj">
-      <Project>{a8865685-27cc-427b-ac38-e48d2ad05df4}</Project>
-      <Name>ArcFormats</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GameRes\GameRes.csproj">
-      <Project>{453c087f-e416-4ae9-8c03-d8760da0574b}</Project>
-      <Name>GameRes</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Nanami\" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <!-- PreBuildEvent -->
+  <!--
   <PropertyGroup>
-    <PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName)
+    <PreBuildEvent>perl "$(SolutionDir)inc-revision.cmd" "$(ProjectPath)" $(ConfigurationName)
 exit 0</PreBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
   -->
 </Project>

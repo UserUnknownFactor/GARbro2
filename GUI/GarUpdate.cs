@@ -1,28 +1,3 @@
-//! \file       GarUpdate.cs
-//! \date       Tue Feb 14 00:02:14 2017
-//! \brief      Application update routines.
-//
-// Copyright (C) 2017 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -33,7 +8,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Xml;
 using GameRes;
-using GARbro.GUI.Strings;
 using System.IO;
 
 namespace GARbro.GUI
@@ -177,7 +151,7 @@ namespace GARbro.GUI
             {
                 if (e.Error != null)
                 {
-                    m_main.SetStatusText (string.Format ("{0} {1}", guiStrings.MsgUpdateFailed, e.Error.Message));
+                    m_main.SetFileStatus (string.Format ("{0} {1}", Localization._T("MsgUpdateFailed"), e.Error.Message));
                     return;
                 }
                 else if (e.Cancelled)
@@ -185,7 +159,7 @@ namespace GARbro.GUI
                 var result = e.Result as GarUpdateInfo;
                 if (null == result)
                 {
-                    m_main.SetStatusText (guiStrings.MsgNoUpdates);
+                    m_main.SetFileStatus (Localization._T("MsgNoUpdates"));
                     return;
                 }
                 ShowUpdateResult (result);
@@ -210,7 +184,7 @@ namespace GARbro.GUI
 
             if (!has_app_update && !has_db_update)
             {
-                m_main.SetStatusText (guiStrings.MsgUpToDate);
+                m_main.SetFileStatus (Localization._T("MsgUpToDate"));
                 return;
             }
             m_dialog = new UpdateDialog (result, has_app_update, has_db_update);
@@ -240,11 +214,11 @@ namespace GARbro.GUI
                     if (!GARbro.Shell.File.Rename (tmp_file.Name, local_formats_dat))
                         throw new Win32Exception (GARbro.Shell.File.GetLastError());
                 }
-                SetFormatsUpdateStatus (dialog, guiStrings.MsgUpdateComplete);
+                SetFormatsUpdateStatus (dialog, Localization._T("MsgUpdateComplete"));
             }
             catch (Exception X)
             {
-                SetFormatsUpdateStatus (dialog, guiStrings.MsgDownloadFailed, X.Message);
+                SetFormatsUpdateStatus (dialog, Localization._T("MsgDownloadFailed"), X.Message);
             }
             finally
             {
@@ -255,7 +229,7 @@ namespace GARbro.GUI
         void SetFormatsUpdateStatus (UpdateDialog dialog, string text1, string text2 = null)
         {
             if (dialog.IsClosed)
-                m_main.SetStatusText (text1);
+                m_main.SetFileStatus (text1);
             else if (null == text2)
                 dialog.FormatsUpdateText.Text = text1;
             else

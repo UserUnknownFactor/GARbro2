@@ -1,9 +1,4 @@
-//! \file       DragScroll.cs
-//! \date       Sun Jul 06 10:47:20 2014
-//! \brief      Scroll control contents by dragging.
-//
 // http://matthamilton.net/touchscrolling-for-scrollviewer
-
 using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows;

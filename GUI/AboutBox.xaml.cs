@@ -1,27 +1,4 @@
-﻿/// Game Resource browser
-//
-// Copyright (C) 2014-2015 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -30,7 +7,6 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Navigation;
 using GARbro.GUI.Properties;
-using GARbro.GUI.Strings;
 
 namespace GARbro.GUI
 {
@@ -45,7 +21,7 @@ namespace GARbro.GUI
             LicenseTabText.Document = GetResourceDoc ("GARbro.GUI.LICENSE");
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click (object sender, RoutedEventArgs e)
         {
             this.Close();
         }
@@ -105,7 +81,7 @@ namespace GARbro.GUI
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
+                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes (typeof (AssemblyTitleAttribute), false);
                 if (attributes.Length > 0)
                 {
                     AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
@@ -114,7 +90,7 @@ namespace GARbro.GUI
                         return titleAttribute.Title;
                     }
                 }
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
+                return System.IO.Path.GetFileNameWithoutExtension (Assembly.GetExecutingAssembly().CodeBase);
             }
         }
 
@@ -122,7 +98,7 @@ namespace GARbro.GUI
         {
             get
             {
-                return string.Format (guiStrings.MsgVersion, AssemblyVersion);
+                return string.Format (Localization._T ("MsgVersion"), AssemblyVersion);
             }
         }
 
@@ -138,7 +114,7 @@ namespace GARbro.GUI
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
+                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes (typeof (AssemblyDescriptionAttribute), false);
                 if (attributes.Length == 0)
                 {
                     return "";
@@ -151,7 +127,7 @@ namespace GARbro.GUI
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
+                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes (typeof (AssemblyProductAttribute), false);
                 if (attributes.Length == 0)
                 {
                     return "";
@@ -164,7 +140,7 @@ namespace GARbro.GUI
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes (typeof (AssemblyCopyrightAttribute), false);
                 if (attributes.Length == 0)
                 {
                     return "";
@@ -177,7 +153,7 @@ namespace GARbro.GUI
         {
             get
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
+                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes (typeof (AssemblyCompanyAttribute), false);
                 if (attributes.Length == 0)
                 {
                     return "";
@@ -213,7 +189,7 @@ namespace GARbro.GUI
         /// of type Visibility, and specifies what visibility value to return when the boolean
         /// value is true.
         /// </summary>
-        private static Visibility GetVisibilityMode(object parameter)
+        private static Visibility GetVisibilityMode (object parameter)
         {
             // Default to Visible
             Visibility mode = Visibility.Visible;
@@ -231,11 +207,11 @@ namespace GARbro.GUI
                     // Let's try to parse the parameter as a Visibility value, throwing an exception when the parsing fails
                     try
                     {
-                        mode = (Visibility)Enum.Parse(typeof(Visibility), parameter.ToString(), true);
+                        mode = (Visibility)Enum.Parse (typeof (Visibility), parameter.ToString(), true);
                     }
                     catch (FormatException e)
                     {
-                        throw new FormatException("Invalid Visibility specified as the ConverterParameter.  Use Visible or Collapsed.", e);
+                        throw new FormatException ("Invalid Visibility specified as the ConverterParameter.  Use Visible or Collapsed.", e);
                     }
                 }
             }
@@ -249,35 +225,35 @@ namespace GARbro.GUI
         /// When the parameter is specified as Collapsed, that means that when the boolean value
         /// is true, we should return Collapsed, which is inverted.
         /// </summary>
-        private static bool IsVisibilityInverted(object parameter)
+        private static bool IsVisibilityInverted (object parameter)
         {
-            return (GetVisibilityMode(parameter) == Visibility.Collapsed);
+            return (GetVisibilityMode (parameter) == Visibility.Collapsed);
         }
 
         /// <summary>
         /// Support 2-way databinding of the VisibilityConverter, converting Visibility to a boolean
         /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object ConvertBack (object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             bool isVisible = ((Visibility)value == Visibility.Visible);
         
             // If visibility is inverted by the converter parameter, then invert our value
-            if (IsVisibilityInverted(parameter))
+            if (IsVisibilityInverted (parameter))
                 isVisible = !isVisible;
         
             return isVisible;
         }
     }
 
-    [ValueConversion(typeof(bool), typeof(string))]
+    [ValueConversion (typeof (bool), typeof (string))]
     class CanCreateConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert (object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return (bool)value ? "[r/w]" : "[r]";
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object ConvertBack (object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
             return false;
         }

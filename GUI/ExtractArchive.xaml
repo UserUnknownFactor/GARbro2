@@ -1,16 +1,16 @@
 ﻿<local:ExtractDialog x:Class="GARbro.GUI.ExtractArchiveDialog"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:s="clr-namespace:GARbro.GUI.Strings"
-        xmlns:p="clr-namespace:GARbro.GUI.Properties"
-        xmlns:local="clr-namespace:GARbro.GUI"
-        Title="{x:Static s:guiStrings.TextExtractTitle}" SizeToContent="WidthAndHeight"
-        ShowInTaskbar="False"  WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:p="clr-namespace:GARbro.GUI.Properties"
+                xmlns:local="clr-namespace:GARbro.GUI"
+                xmlns:gre="clr-namespace:GameRes.Extensions;assembly=GameRes"
+            Title="{gre:Localize TextExtractTitle}" SizeToContent="WidthAndHeight"
+            ShowInTaskbar="False"  WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+
     <!-- Binding to application settings causes Visual Studio designer to crash.
-         Replace {Settings} bindings with "True" for designer to work.
-         WPF is awesome. -->
+         Replace {Settings} bindings with "True" for designer to work. -->
     <StackPanel Orientation="Vertical">
-        <TextBlock x:Name="ExtractLabel" Text="{x:Static s:guiStrings.LabelExtractAllTo}" Margin="10,10,10,0" VerticalAlignment="Top" Height="15"/>
+        <TextBlock x:Name="ExtractLabel" Text="{gre:Localize LabelExtractAllTo}" Margin="10,10,10,0" VerticalAlignment="Top" Height="15"/>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
@@ -33,38 +33,38 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <CheckBox Name="ExtractImages" Content="{x:Static s:guiStrings.TextExtractImages}" HorizontalAlignment="Left" Margin="10,6,0,7.383" Grid.Row="0" Grid.Column="0"
+            <CheckBox Name="ExtractImages" Content="{gre:Localize TextExtractImages}" HorizontalAlignment="Left" Margin="10,6,0,7.383" Grid.Row="0" Grid.Column="0"
                IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=appExtractImages, Mode=TwoWay}"/>
 <!--               IsChecked="True"/>-->
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Margin="0,0,10,0" HorizontalAlignment="Right">
                 <Border BorderBrush="{x:Null}" Height="28" Width="115" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right" >
-                    <TextBlock Text="{x:Static s:guiStrings.TextSaveImagesAs}" TextWrapping="Wrap" TextAlignment="Right"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <TextBlock Text="{gre:Localize TextSaveImagesAs}" TextWrapping="Wrap" TextAlignment="Right"  VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 </Border>
                 <ComboBox Name="ImageConversionFormat" DisplayMemberPath="Tag" Margin="10,3,0,0" VerticalAlignment="Top" Height="21" HorizontalAlignment="Right" Width="75"
                           IsEnabled="{Binding ElementName=ExtractImages, Path=IsChecked}"/>
             </StackPanel>
-            <CheckBox Grid.Row="2" Grid.Column="0" x:Name="ExtractText" Content="{x:Static s:guiStrings.TextExtractText}" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <CheckBox Grid.Row="2" Grid.Column="0" x:Name="ExtractText" Content="{gre:Localize TextExtractText}" HorizontalAlignment="Left" VerticalAlignment="Top"
                       Margin="10,6,0,0" Visibility="Collapsed"
                       IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=appExtractText, Mode=TwoWay}"/>
 <!--               IsChecked="True"/>-->
             <StackPanel Grid.Row="2" Grid.Column="1" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0">
-                <TextBlock Text="{x:Static s:guiStrings.TextEncoding}" TextAlignment="Right"  VerticalAlignment="Top" Height="15" HorizontalAlignment="Right"/>
+                <TextBlock Text="{gre:Localize TextEncoding}" TextAlignment="Right"  VerticalAlignment="Top" Height="15" HorizontalAlignment="Right"/>
                 <ComboBox x:Name="TextEncoding" VerticalAlignment="Top" Margin="10,3,0,0" Height="21" HorizontalAlignment="Right" Width="76"/>
             </StackPanel>
-            <CheckBox x:Name="ExtractAudio" Content="{x:Static s:guiStrings.TextExtractAudio}" HorizontalAlignment="Left" VerticalAlignment="Top"
+            <CheckBox x:Name="ExtractAudio" Content="{gre:Localize TextExtractAudio}" HorizontalAlignment="Left" VerticalAlignment="Top"
                       Grid.Row="1" Grid.Column="0" Margin="10,6,10,0"
                       IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=appExtractAudio, Mode=TwoWay}"/>
 <!--               IsChecked="True"/>-->
-        <CheckBox Grid.Row="1" Grid.Column="1" x:Name="AudioConversion" Content="{x:Static s:guiStrings.TextConvertAudio}"
-                  Margin="0,6,10,0" HorizontalAlignment="Right" ToolTip="{x:Static s:guiStrings.TooltipAudioFormats}" VerticalAlignment="Top"
+        <CheckBox Grid.Row="1" Grid.Column="1" x:Name="AudioConversion" Content="{gre:Localize TextConvertAudio}"
+                  Margin="0,6,10,0" HorizontalAlignment="Right" ToolTip="{gre:Localize TooltipAudioFormats}" VerticalAlignment="Top"
                   IsEnabled="{Binding ElementName=ExtractAudio, Path=IsChecked}"
                   IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=appConvertAudio, Mode=TwoWay}"/>
 <!--                   IsChecked="True"/>-->
         </Grid>
         <Separator Height="1" Margin="0,10,0,0"/>
         <StackPanel Orientation="Horizontal" Margin="0,10,10,10" HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            <Button Content="{x:Static s:guiStrings.ButtonExtract}" Margin="0" Click="ExtractButton_Click" Grid.Row="2" Width="75" Height="25" VerticalAlignment="Bottom" IsDefault="True"/>
-            <Button Content="{x:Static s:guiStrings.ButtonCancel}" Margin="20,0,0,0" Height="25" VerticalAlignment="Bottom" IsCancel="True" Width="75"/>
+            <Button Content="{gre:Localize ButtonExtract}" Margin="0" Click="ExtractButton_Click" Grid.Row="2" Width="75" Height="25" VerticalAlignment="Bottom" IsDefault="True"/>
+            <Button Content="{gre:Localize ButtonCancel}" Margin="20,0,0,0" Height="25" VerticalAlignment="Bottom" IsCancel="True" Width="75"/>
         </StackPanel>
     </StackPanel>
     <Window.CommandBindings>

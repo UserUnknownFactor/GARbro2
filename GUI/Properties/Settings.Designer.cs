@@ -9,20 +9,20 @@
 //------------------------------------------------------------------------------
 
 namespace GARbro.GUI.Properties {
-    
-    
+
+
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.0.3.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.10.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
+
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
-        
+
         public static Settings Default {
             get {
                 return defaultInstance;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -34,7 +34,7 @@ namespace GARbro.GUI.Properties {
                 this["UpgradeRequired"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("NaN")]
@@ -46,7 +46,7 @@ namespace GARbro.GUI.Properties {
                 this["winTop"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("NaN")]
@@ -58,10 +58,10 @@ namespace GARbro.GUI.Properties {
                 this["winLeft"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1024")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1200")]
         public double winWidth {
             get {
                 return ((double)(this["winWidth"]));
@@ -70,7 +70,7 @@ namespace GARbro.GUI.Properties {
                 this["winWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("600")]
@@ -82,7 +82,7 @@ namespace GARbro.GUI.Properties {
                 this["winHeight"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
@@ -94,7 +94,7 @@ namespace GARbro.GUI.Properties {
                 this["winState"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("265")]
@@ -106,7 +106,7 @@ namespace GARbro.GUI.Properties {
                 this["lvNameColumnWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("75")]
@@ -118,7 +118,7 @@ namespace GARbro.GUI.Properties {
                 this["lvTypeColumnWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("75")]
@@ -130,7 +130,7 @@ namespace GARbro.GUI.Properties {
                 this["lvSizeColumnWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Name")]
@@ -142,7 +142,7 @@ namespace GARbro.GUI.Properties {
                 this["lvSortColumn"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Ascending")]
@@ -154,7 +154,7 @@ namespace GARbro.GUI.Properties {
                 this["lvSortDirection"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("448")]
@@ -166,7 +166,7 @@ namespace GARbro.GUI.Properties {
                 this["lvPanelWidth"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -178,7 +178,7 @@ namespace GARbro.GUI.Properties {
                 this["appExtractImages"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -190,7 +190,7 @@ namespace GARbro.GUI.Properties {
                 this["appExtractText"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -202,7 +202,7 @@ namespace GARbro.GUI.Properties {
                 this["appImageFormat"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("65001")]
@@ -214,7 +214,7 @@ namespace GARbro.GUI.Properties {
                 this["appTextEncoding"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -226,7 +226,7 @@ namespace GARbro.GUI.Properties {
                 this["appLastDirectory"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -238,7 +238,7 @@ namespace GARbro.GUI.Properties {
                 this["appArchiveFormat"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public global::System.Collections.Specialized.StringCollection appRecentFiles {
@@ -249,7 +249,7 @@ namespace GARbro.GUI.Properties {
                 this["appRecentFiles"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -261,7 +261,7 @@ namespace GARbro.GUI.Properties {
                 this["appLastCreatedArchive"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Visible")]
@@ -273,7 +273,7 @@ namespace GARbro.GUI.Properties {
                 this["winMenuBarVisibility"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Visible")]
@@ -285,7 +285,7 @@ namespace GARbro.GUI.Properties {
                 this["winToolBarVisibility"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Visible")]
@@ -297,7 +297,7 @@ namespace GARbro.GUI.Properties {
                 this["winStatusBarVisibility"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("PNG")]
@@ -309,7 +309,19 @@ namespace GARbro.GUI.Properties {
                 this["appLastImageFormat"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("WAV")]
+        public string appLastAudioFormat {
+            get {
+                return ((string)(this["appLastAudioFormat"]));
+            }
+            set {
+                this["appLastAudioFormat"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -321,7 +333,7 @@ namespace GARbro.GUI.Properties {
                 this["appConvertAudio"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
@@ -333,7 +345,7 @@ namespace GARbro.GUI.Properties {
                 this["appExtractAudio"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -345,7 +357,19 @@ namespace GARbro.GUI.Properties {
                 this["appIgnoreConversionErrors"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool appForceConversion {
+            get {
+                return ((bool)(this["appForceConversion"]));
+            }
+            set {
+                this["appForceConversion"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -357,7 +381,7 @@ namespace GARbro.GUI.Properties {
                 this["appLastDestination"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -367,6 +391,77 @@ namespace GARbro.GUI.Properties {
             }
             set {
                 this["winDownScaleImage"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public System.Collections.Specialized.StringCollection fileEncodingHistory {
+            get {
+                return ((System.Collections.Specialized.StringCollection)(this["fileEncodingHistory"]));
+            }
+            set {
+                this["fileEncodingHistory"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Animation")]
+        public string AnimationFrameLayout {
+            get {
+                return ((string)(this["AnimationFrameLayout"]));
+            }
+            set {
+                this["AnimationFrameLayout"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4")]
+        public int FrameGridColumns {
+            get {
+                return ((int)(this["FrameGridColumns"]));
+            }
+            set {
+                this["FrameGridColumns"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4")]
+        public int FrameGridRows {
+            get {
+                return ((int)(this["FrameGridRows"]));
+            }
+            set {
+                this["FrameGridRows"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int SpriteSheetDelay {
+            get {
+                return ((int)(this["SpriteSheetDelay"]));
+            }
+            set {
+                this["SpriteSheetDelay"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.8")]
+        public double MediaVolume {
+            get {
+                return ((double)(this["MediaVolume"]));
+            }
+            set {
+                this["MediaVolume"] = value;
             }
         }
     }

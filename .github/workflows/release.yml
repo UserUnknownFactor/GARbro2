@@ -1,0 +1,46 @@
+name: Release CI
+on:
+  push:
+    tags:
+      - '*.*.*'  # Matches tags with dots like v1.0.0.0, 2.3.1, etc.
+
+env:
+  PROGRAM_NAME: GARbro2
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          show-progress: false
+          fetch-depth: 0
+
+      - name: Add MSbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build the solution
+        run: msbuild ${{ env.PROGRAM_NAME }}.sln /t:restore,build /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Get the versioned name
+        id: get_version
+        run: echo "VERSIONED=${{ env.PROGRAM_NAME }}_${GITHUB_REF#refs/*/}.zip" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create release zip
+        shell: pwsh
+        run: Compress-Archive -Path bin/Release/net48/* -DestinationPath ${{ steps.get_version.outputs.VERSIONED }} -CompressionLevel Optimal
+
+      - name: Create release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          file: ${{ steps.get_version.outputs.VERSIONED }}
+          overwrite: true

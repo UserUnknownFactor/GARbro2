@@ -1,31 +1,5 @@
-//! \file       GarOperation.cs
-//! \date       Fri Feb 03 19:06:52 2017
-//! \brief      Base class for GARbro file operation.
-//
-// Copyright (C) 2017 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
 using System;
 using System.IO;
-using GARbro.GUI.Strings;
 
 namespace GARbro.GUI
 {
@@ -71,7 +45,7 @@ namespace GARbro.GUI
             }
             if (!m_duplicate_action.ApplyToAll)
             {
-                var msg_text = string.Format (guiStrings.TextFileAlreadyExists, Path.GetFileName (filename));
+                var msg_text = Localization.Format ("TextFileAlreadyExists", Path.GetFileName (filename));
                 m_duplicate_action = m_main.Dispatcher.Invoke (() => m_main.ShowFileExistsDialog (m_title, msg_text, m_progress_dialog.GetWindowHandle()));
             }
             switch (m_duplicate_action.Action)

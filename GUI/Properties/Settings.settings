@@ -74,6 +74,9 @@
     <Setting Name="appLastImageFormat" Type="System.String" Scope="User">
       <Value Profile="(Default)">PNG</Value>
     </Setting>
+    <Setting Name="appLastAudioFormat" Type="System.String" Scope="User">
+      <Value Profile="(Default)">WAV</Value>
+    </Setting>
     <Setting Name="appConvertAudio" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
@@ -83,11 +86,32 @@
     <Setting Name="appIgnoreConversionErrors" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="appForceConversion" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
     <Setting Name="appLastDestination" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="fileEncodingHistory" Type="System.Collections.Specialized.StringCollection" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AnimationFrameLayout" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Animation</Value>
+    </Setting>
+    <Setting Name="FrameGridColumns" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">4</Value>
+    </Setting>
+    <Setting Name="FrameGridRows" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">4</Value>
+    </Setting>
+    <Setting Name="SpriteSheetDelay" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
     <Setting Name="winDownScaleImage" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="MediaVolume" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">100</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -1,38 +1,46 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <!-- Main project properties -->
   <PropertyGroup>
+    <AssemblyTitle>GARbro2</AssemblyTitle>
+    <AssemblyName>GARbro.GUI</AssemblyName>
+    <Copyright>Various contributors</Copyright>
+    <Description>GARbro2 Viewer</Description>
+    <Version>2.0.$([System.DateTime]::Today.ToString('yy')).$([System.DateTime]::Today.ToString('MMdd'))</Version>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <ApplicationVersion>2.0.$([System.DateTime]::Today.ToString('yy')).$([System.DateTime]::Today.ToString('MMdd'))</ApplicationVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2935BE57-C4E0-43E7-86DE-C1848C820B19}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>GARbro.GUI</RootNamespace>
-    <AssemblyName>GARbro.GUI</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFramework>net48</TargetFramework>
     <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.1.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <RestorePackagesPath>$(ProjectDir)..\packages</RestorePackagesPath>
+    <ApplicationIcon>Images\sample.ico</ApplicationIcon>
+    <GenerateManifests>false</GenerateManifests>
+    <TargetZone>LocalIntranet</TargetZone>
+    <SignManifests>false</SignManifests>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
+
+  <!-- Debug configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
@@ -44,39 +52,20 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
+  <!-- Release configuration -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\bin\Release\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants />
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>Images\sample.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestCertificateThumbprint>751F4A9FD4F4CC3D99D70509FF1F9D9CC9E49516</ManifestCertificateThumbprint>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ManifestKeyFile>GARbro.GUI_TemporaryKey.pfx</ManifestKeyFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <GenerateManifests>false</GenerateManifests>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetZone>LocalIntranet</TargetZone>
-  </PropertyGroup>
-  <PropertyGroup />
-  <PropertyGroup>
-    <SignManifests>false</SignManifests>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
-  </PropertyGroup>
+
+  <!-- Prerelease configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Prerelease|AnyCPU'">
     <OutputPath>..\bin\Prerelease\</OutputPath>
     <Optimize>true</Optimize>
@@ -84,274 +73,76 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
+
+  <!-- References -->
   <ItemGroup>
-    <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack-Core.1.1.2\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\WindowsAPICodePack-Shell.1.1.1\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
-    </Reference>
-    <Reference Include="NAudio, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NAudio.1.10.0\lib\net35\NAudio.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Input.Toolkit.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Controls.Layout.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Layout.Toolkit.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="WindowsBase" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="WPFToolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\WPFToolkit.dll</HintPath>
-    </Reference>
+    <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
+    <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
+    <PackageReference Include="WPFToolkit" Version="3.5.50211.1" />
   </ItemGroup>
+
+  <!-- Project references -->
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </ApplicationDefinition>
-    <Compile Include="AboutBox.xaml.cs">
-      <DependentUpon>AboutBox.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ArcParameters.xaml.cs">
-      <DependentUpon>ArcParameters.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="AutoComplete.cs" />
-    <Compile Include="ConvertMedia.xaml.cs">
-      <DependentUpon>ConvertMedia.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="CreateArchive.xaml.cs">
-      <DependentUpon>CreateArchive.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="DragScroll.cs" />
-    <Compile Include="EnterMaskDialog.xaml.cs">
-      <DependentUpon>EnterMaskDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ExtractArchive.xaml.cs">
-      <DependentUpon>ExtractArchive.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ExtractDialog.cs" />
-    <Compile Include="ExtractFile.xaml.cs">
-      <DependentUpon>ExtractFile.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="FileErrorDialog.xaml.cs">
-      <DependentUpon>FileErrorDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="FileExistsDialog.xaml.cs">
-      <DependentUpon>FileExistsDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="GarConvert.cs" />
-    <Compile Include="GarCreate.cs" />
-    <Compile Include="GarExtract.cs" />
-    <Compile Include="GarOperation.cs" />
-    <Compile Include="GarUpdate.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="HistoryStack.cs" />
-    <Compile Include="ImagePreview.cs" />
-    <Compile Include="ListViewEx.cs" />
-    <Compile Include="ModalWindow.cs" />
-    <Compile Include="NAudio.cs" />
-    <Compile Include="ProgressDialog\IProgressDialog.cs" />
-    <Compile Include="ProgressDialog\ProgressDialog.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Settings.cs" />
-    <Compile Include="SettingsWindow.xaml.cs">
-      <DependentUpon>SettingsWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Shell.cs" />
-    <Compile Include="Strings\guiStrings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>guiStrings.resx</DependentUpon>
-    </Compile>
-    <Compile Include="TextViewer.xaml.cs">
-      <DependentUpon>TextViewer.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="TroubleShootingDialog.xaml.cs">
-      <DependentUpon>TroubleShootingDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="UpdateDialog.xaml.cs">
-      <DependentUpon>UpdateDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Utility.cs" />
-    <Compile Include="ViewModel.cs" />
-    <Page Include="AboutBox.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ArcParameters.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ConvertMedia.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="CreateArchive.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="EnterMaskDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ExtractArchive.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ExtractFile.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="FileErrorDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="FileExistsDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Page Include="SettingsWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="TextViewer.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="TroubleShootingDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="UpdateDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <ProjectReference Include="..\GameRes\GameRes.csproj">
+      <Name>GameRes</Name>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </ProjectReference>
   </ItemGroup>
+
+  <!-- Embedded resources -->
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <EmbeddedResource Include="Strings\guiStrings.ja-JP.resx" />
-    <EmbeddedResource Include="Strings\guiStrings.ko-KR.resx" />
-    <EmbeddedResource Include="Strings\guiStrings.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>guiStrings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Strings\guiStrings.ru-RU.resx" />
     <EmbeddedResource Include="..\LICENSE" />
-    <EmbeddedResource Include="Strings\guiStrings.zh-Hans.resx" />
-    <None Include="packages.config" />
+  </ItemGroup>
+
+  <!-- None items (configs, settings, manifest) -->
+  <ItemGroup>
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
+
+  <!-- Resources and splash screen -->
   <ItemGroup>
-    <Resource Include="Images\32x32\back button.png" />
-    <Resource Include="Images\32x32\forward button.png" />
-    <Resource Include="Images\32x32\help.png" />
-    <Resource Include="Images\64x64\info.png" />
-    <Resource Include="Images\sample.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\48x48\refresh.png" />
     <SplashScreen Include="Images\splashscreen.png" />
+    <Resource Include="Images\sample.ico" />
     <Resource Include="Images\search4files.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\GameRes\GameRes.csproj">
-      <Project>{453c087f-e416-4ae9-8c03-d8760da0574b}</Project>
-      <Name>GameRes</Name>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.5 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\Cursors\grab.cur" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\Cursors\grabbing.cur" />
-  </ItemGroup>
-  <ItemGroup>
+    <Resource Include="Images\64x64\info.png" />
     <Resource Include="Images\64x64\actions.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Images\64x64\alert.png" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName) "$(SolutionDir)\"
-exit 0</PreBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PostBuildEvent>
+
+  <!-- Bootstrapper packages -->
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.8 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+
+   <!-- Copy files -->
+    <Target Name="CopyTranslationFiles" AfterTargets="Build">
+      <ItemGroup>
+        <TranslationFiles Include="Translations\*.csv" />
+      </ItemGroup>
+      <Copy SourceFiles="@(TranslationFiles)" 
+            DestinationFiles="@(TranslationFiles->'$(OutputPath)Translations\%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true" />
+    </Target>
+
+  <!-- PreBuildEvent and PostBuildEvent -->
+  <PropertyGroup> <!-- way too big and unnecessary stuff -->
+  <PostBuildEvent>
+del /F /Q "$(TargetDir)Magick.Native-Q8-arm64.dll" 2&gt;nul 
+del /F /Q "$(TargetDir)Magick.Native-Q8-x86.dll" 2&gt;nul
+del /F /Q "$(TargetDir)NAudio.Asio.dll" 2&gt;nul
     </PostBuildEvent>
+  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

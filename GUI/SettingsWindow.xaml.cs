@@ -1,41 +1,20 @@
-﻿/// Game Resource browser
-//
-// Copyright (C) 2018 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+
 using GameRes;
 using GARbro.GUI.Properties;
-using GARbro.GUI.Strings;
 
 namespace GARbro.GUI
 {
@@ -96,11 +75,11 @@ namespace GARbro.GUI
         {
             SettingsSectionView[] list = {
                 new SettingsSectionView {
-                    Label = guiStrings.TextViewer,
+                    Label = Localization._T("TextViewer"),
                     Panel = CreateSectionPanel (ViewerSettings)
                 },
                 new SettingsSectionView {
-                    Label = guiStrings.TextFormats,
+                    Label = Localization._T("TextFormats"),
                     Children = EnumerateFormatsSettings(),
                 },
             };
@@ -124,7 +103,7 @@ namespace GARbro.GUI
                 {
                     var section = new SettingsSectionView {
                         Label = format.Tag,
-                        SectionTitle = guiStrings.TextFormats+" :: "+format.Tag,
+                        SectionTitle = Localization._T("TextFormats")+" :: "+format.Tag,
                         Panel = pane
                     };
                     list.Add (section);
@@ -155,31 +134,11 @@ namespace GARbro.GUI
 
         UIElement CreateEncodingWidget (IResourceSetting setting)
         {
-            var view = CreateSettingView<Encoding> (setting);
-            // XXX make a control template in XAML instead
-            var container = new StackPanel {
-                Orientation = Orientation.Vertical,
-                Margin = new Thickness (2.0),
+            var view = CreateEncodingSettingView (setting);
+            return new ContentControl {
+                Template = (ControlTemplate)this.Resources["BoundEncodingSelector"],
                 DataContext = view,
             };
-            var caption = new TextBlock {
-                Text = view.Text,
-                ToolTip = view.Description,
-            };
-            var combo_box = new ComboBox {
-                ItemsSource = MainWindow.GetEncodingList (true),
-                Margin = new Thickness (0,4,0,0),
-                DisplayMemberPath = "EncodingName",
-                ToolTip = view.Description,
-            };
-            var binding = new Binding ("Value") {
-                Mode = BindingMode.TwoWay,
-                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
-            };
-            BindingOperations.SetBinding (combo_box, ComboBox.SelectedItemProperty, binding);
-            container.Children.Add (caption);
-            container.Children.Add (combo_box);
-            return container;
         }
 
         UIElement CreateGaugeWidget (FixedGaugeSetting setting)
@@ -199,24 +158,134 @@ namespace GARbro.GUI
             };
         }
 
+        UIElement CreateTextBoxWidget (IResourceSetting setting)
+        {
+            return new ContentControl {
+                Template = (ControlTemplate)this.Resources["BoundTextBox"],
+                DataContext = CreateSettingView<string> (setting),
+            };
+        }
+
+        UIElement CreateNumericWidget (IResourceSetting setting, Type numericType)
+        {
+            if (numericType == typeof(int) || numericType == typeof(uint))
+            {
+                return new ContentControl {
+                    Template = (ControlTemplate)this.Resources["BoundNumericBox"],
+                    DataContext = CreateSettingView<int> (setting),
+                };
+            }
+            else if (numericType == typeof(long) || numericType == typeof(ulong))
+            {
+                return new ContentControl {
+                    Template = (ControlTemplate)this.Resources["BoundNumericBox"],
+                    DataContext = CreateSettingView<long> (setting),
+                };
+            }
+            else if (numericType == typeof(short) || numericType == typeof(ushort))
+            {
+                return new ContentControl {
+                    Template = (ControlTemplate)this.Resources["BoundNumericBox"],
+                    DataContext = CreateSettingView<int> (setting),
+                };
+            }
+            else if (numericType == typeof(byte) || numericType == typeof(sbyte))
+            {
+                return new ContentControl {
+                    Template = (ControlTemplate)this.Resources["BoundNumericBox"],
+                    DataContext = CreateSettingView<int> (setting),
+                };
+            }
+            else if (numericType == typeof(double) || numericType == typeof(float) || numericType == typeof(decimal))
+            {
+                return new ContentControl {
+                    Template = (ControlTemplate)this.Resources["BoundTextBox"],
+                    DataContext = CreateSettingView<double> (setting),
+                };
+            }
+            return null;
+        }
+
+        UIElement CreateEnumWidget (IResourceSetting setting, Type enumType)
+        {
+            var viewType = typeof(EnumSettingView<>).MakeGenericType(enumType);
+            var view = Activator.CreateInstance(viewType, setting) as ISettingView;
+
+            view.ValueChanged += (s, e) => ViewModel.HasChanges = true;
+            this.OnApplyChanges += (s, e) => view.Apply();
+
+            return new ComboBox {
+                Template = (ControlTemplate)this.Resources["BoundEnumSelector"],
+                DataContext = view,
+            };
+        }
+
         UIElement CreateSettingWidget<TUnknown> (IResourceSetting setting, TUnknown value)
         {
+            // Check for specific setting types
             if (setting is FixedGaugeSetting)
                 return CreateGaugeWidget (setting as FixedGaugeSetting);
+
             if (setting is FixedSetSetting)
                 return CreateDropDownWidget (setting as FixedSetSetting);
+
+            // Check value type
+            var valueType = value?.GetType();
+            if (valueType == null)
+                return null;
+
+            // Boolean
             if (value is bool)
                 return CreateCheckBoxWidget (setting);
+
+            // Encoding
             if (value is Encoding)
                 return CreateEncodingWidget (setting);
-            Trace.WriteLine (string.Format ("Unknown setting type {0}", value.GetType()), "[GUI]");
+
+            // Enum
+            if (valueType.IsEnum)
+                return CreateEnumWidget (setting, valueType);
+
+            // Numeric types
+            if (IsNumericType(valueType))
+                return CreateNumericWidget (setting, valueType);
+
+            // String (and fallback for other types)
+            if (value is string || CanConvertToString(valueType))
+                return CreateTextBoxWidget (setting);
+
+            Trace.WriteLine (string.Format ("Unsupported setting type {0}", valueType), "[GUI]");
             return null;
+        }
+
+        bool IsNumericType (Type type)
+        {
+            return type == typeof(int) || type == typeof(uint) ||
+                   type == typeof(long) || type == typeof(ulong) ||
+                   type == typeof(short) || type == typeof(ushort) ||
+                   type == typeof(byte) || type == typeof(sbyte) ||
+                   type == typeof(double) || type == typeof(float) ||
+                   type == typeof(decimal);
+        }
+
+        bool CanConvertToString (Type type)
+        {
+            // Types that have meaningful ToString() and can parse from string
+            return type.IsPrimitive || type == typeof(decimal) || type == typeof(Guid);
         }
 
         ISettingView CreateSettingView<TValue> (IResourceSetting setting)
         {
             var view = new ResourceSettingView<TValue> (setting);
             view.ValueChanged   += (s, e) => ViewModel.HasChanges = true;
+            this.OnApplyChanges += (s, e) => view.Apply();
+            return view;
+        }
+
+        ISettingView CreateEncodingSettingView (IResourceSetting setting)
+        {
+            var view = new EncodingSettingView (setting);
+            view.ValueChanged += (s, e) => ViewModel.HasChanges = true;
             this.OnApplyChanges += (s, e) => view.Apply();
             return view;
         }
@@ -243,6 +312,64 @@ namespace GARbro.GUI
                 item.IsSelected = true;
                 e.Handled = true;
             }
+        }
+
+        // Event handlers for numeric up/down buttons
+        private void NumericUpButton_Click (object sender, RoutedEventArgs e)
+        {
+            var button = sender as RepeatButton;
+            if (button?.Tag is ISettingView view)
+            {
+                try {
+                    var prop = view.GetType().GetProperty("Value");
+                    if (prop != null)
+                    {
+                        var currentValue = prop.GetValue(view);
+                        if (currentValue is int intVal)
+                            prop.SetValue(view, intVal + 1);
+                        else if (currentValue is long longVal)
+                            prop.SetValue(view, longVal + 1);
+                        else if (currentValue is short shortVal)
+                            prop.SetValue(view, (short)(shortVal + 1));
+                        else if (currentValue is byte byteVal && byteVal < byte.MaxValue)
+                            prop.SetValue(view, (byte)(byteVal + 1));
+                    }
+                } catch { }
+            }
+        }
+
+        private void NumericDownButton_Click (object sender, RoutedEventArgs e)
+        {
+            var button = sender as RepeatButton;
+            if (button?.Tag is ISettingView view)
+            {
+                try {
+                    var prop = view.GetType().GetProperty("Value");
+                    if (prop != null)
+                    {
+                        var currentValue = prop.GetValue(view);
+                        if (currentValue is int intVal)
+                            prop.SetValue(view, intVal - 1);
+                        else if (currentValue is long longVal)
+                            prop.SetValue(view, longVal - 1);
+                        else if (currentValue is short shortVal)
+                            prop.SetValue(view, (short)(shortVal - 1));
+                        else if (currentValue is byte byteVal && byteVal > byte.MinValue)
+                            prop.SetValue(view, (byte)(byteVal - 1));
+                    }
+                } catch { }
+            }
+        }
+
+        private void NumericTextBox_PreviewTextInput (object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !IsTextNumeric(e.Text);
+        }
+
+        private static bool IsTextNumeric (string text)
+        {
+            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("[^0-9.-]+");
+            return !regex.IsMatch(text);
         }
 
         public delegate void ApplyEventHandler (object sender, EventArgs e);
@@ -350,6 +477,81 @@ namespace GARbro.GUI
         }
     }
 
+    public class EncodingSettingView : ResourceSettingView<Encoding>
+    {
+        public IEnumerable<Encoding> EncodingList { get; }
+
+        public EncodingSettingView (IResourceSetting setting) : base (setting)
+        {
+            EncodingList = MainWindow.GetEncodingList (true);
+        }
+    }
+
+    public class EnumSettingView<TEnum> : ISettingView where TEnum : struct, Enum
+    {
+        public IResourceSetting Source { get; private set; }
+        public bool IsChanged { get; private set; }
+        public string Text { get { return Source.Text; } }
+        public string Description { get { return Source.Description; } }
+
+        TEnum m_value;
+        public TEnum Value {
+            get { return m_value; }
+            set {
+                if (!EqualityComparer<TEnum>.Default.Equals (m_value, value))
+                {
+                    m_value = value;
+                    IsChanged = true;
+                    OnValueChanged();
+                }
+            }
+        }
+
+        public class EnumDisplay
+        {
+            public TEnum Value { get; set; }
+            public string Display { get; set; }
+        }
+
+        public IEnumerable<EnumDisplay> EnumValues { get; }
+
+        public EnumSettingView (IResourceSetting src)
+        {
+            Source = src;
+            m_value = (TEnum)src.Value;
+
+            EnumValues = Enum.GetValues(typeof(TEnum))
+                .Cast<TEnum>()
+                .Select(e => new EnumDisplay { 
+                    Value = e, 
+                    Display = GetEnumDescription(e) ?? e.ToString() 
+                });
+        }
+
+        string GetEnumDescription (TEnum value)
+        {
+            var field = value.GetType().GetField(value.ToString());
+            var attribute = field?.GetCustomAttribute<DescriptionAttribute>();
+            return attribute?.Description;
+        }
+
+        public void Apply ()
+        {
+            if (IsChanged)
+            {
+                Source.Value = m_value;
+                IsChanged = false;
+            }
+        }
+
+        public event PropertyChangedEventHandler ValueChanged;
+
+        void OnValueChanged ()
+        {
+            ValueChanged?.Invoke (this, new PropertyChangedEventArgs ("Value"));
+        }
+    }
+
     public static class TreeViewItemExtensions
     {
         /// <returns>Depth of the given TreeViewItem</returns>
@@ -377,7 +579,7 @@ namespace GARbro.GUI
         {
             var item = value as TreeViewItem;
             if (item == null)
-                return new Thickness(0);
+                return new Thickness (0);
             double thickness = Length * item.GetDepth();
 
             return new Thickness (thickness, 0, 0, 0);
@@ -389,7 +591,7 @@ namespace GARbro.GUI
         }
     }
 
-    internal class GuiResourceSetting : ResourceSettingBase, INotifyPropertyChanged
+    public class GuiResourceSetting : ResourceSettingBase, INotifyPropertyChanged
     {
         public override object Value {
             get { return Settings.Default[Name]; }
@@ -407,7 +609,7 @@ namespace GARbro.GUI
         public GuiResourceSetting (string name)
         {
             Name = name;
-            Text = guiStrings.ResourceManager.GetString (name, guiStrings.Culture) ?? name;
+            Text = Localization._T(name) ?? name;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

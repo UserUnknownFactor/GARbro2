@@ -1,28 +1,3 @@
-//! \file       GarCreate.cs
-//! \date       Fri Jul 25 05:56:29 2014
-//! \brief      Create archive frontend.
-//
-// Copyright (C) 2014 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
 using System;
 using System.IO;
 using System.Linq;
@@ -32,7 +7,6 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using GameRes;
-using GARbro.GUI.Strings;
 using GARbro.GUI.Properties;
 
 namespace GARbro.GUI
@@ -51,7 +25,7 @@ namespace GARbro.GUI
             catch (Exception X)
             {
                 ResumeWatchDirectoryChanges();
-                PopupError (X.Message, guiStrings.TextCreateArchiveError);
+                PopupError (X.Message, Localization._T("TextCreateArchiveError"));
             }
         }
     }
@@ -65,7 +39,7 @@ namespace GARbro.GUI
 
         delegate void AddFilesEnumerator (IList<Entry> list, string path, DirectoryInfo path_info);
 
-        public GarCreate (MainWindow parent) : base (parent, guiStrings.TextCreateArchiveError)
+        public GarCreate (MainWindow parent) : base (parent, Localization._T("TextCreateArchiveError"))
         {
             m_arc_name = Settings.Default.appLastCreatedArchive;
         }
@@ -93,13 +67,13 @@ namespace GARbro.GUI
             }
             if (string.IsNullOrEmpty (dialog.ArchiveName.Text))
             {
-                m_main.SetStatusText ("Archive name is empty");
+                m_main.SetFileStatus (Localization._T("Archive name is empty"));
                 return false;
             }
             m_format = dialog.ArchiveFormat.SelectedItem as ArchiveFormat;
             if (null == m_format)
             {
-                m_main.SetStatusText ("Format is not selected");
+                m_main.SetFileStatus (Localization._T("Format is not selected"));
                 return false;
             }
             m_options = dialog.ArchiveOptions;
@@ -113,8 +87,8 @@ namespace GARbro.GUI
 
             m_progress_dialog = new ProgressDialog ()
             {
-                WindowTitle = guiStrings.TextTitle,
-                Text        = string.Format (guiStrings.MsgCreatingArchive, Path.GetFileName (m_arc_name)),
+                WindowTitle = Localization._T("TextTitle"),
+                Text        = string.Format (Localization._T("MsgCreatingArchive"), Path.GetFileName (m_arc_name)),
                 Description = "",
                 MinimizeBox = true,
             };
@@ -156,8 +130,9 @@ namespace GARbro.GUI
             m_pending_error = null;
             try
             {
-                using (var tmp_file = new GARbro.Shell.TemporaryFile (Path.GetDirectoryName (m_arc_name),
-                                                                    Path.GetRandomFileName ()))
+                using (var tmp_file = new GARbro.Shell.TemporaryFile (
+                        Path.GetDirectoryName (m_arc_name),
+                        Path.GetRandomFileName ()))
                 {
                     m_total = m_file_list.Count() + 1;
                     using (var file = File.Create (tmp_file.Name))
@@ -190,9 +165,9 @@ namespace GARbro.GUI
             else
             {
                 if (m_pending_error is OperationCanceledException)
-                    m_main.SetStatusText (m_pending_error.Message);
+                    m_main.SetFileStatus (m_pending_error.Message);
                 else
-                    m_main.PopupError (m_pending_error.Message, guiStrings.TextCreateArchiveError);
+                    m_main.PopupError (m_pending_error.Message, Localization._T("TextCreateArchiveError"));
             }
         }
 
@@ -203,7 +178,7 @@ namespace GARbro.GUI
             {
                 if (entry.IsDirectory)
                 {
-                    if (".." != entry.Name)
+                    if (VFS.DIR_PARENT != entry.Name)
                     {
                         var dir = new DirectoryInfo (entry.Name);
                         add_files (list, entry.Name, dir);

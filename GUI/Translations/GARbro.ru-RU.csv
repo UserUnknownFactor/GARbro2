@@ -1,0 +1,353 @@
+Original→Singular→Plural1→Plural2→Plural3
+// ArcFormats strings
+AMIBaseArchive→Базовый архив→→→
+AMIBaseTooltip→Новый архив будет содержать записи из базового.→→→
+AMIChooseBase→Выберите базовый архив→→→
+AMIDescription→Архив Amaterasu Translations Muv-Luv→→→
+AMINoFiles→Не найдено файлов, подходящих для архива AMI.→→→
+ArcEncryptedNotice→Содержимое архива зашифровано.¶
+Выберите подходящую схему шифрования.→→→
+ArcNoEncryption→Без шифрования→→→
+ArcReset→Сброс→→→
+GRPDescription→Проприетарный формат изображений âge→→→
+GSCDescription→Проприетарный формат скриптов Liar-soft→→→
+INTCreationNotice→Создание зашифрованных архивов не реализовано.→→→
+INTDescription→Архив ресурсов движка CatSystem2→→→
+INTKeyRequirement→Ключ должен быть 32-битным шестнадцатеричным целым числом→→→
+INTLabelNumericKey→Числовой ключ→→→
+INTNotice→Каталог архива зашифрован.→→→
+KogadoDescription→Архив ресурсов игрового движка Kogado→→→
+LabelPassphrase→Пароль:→→→
+LabelScheme→Схема→→→
+LWGDescription→Архив изображений Liar-soft→→→
+MsgAddingFile→Добавление файла→→→
+MsgCalculatingChecksum→Вычисление контрольной суммы...→→→
+MsgCompressingIndex→Сжатие индекса...→→→
+MsgCreationKeyRequired→Для создания требуется ключ шифрования.→→→
+MsgEncNotImplemented→Метод шифрования не реализован→→→
+MsgExtensionTooLong→Расширение имени файла слишком длинное.→→→
+MsgFileNameTooLong→Имя файла слишком длинное→→→
+MsgIllegalCharacters→Имя файла содержит недопустимые символы→→→
+MsgInvalidImageFormat→{0}: формат изображения не распознан.→→→
+MsgInvalidVersion→Указана недопустимая версия архива.→→→
+MsgNoExtension→Имя файла без расширения.→→→
+MsgTooManyFiles→Количество файлов превышает лимит архива.→→→
+MsgUpdatingIndex→Обновление индекса...→→→
+MsgWritingIndex→Запись индекса...→→→
+NPACompressContents→Сжать содержимое→→→
+NPADescription→Архив ресурсов Nitro+→→→
+NPAKeys→Ключи шифрования¶
+(требуются даже если содержимое не зашифровано)→→→
+NPASteinsGateDescription→Архив ресурсов Nitro+ Steins;Gate→→→
+NSADescription→Архив ресурсов игрового движка NScripter→→→
+ONSArchiveType→Тип архива→→→
+ONSCompression→Сжатие→→→
+ONSCompressionNone→Нет→→→
+PDDescription→Архив ресурсов Flying Shine→→→
+PDScrambleContents→Скремблировать содержимое→→→
+RPADescription→Архив игрового движка Ren'Py→→→
+RPALabelKey→32-битный ключ→→→
+SCRDescription→Файл скрипта Amaterasu Translations Muv-Luv→→→
+SGLabelEncoding→Кодировка имён файлов→→→
+TooltipHex→Шестнадцатеричное число→→→
+WARCLabelLength→Максимальная длина имени файла¶
+(без расширения)→→→
+XFLDescription→Архив игровых ресурсов Liar-soft→→→
+XP3CompressContents→Сжать содержимое→→→
+XP3CompressHeader→Сжать индекс→→→
+XP3Description→Архив ресурсов игрового движка KiriKiri→→→
+XP3LabelVersion→Версия→→→
+XP3RetainStructure→Сохранить структуру каталогов→→→
+YPFDescription→Архив ресурсов игрового движка Yu-Ris→→→
+YPFLabelKey→8-битный ключ шифрования→→→
+YPFLabelVersion→Версия архива→→→
+YPFNotice→Каталог архива зашифрован.¶
+Выберите подходящую схему шифрования.→→→
+LabelEncScheme→Схема шифрования→→→
+DPKKeys→Ключи шифрования→→→
+ArcDefault→По умолчанию→→→
+ArcHex32Bit→32-битное шестнадцатеричное число→→→
+KCAPDefault→По умолчанию→→→
+MBLNotice→Архив содержит зашифрованные скрипты.¶
+Выберите схему шифрования или введите пароль.→→→
+ArcTitleOrPassword→Выберите название или введите пароль→→→
+RPMEncryptedNotice→Файл похож на архив ресурсов RPM,¶
+но попытка угадать ключ шифрования не удалась.¶
+Выберите подходящую схему шифрования.→→→
+QLIEDefaultScheme→Использовать схему шифрования по умолчанию→→→
+INTChooseExe→Выберите исполняемый файл игры→→→
+INTExeButton→Проверить EXE→→→
+INTExeFiles→Исполняемые файлы→→→
+INTMessage1→Нажмите кнопку "Проверить EXE" для поиска ключа в исполняемом файле игры.→→→
+INTMessage2→Или введите ключ шифрования архива или выберите одну из предустановленных схем шифрования.→→→
+INTKeyNotFound→Ключ не найден в {0}.→→→
+ArcIgnoreEncryption→Игнорировать шифрование→→→
+ArcImageEncrypted→Изображение зашифровано.→→→
+MCGChoose→Выберите название или введите ключ→→→
+MCGLabelKey→8-битный ключ→→→
+MCAEncryptedNotice→Содержимое архива зашифровано.→→→
+YPFTryGuess→Попытаться угадать→→→
+AGSMightBeEncrypted→Содержимое архива может быть зашифровано,¶
+выберите подходящую схему шифрования.→→→
+XP3EncryptedNotice→Содержимое архива может быть зашифровано.¶
+Выберите подходящую схему шифрования.→→→
+GALChoose→Выберите название или введите ключ→→→
+GYUImageEncrypted→Изображение зашифровано.¶
+Выберите подходящую схему шифрования.→→→
+FJSYSNotice→Архив содержит зашифрованные скрипты.¶
+Выберите схему шифрования или введите пароль.→→→
+RCTApplyMask→Загрузить данные прозрачности из растрового изображения RC8→→→
+RCTOverlayFrames→Автоматически объединять инкрементные кадры→→→
+ZIPEncryptedNotice→Содержимое архива зашифровано.→→→
+OGGFixCrc→Исправить контрольные суммы файлов ogg→→→
+DefaultEncoding→Кодировка имён файлов по умолчанию→→→
+ODNAudioSampleRate→Частота дискретизации аудио по умолчанию→→→
+Tim2AlphaFormat→Выберите формат альфа-канала изображения Tim2.¶
+Он не может быть правильно прочитан из файла.→→→
+// GUI strings
+ButtonCancel→Отмена→→→
+ButtonExtract→Извлечь→→→
+ButtonOK→ОК→→→
+CtxMenuClose→_Закрыть→→→
+CtxMenuCopy→Копировать→→→
+CtxMenuCreate→Создать архив...→→→
+CtxMenuCut→Вырезать→→→
+CtxMenuDelete→_Удалить→→→
+CtxMenuExplorer→Открыть в _Проводнике→→→
+CtxMenuExtract→Извлечь→→→
+CtxMenuOpen→Открыть→→→
+CtxMenuPaste→Вставить→→→
+CtxMenuRefresh→Обновить→→→
+CtxMenuRename→Пере_именовать→→→
+CtxMenuSortBy→Сортировать по→→→
+CtxMenuSortByName→Имени→→→
+CtxMenuSortBySize→Размеру→→→
+CtxMenuSortByType→Типу→→→
+CtxMenuUnsorted→Без сортировки→→→
+HeaderName→Имя→→→
+HeaderSize→Размер→→→
+HeaderType→Тип→→→
+LabelArchiveFormat→Формат архива→→→
+LabelArchiveName→Имя архива→→→
+LabelArchiveOptions→Параметры архива→→→
+LabelExtractAllTo→Извлечь файлы из {0} в→→→
+LabelExtractFileTo→Извлечь {0} в →→→
+MenuAbout→О программе Game Resource browser→→→
+MsgDeletedItem→Удалён {0}→→→
+MsgDirectoryNotFound→Каталог не найден→→→
+MsgEmptyArchive→Архив пуст→→→
+MsgErrorExtracting→Ошибка извлечения файла→→→
+MsgErrorOpening→Ошибка открытия файла→→→
+MsgExtractComplete→Извлечён {0} в {1}→→→
+MsgExtractedFiles→Извлечён {0} файл→Извлечено {0} файла→Извлечено {0} файлов→
+MsgExtractingArchive→Извлечение файлов из {0}→→→
+MsgExtractingFile→Извлечение файла из {0}→→→
+MsgExtractingTo→Извлечение файлов из {0} в {1}→→→
+MsgImageSize→ {0} x {1} x {2}bpp{3}→→→
+MsgBPP→ x {0}bpp→→→
+MsgNoFiles→Нет файлов для извлечения→→→
+MsgReady→Готово→→→
+MsgUnableInterpretImage→Невозможно интерпретировать формат изображения→→→
+MsgVersion→Версия {0}→→→
+TextAboutBuiltin→[встроенный]→→→
+TextAboutArchives→Архивы→→→
+TextAboutImages→Изображения→→→
+TextAboutTitle→О программе Game Resource browser→→→
+TextAllFiles→Все файлы→→→
+TextAsIs→Как есть→→→
+TextChooseArchive→Выберите расположение архива→→→
+TextChooseDestDir→Выберите каталог назначения→→→
+TextCreateArchive→Создать архив→→→
+TextCreateArchiveError→Ошибка создания архива→→→
+Type_directory→<каталог>→→→
+TextEncoding→Кодировка текста→→→
+TextExtractImages→Извлечь изображения→→→
+TextExtractText→Извлечь текст→→→
+TextExtractTitle→Извлечь из архива→→→
+TextParametersTitle→Параметры архива→→→
+TextSaveAs→Сохранить как→→→
+TextSaveImagesAs→Сохранить изображения как→→→
+TextTitle→Game Resource browser→→→
+TooltipBack→Назад→→→
+TooltipForward→Вперёд→→→
+MsgOverwrite→Файл {0}¶
+уже существует.¶
+¶
+Перезаписать?→→→
+TextConfirmOverwrite→Подтвердить перезапись→→→
+MsgCreatingArchive→Создание архива {0}→→→
+MenuOpen→Открыть...→→→
+MenuRecent→Недавние файлы→→→
+MsgChooseFiles→Выберите файлы для извлечения→→→
+MenuExit→В_ыход→→→
+MenuFile→_Файл→→→
+MenuHelp→_Справка→→→
+MsgFiles→{0} файл→{0} файла→{0} файлов→
+MsgConfirmDeleteFiles→Вы уверены, что хотите удалить эти файлы?→→→
+TextDeleteFiles→Удалить файлы→→→
+MsgDeletedItems→Удалён {0} файл→Удалено {0} файла→Удалено {0} файлов→
+MenuFitWindow→Подогнать изображение под окно→→→
+MenuToggleMenuBar→Показать/скрыть главное _меню→→→
+MenuToggleStatusBar→Показать/скрыть _строку состояния→→→
+MenuToggleToolBar→Показать/скрыть панель _инструментов→→→
+MenuView→_Вид→→→
+CtxMenuConvert→Конвертировать мультимедиа...→→→
+ButtonConvert→Конвертировать→→→
+LabelImageDestinationFormat→Выберите целевой формат для изображений:→→→
+LabelAudioDestinationFormat→Выберите целевой формат для аудио:→→→
+TextConvertMedia→Конвертация медиа→→→
+MsgConvertingFile→Конвертация файла {0}→→→
+TextMediaConvertError→Ошибка конвертации мультимедиа→→→
+LabelEncoding→Кодировка→→→
+TextConvertAudio→Конвертировать аудио в стандартный формат→→→
+TextExtractAudio→Извлечь аудио→→→
+TooltipAudioFormats→WAV, MP3 или OGG→→→
+TextAboutAudio→Аудио→→→
+TextAboutLicense→Лицензия→→→
+MsgUnableInterpretAudio→невозможно интерпретировать формат аудио→→→
+MsgNoMediaFiles→Медиафайлы не выбраны.→→→
+LabelSkipFailures→Пропускать неконвертируемое→→→
+LabelForceConversion→Принудительная конвертация→→→
+MsgNoMatching→Нет записей, соответствующих "{0}"→→→
+MsgSelectedFiles1→{0} файл добавлен в выборку→{0} файла добавлено в выборку→{0} файлов добавлено в выборку→
+MsgSelectedFiles2→{0} файлов добавлено в выборку→→→
+LabelEnterMask→Введите маску с подстановочными знаками→→→
+TextSelectFiles→Выберите файлы→→→
+TextErrorExtracting→Произошла ошибка при извлечении файла¶
+{0}¶
+{1}→→→
+CtxMenuFileType→Тип файла→→→
+Type_archive→архив→→→
+Type_image→графика→→→
+Type_script→скрипт→→→
+Type_audio→аудио→→→
+Type_video→видео→→→
+Type_NONE→без типа→→→
+LabelDestinationDir→Каталог назначения:→→→
+LabelDevSite→Сайт разработки→→→
+CtxMenuSelectByMask→Выбрать файлы по маске...→→→
+ButtonAbort→_Прервать→→→
+ButtonContinue→_Продолжить→→→
+LabelIgnoreErrors→_Игнорировать дальнейшие ошибки→→→
+TextExtractionError→Ошибка извлечения файла→→→
+ButtonOverwrite→_Перезаписать→→→
+ButtonRename→Пере_именовать→→→
+ButtonSkip→Пропу_стить→→→
+LabelApplyToAll→Применить ко _всем дублирующимся файлам→→→
+LabelDuplicateFileQuestion→Что следует сделать?→→→
+TextErrorConverting→Произошла ошибка при конвертации файла¶
+{0}¶
+{1}→→→
+TextFileAlreadyExists→Файл {0} уже существует в целевой папке→→→
+ButtonDownload→_Загрузить→→→
+LabelReleaseNotes→Примечания к выпуску→→→
+MenuCheckUpdates→_Проверить обновления...→→→
+MsgNoUpdates→В настоящее время обновления недоступны→→→
+MsgUpdateAvailable→Доступно обновление базы данных форматов→→→
+MsgUpdateComplete→База данных форматов обновлена→→→
+MsgUpdateFailed→Проверка обновлений не удалась→→→
+MsgUpToDate→Версия GARbro актуальна.→→→
+TextNewVersion→Доступна новая версия:→→→
+TextUpdateTitle→Обновление приложения→→→
+TextVisitPage→Посетить страницу загрузки→→→
+MsgDownloadFailed→Загрузка обновления не удалась→→→
+ButtonApply→Применить→→→
+MenuPreferences→_Настройки→→→
+TextFormats→Форматы→→→
+TextPreferences→Настройки→→→
+TextViewer→Просмотр изображений→→→
+winDownScaleImage→Масштабировать изображения по размеру окна→→→
+MsgPlaying→{0} | {1} | {2}Гц {3}Кбит/с | {4}/{5}→→→
+TooltipStop→Стоп→→→
+TooltipPause→Пауза→→→
+TooltipResume→Возобновить→→→
+TooltipCycleOn→Цикл (Вкл)→→→
+TooltipCycleOff→Цикл (Выкл)→→→
+TooltipAutoOn→Авто (Вкл)→→→
+TooltipAutoOff→Авто (Выкл)→→→
+MsgReachedLastAudio→Достигнут последний аудиофайл→→→
+TooltipVolume→Громкость→→→
+Manual→Вручную→→→
+RepeatFile→Повтор (Файл)→→→
+AutoDir→Авто (Каталог)→→→
+RepeatDir→Повтор (Каталог)→→→
+NoVideoDataAvailable→Видеоданные недоступны→→→
+ErrorLoadingVideo→Ошибка загрузки видео: {0}→→→
+Stream→Поток→→→
+VideoInfo→Видео: {0}→→→
+VideoCodecInfo→Видео: {0} | Кодек: {1} | Разрешение: {2}x{3} | FPS: {4:F1}→→→
+VideoPlaybackErrorText→Не удалось воспроизвести видео встроенным плеером: {0}. Хотите открыть его в видеоплеере по умолчанию?→→→
+VideoPlaybackError→Ошибка воспроизведения видео→→→
+MediaFailedToLoad→Не удалось загрузить медиа→→→
+AdditionalCodecsNeeded→Этот видео-формат требует установки дополнительных кодеков в системе, например пакета кодеков K-Lite Codec Pack.→→→
+Unknown→Неизвестно→→→
+FailedToGenerateHexDump→Не удалось создать шестнадцатеричный дамп: →→→
+HexHeader0→Смещение  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
+HexHeader1→--------  -----------------------------------------------  | ----------------→→→
+FailedToOpenExternalPlayer→Не удалось открыть внешний плеер: {0}→→→
+BinaryFileTooLarge→Двоичный файл слишком большой для предпросмотра ({0:N0}Б)→→→
+HexDumpOf→Шестнадцатеричный дамп {0} ({1:N0} байт)→→→
+Archive name is empty→Archive name is empty→→→
+Format is not selected→Format is not selected→→→
+Converted→Конвертирован {0}→→→
+FilterItems→Фильтр: {0} из {1} элементов→→→
+PlayAnimation→Воспроизвести анимацию→→→
+PauseAnimation→Приостановить анимацию→→→
+SpriteSheetFrames→Спрайт-лист: извлечено {0} кадров→→→
+AutoDetectedGrid→Автоопределение: сетка {0}x{1} из изображений {2}x{3}→→→
+CouldNotDetectSprite→Не удалось определить макет спрайтов→→→
+LoadingFile→Загружается {0}...→→→
+LoadingFailure→Не удалось загрузить {0}: {1}→→→
+NoImagesSelected→Изображения не выбраны→→→
+AnimationText→Анимация:→→→
+ImageMode→Режим:→→→
+ImageModeTooltip→Как спрайты организованы в этом изображении→→→
+ImageModeStatic→Статичное изображение→→→
+ImageModeOverlay→Наложение слоёв→→→
+ImageModeGrid→Сетка изображений→→→
+AddSelectionText→Добавить→→→
+AddToOverlayTooltip→Добавить выбранные изображения в наложение.→→→
+ClearAllOverlaysText→Очистить→→→
+ClearAllOverlaysTooltip→Очистить все слои наложения.→→→
+ExportOverlayText→Экспорт→→→
+ExportOverlayTooltip→Экспортировать составное изображение.→→→
+GridDimensions→Сетка:→→→
+NumberOfColumnsTooltip→Количество столбцов→→→
+NumberOfRowsTooltip→Количество строк→→→
+FrameDelayText→Задержка:→→→
+FrameDelayTooltip→Задержка между кадрами (мс)→→→
+UNIT_ms→мс→→→
+AutodetectText→Авто→→→
+AutodetectGridTooltip→Попытаться автоматически определить раскладку спрайтов→→→
+ParametersText→Параметры→→→
+NoExportLayers→Нет слоёв для экспорта→→→
+ImageSaveFilter→Изображение PNG|*.png|Изображение BMP|*.bmp|Изображение JPEG|*.jpg→→→
+MsgExportedTo→Экспортировано в {0}→→→
+MsgExportFail→Экспорт не удался: {0}→→→
+SelectOverlayImages→Выберите изображения для наложения→→→
+OverlayLayers→Режим наложения: {0} слой→Режим наложения: {0} слоя→Режим наложения: {0} слоёв→
+nth_layer→{0} слой→{0} слоя→{0} слоёв→
+n_frames→ ({0} кадр)→ ({0} кадра)→ ({0} кадров)→
+Real encoding→Реальная кодировка→→→
+Assumed encoding→Предполагаемая кодировка→→→
+ISO filename encoding→Кодировка ISO-имён→→→
+DropImagesHere→Перетащите сюда,¶
+чтобы добавить слои→→→
+MoveLayerUp→Cлой вверх→→→
+MoveLayerDown→Cлой вниз→→→
+RemoveLayer→Удалить слой→→→
+Overlays→Слои→→→
+Opacity→Прозрачность:→→→
+KnownPasswords→--- Известные пароли ---→→→
+// GameRes strings
+BMPExtensionsDesc→Включает различные расширения BMP,¶
+такие как поддержка прозрачности.→→→
+BMPExtensionsText→Включить поддержку расширений формата→→→
+JPEGQualityText→Качество сжатия JPEG→→→
+MsgFileIsEmpty→Файл пуст→→→
+MsgFileTooLarge→Файл слишком большой→→→
+MsgInvalidEncryption→Неподходящая схема шифрования→→→
+MsgInvalidFileName→Недопустимое имя файла→→→
+MsgInvalidFormat→Недопустимый формат файла→→→
+MsgUnknownEncryption→Неизвестная схема шифрования→→→
+MsgUnknownFormat→Файл не может быть открыт как архив ресурсов→→→

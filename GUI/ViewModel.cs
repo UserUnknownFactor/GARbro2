@@ -1,28 +1,3 @@
-//! \file       ViewModel.cs
-//! \date       Wed Jul 02 07:29:11 2014
-//! \brief      GARbro directory list.
-//
-// Copyright (C) 2014 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
 using System;
 using System.IO;
 using System.Linq;
@@ -34,8 +9,9 @@ using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Windows.Data;
+using System.Runtime.InteropServices;
+
 using GameRes;
-using GARbro.GUI.Strings;
 
 namespace GARbro.GUI
 {
@@ -58,7 +34,7 @@ namespace GARbro.GUI
             var last_dir = Path.Last();
             if (IsArchive || !string.IsNullOrEmpty (last_dir) && null != Directory.GetParent (last_dir))
             {
-                Add (new EntryViewModel (new SubDirEntry (".."), -2));
+                Add (new EntryViewModel (new SubDirEntry (VFS.DIR_PARENT), -2));
             }
             foreach (var entry in Source)
             {
@@ -78,21 +54,66 @@ namespace GARbro.GUI
         public EntryViewModel (Entry entry, int priority)
         {
             Source = entry;
-            Name = SafeGetFileName (entry.Name);
+            Name = GetRelativePath(entry.Name);
             Priority = priority;
         }
 
-        static char[] SeparatorCharacters = { '\\', '/', ':' };
+        private string GetRelativePath(string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath) || fullPath == VFS.DIR_PARENT)
+                return fullPath;
+
+            if (!Path.IsPathRooted(fullPath))
+                return SafeGetFileName(fullPath);
+
+            try
+            {
+                string currentDir = VFS.Top.CurrentDirectory;
+                if (string.IsNullOrEmpty(currentDir))
+                    currentDir = Directory.GetCurrentDirectory();
+
+                currentDir = Path.GetFullPath(currentDir);
+                fullPath = Path.GetFullPath(fullPath);
+
+                if (fullPath.StartsWith(currentDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    string relativePath = fullPath.Substring(currentDir.Length);
+                    if (relativePath.StartsWith(Path.DirectorySeparatorChar.ToString()) || 
+                        relativePath.StartsWith(Path.AltDirectorySeparatorChar.ToString()))
+                    {
+                        relativePath = relativePath.Substring(1);
+                    }
+                    return relativePath;
+                }
+            }
+            catch { }
+
+            return SafeGetFileName(fullPath);
+        }
+
+        private static readonly char[] SeparatorCharacters = { '\\', '/' };
 
         /// <summary>
-        /// Same as Path.GetFileName, but ignores invalid charactes
+        /// Same as Path.GetFileName, but robustly ignores invalid characters
         /// </summary>
-        string SafeGetFileName (string filename)
+        string SafeGetFileName(string filename)
         {
-            var name_start = filename.LastIndexOfAny (SeparatorCharacters);
-            if (-1 == name_start)
+            if (string.IsNullOrEmpty(filename))
+                return string.Empty;
+
+            filename = filename.TrimEnd(SeparatorCharacters);
+
+            if (string.IsNullOrEmpty(filename))
+                return string.Empty;
+
+            var name_start = filename.LastIndexOfAny(SeparatorCharacters);
+            if (name_start == -1)
                 return filename;
-            return filename.Substring (name_start+1);
+
+            if (name_start == filename.Length - 1)
+                return string.Empty;
+
+            return filename.Substring(name_start + 1);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -179,8 +200,94 @@ namespace GARbro.GUI
 
         static int CompareNames (string a, string b)
         {
-//            return NativeMethods.StrCmpLogicalW (a, b);
-            return string.Compare (a, b, StringComparison.CurrentCultureIgnoreCase);
+            return NativeMethods.StrCmpLogicalW (a, b);
+            //return NaturalStringComparer.Compare (a, b);
+            //return string.Compare (a, b, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        /*private static class NaturalStringComparer
+        {
+            public static int Compare(string x, string y)
+            {
+                if (x == null && y == null) return 0;
+                if (x == null) return -1;
+                if (y == null) return 1;
+
+                int lengthX = x.Length;
+                int lengthY = y.Length;
+
+                int indexX = 0;
+                int indexY = 0;
+
+                while (indexX < lengthX && indexY < lengthY)
+                {
+                    if (char.IsDigit(x[indexX]) && char.IsDigit(y[indexY]))
+                    {
+                        int numStartX = indexX;
+                        int numStartY = indexY;
+
+                        while (indexX < lengthX && x[indexX] == '0') indexX++;
+                        while (indexY < lengthY && y[indexY] == '0') indexY++;
+
+                        int numLengthX = 0;
+                        int numLengthY = 0;
+
+                        int tempX = indexX;
+                        int tempY = indexY;
+
+                        while (tempX < lengthX && char.IsDigit(x[tempX]))
+                        {
+                            numLengthX++;
+                            tempX++;
+                        }
+
+                        while (tempY < lengthY && char.IsDigit(y[tempY]))
+                        {
+                            numLengthY++;
+                            tempY++;
+                        }
+
+                        if (numLengthX != numLengthY)
+                        {
+                            return numLengthX.CompareTo(numLengthY);
+                        }
+
+                        while (indexX < tempX && indexY < tempY)
+                        {
+                            int diff = x[indexX].CompareTo(y[indexY]);
+                            if (diff != 0) return diff;
+                            indexX++;
+                            indexY++;
+                        }
+
+                        if (indexX == tempX && indexY == tempY)
+                        {
+                            int zerosX = indexX - numStartX - numLengthX;
+                            int zerosY = indexY - numStartY - numLengthY;
+                            if (zerosX != zerosY)
+                            {
+                                return zerosY.CompareTo(zerosX);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        int diff = char.ToUpperInvariant(x[indexX]).CompareTo(char.ToUpperInvariant(y[indexY]));
+                        if (diff != 0) return diff;
+
+                        indexX++;
+                        indexY++;
+                    }
+                }
+
+                return lengthX.CompareTo(lengthY);
+            }
+        }*/
+
+        internal static class NativeMethods
+        {
+            [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+            public static extern int StrCmpLogicalW(string psz1, string psz2);
         }
     }
 
@@ -191,53 +298,12 @@ namespace GARbro.GUI
     {
         public ImageFormat Source { get; private set; }
         public string Tag {
-            get { return null != Source ? Source.Tag : guiStrings.TextAsIs; }
+            get { return null != Source ? Source.Tag : Localization._T("TextAsIs"); }
         }
 
         public ImageFormatModel (ImageFormat impl = null)
         {
             Source = impl;
-        }
-    }
-
-    /// <summary>
-    /// Stores current position within directory view model.
-    /// </summary>
-    public class DirectoryPosition
-    {
-        public IEnumerable<string> Path { get; set; }
-        public string              Item { get; set; }
-
-        public DirectoryPosition (DirectoryViewModel vm, EntryViewModel item)
-        {
-            Path = vm.Path;
-            Item = null != item ? item.Name : null;
-        }
-
-        public DirectoryPosition (string filename)
-        {
-            Path = new string[] { System.IO.Path.GetDirectoryName (filename) };
-            Item = System.IO.Path.GetFileName (filename);
-        }
-    }
-
-    public class EntryTypeConverter : IValueConverter
-    {
-        public object Convert (object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            var type = value as string;
-            if (!string.IsNullOrEmpty (type))
-            {
-                var translation = guiStrings.ResourceManager.GetString ("Type_"+type, guiStrings.Culture);
-                if (!string.IsNullOrEmpty (translation))
-                    return translation;
-            }
-            return value;
-        }
-
-        public object ConvertBack (object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
         }
     }
 }

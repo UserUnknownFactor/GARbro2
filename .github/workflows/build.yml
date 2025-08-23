@@ -1,25 +1,44 @@
-name: .NET Framework Build
-on: [push, pull_request]
+name: Build CI
+on:
+  push:
+    tags-ignore:
+      - '**'
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PROGRAM_NAME: GARbro2
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           show-progress: false
-      - name: Add msbuild to PATH
+          fetch-depth: 0
+
+      - name: Add MSbuild to PATH
         uses: microsoft/setup-msbuild@v2
-      # Restore NuGet packages
-      - name: Restore
-        run: nuget restore
-      # Build the solution
-      - name: Build
-        run: msbuild /p:Configuration=Release /p:Platform="Any CPU" /p:TargetFrameworkVersion=v4.6.2 GARbro.sln
-      # Publish the artifacts
-      - name: Publish Artifact
-        if: success()
+
+      - name: Build the solution
+        run: msbuild ${{ env.PROGRAM_NAME }}.sln /t:restore,build /p:Configuration=Release /p:Platform="Any CPU"
+
+      - name: Set short SHA
+        id: vars
+        shell: bash
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Publish artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GARbro-Mod-ci-build
-          path: bin/Release
+          name: ${{ env.PROGRAM_NAME }}-beta-${{ steps.vars.outputs.sha_short }}
+          path: bin/Release/net48

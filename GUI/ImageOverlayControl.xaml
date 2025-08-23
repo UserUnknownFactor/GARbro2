@@ -1,0 +1,168 @@
+<UserControl x:Class="GARbro.GUI.ImageOverlayControl"
+         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         xmlns:gre="clr-namespace:GameRes.Extensions;assembly=GameRes"
+         xmlns:local="clr-namespace:GARbro.GUI">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="*" MinWidth="200"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Main overlay canvas -->
+        <ScrollViewer Grid.Column="0" 
+                x:Name="OverlayScrollViewer"
+                HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Auto"
+                Background="#404040"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                SizeChanged="OverlayScrollViewer_SizeChanged">
+            <Viewbox x:Name="OverlayViewbox" 
+                     Stretch="None" 
+                     StretchDirection="DownOnly">
+                <!--Border BorderBrush="Red" BorderThickness="1"-->
+                <Canvas x:Name="OverlayCanvas" 
+                         Background="Transparent"
+                        ClipToBounds="True"
+                        local:TouchScrolling.IsEnabled="True"
+                        Cursor="Hand"
+                        local:TouchScrolling.DraggingCursor="Hand"/>
+                <!--/Border-->
+            </Viewbox>
+        </ScrollViewer>
+
+        <!-- Layer controls -->
+        <Border Grid.Column="1" 
+            Background="#F0F0F0" 
+            BorderBrush="#808080" 
+            BorderThickness="1,0,0,0"
+            AllowDrop="True"
+            Drop="LayerPanel_Drop"
+            DragOver="LayerPanel_DragOver">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                    Text="{gre:Localize Overlays}" 
+                    FontWeight="Bold" 
+                    Margin="5" 
+                    HorizontalAlignment="Center"/>
+
+                <ListBox Grid.Row="1" 
+                         x:Name="LayersList"
+                         Margin="5"
+                         SelectionChanged="LayersList_SelectionChanged"
+                         AllowDrop="True"
+                         PreviewMouseLeftButtonDown="LayersList_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="LayersList_PreviewMouseMove"
+                         DragEnter="LayersList_DragEnter"
+                         Drop="LayersList_Drop"
+                         DragOver="LayersList_DragOver"
+                         DragLeave="LayersList_DragLeave">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#B0C4DE"/>
+                                    <Setter Property="BorderBrush" Value="#4682B4"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#C8C8C8" 
+                                    BorderThickness="0,0,0,1" 
+                                    Padding="5">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0" 
+                                        IsChecked="{Binding IsVisible}"
+                                        Checked="LayerVisibility_Changed"
+                                        Unchecked="LayerVisibility_Changed"/>
+
+                                    <TextBlock Grid.Column="1" 
+                                        Text="{Binding Name}" 
+                                        VerticalAlignment="Center"
+                                        Margin="5,0,0,0"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding Name}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Drop zone hint -->
+                <Border Grid.Row="1" 
+                        x:Name="DropHint"
+                        Background="#A0FFFFFF"
+                        BorderBrush="#4682B4"
+                        BorderThickness="2"
+                        CornerRadius="4"
+                        Margin="10"
+                        Visibility="Collapsed"
+                        IsHitTestVisible="False">
+                    <TextBlock Text="{gre:Localize DropImagesHere}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        Foreground="#4682B4"
+                        TextWrapping="Wrap"
+                        TextAlignment="Center"
+                        Margin="10"
+                        IsHitTestVisible="False"/>
+                </Border>
+
+                <StackPanel Grid.Row="2" Margin="5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" 
+                            Text="{gre:Localize Opacity}" 
+                            VerticalAlignment="Center"/>
+                        <Slider Grid.Column="1" 
+                            x:Name="OpacitySlider"
+                            Minimum="0" 
+                            Maximum="1" 
+                            Value="1"
+                            Margin="5,0"
+                            ValueChanged="OpacitySlider_ValueChanged"/>
+                        <TextBlock Grid.Column="2" 
+                            Text="{Binding ElementName=OpacitySlider, Path=Value, StringFormat=F2}" 
+                            Width="30"/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center"
+                                Margin="0,5,0,0">
+                        <Button Content="↑" Width="30" Margin="2" 
+                            Click="MoveUp_Click" 
+                            ToolTip="{gre:Localize MoveLayerUp}"/>
+                        <Button Content="↓" Width="30" Margin="2" 
+                            Click="MoveDown_Click" 
+                            ToolTip="{gre:Localize MoveLayerDown}"/>
+                        <Button Content="✕" Width="30" Margin="2" 
+                            Click="Remove_Click" 
+                            ToolTip="{gre:Localize RemoveLayer}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

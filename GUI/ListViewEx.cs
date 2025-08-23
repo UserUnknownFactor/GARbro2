@@ -1,34 +1,10 @@
-//! \file       ListViewEx.cs
-//! \date       Thu Jul 24 02:19:38 2014
-//! \brief      Extended ListView with explorer-like multiple items selection.
-//
-// Copyright (C) 2014 by morkt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Collections;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows.Media;
 
 namespace GARbro.GUI
 {
@@ -44,6 +20,16 @@ namespace GARbro.GUI
         {
         }
 
+        public static readonly DependencyProperty IsDragDropEnabledProperty =
+            DependencyProperty.Register ("IsDragDropEnabled", typeof (bool), typeof (ListViewEx), 
+                new PropertyMetadata (false));
+
+        public bool IsDragDropEnabled
+        {
+            get { return (bool)GetValue (IsDragDropEnabledProperty); }
+            set { SetValue (IsDragDropEnabledProperty, value); }
+        }
+
         new public bool SetSelectedItems (IEnumerable selected_items)
         {
             return base.SetSelectedItems (selected_items);
@@ -54,14 +40,28 @@ namespace GARbro.GUI
             return new ListViewItemEx();
         }
 
-        protected override void OnMouseLeftButtonDown (MouseButtonEventArgs e)
+        /*protected override void OnMouseLeftButtonDown (MouseButtonEventArgs e)
         {
             if (0 == (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)))
             {
-                StartDragSelect();
+                var hit = VisualTreeHelper.HitTest (this, e.GetPosition (this));
+                if (hit != null)
+                {
+                    DependencyObject current = hit.VisualHit;
+                    while (current != null && current != this)
+                    {
+                        if (current is ListViewItem)
+                        {
+                            // We clicked on an item, start drag select
+                            StartDragSelect();
+                            break;
+                        }
+                        current = VisualTreeHelper.GetParent (current);
+                    }
+                }
             }
             base.OnMouseLeftButtonDown (e);
-        }
+        }*/
 
         protected override void OnMouseLeftButtonUp (MouseButtonEventArgs e)
         {
@@ -141,16 +141,37 @@ namespace GARbro.GUI
         protected override void OnPreviewMouseLeftButtonDown (MouseButtonEventArgs e)
         {
             var lv = ParentListView;
-            if (null != lv)
+            if (null == lv)
             {
-                if (0 == (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)))
+                base.OnPreviewMouseLeftButtonDown (e);
+                return;
+            }
+
+            if (!lv.IsDragDropEnabled)
+            {
+                base.OnPreviewMouseLeftButtonDown (e);
+                return;
+            }
+
+            if (0 == (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)))
+            {
+                // If this item is already selected and we have multiple selections,
+                // prevent the default behavior to preserve multi-selection for dragging
+                if (this.IsSelected && lv.SelectedItems.Count > 1)
+                {
+                    e.Handled = true;  // Prevent default selection behavior
+                    return;
+                }
+
+                // Single selection or clicking unselected item
+                if (!this.IsSelected)
                 {
                     lv.StartDragSelect();
                     lv.ContinueDragSelect (this);
                     return;
                 }
             }
-            base.OnPreviewMouseLeftButtonDown(e);
+            base.OnPreviewMouseLeftButtonDown (e);
         }
 
         protected override void OnPreviewMouseLeftButtonUp (MouseButtonEventArgs e)
@@ -160,7 +181,7 @@ namespace GARbro.GUI
             {
                 lv.EndDragSelect();
             }
-            base.OnPreviewMouseLeftButtonUp(e);
+            base.OnPreviewMouseLeftButtonUp (e);
         }
 
         protected override void OnMouseDoubleClick (MouseButtonEventArgs e)
