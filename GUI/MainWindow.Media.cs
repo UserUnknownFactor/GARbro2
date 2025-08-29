@@ -38,7 +38,7 @@ namespace GARbro.GUI
                 volumeControlPanel
             );
 
-            _mediaControl.ConfigureForMediaType (MediaType.None);
+            _mediaControl.ControlPanel.Visibility = Visibility.Collapsed;
         }
 
         private void CleanupMediaPlayback()
@@ -84,7 +84,7 @@ namespace GARbro.GUI
         private void MediaVolumeSlider_ValueChanged (object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             _savedVolume = e.NewValue;
-            _previewStateMachine.SetVolume((float)e.NewValue);
+            _previewStateMachine?.SetVolume((float)e.NewValue);
         }
 
         private void StopPlaybackExec (object sender, ExecutedRoutedEventArgs e)
@@ -252,13 +252,5 @@ namespace GARbro.GUI
         {
             _previewStateMachine?.UpdateAudioControls();
         }
-
-        internal void UpdateMediaControlsVisibility (MediaType mediaType)
-        {
-            _currentMediaType = mediaType;
-            Dispatcher.Invoke (() => _mediaControl.ConfigureForMediaType (mediaType));
-        }
-
-        private MediaType _currentMediaType = MediaType.None;
     }
 }

@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
 using GameRes;
 using GARbro.GUI.Preview;
 
@@ -93,7 +96,7 @@ namespace GARbro.GUI.Preview
             return null;
         }
 
-        public override void LoadContent (PreviewFile preview)
+        public override async Task LoadContentAsync (PreviewFile preview, CancellationToken cancellationToken)
         {
             var plugin = GetPluginForFile (preview.Entry);
             if (plugin == null)
@@ -101,23 +104,37 @@ namespace GARbro.GUI.Preview
                 Reset();
                 return;
             }
-        
+
             try
             {
                 _activePlugin?.Dispose();
                 _activePlugin = plugin;
-        
-                using (var stream = VFS.OpenBinaryStream (preview.Entry))
+
+                ModelContext context = null;
+
+                await Task.Run(() =>
                 {
-                    var context = plugin.Load (stream.AsStream, preview.Entry.Name);
-        
-                    _mainWindow.Dispatcher.Invoke (() =>
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    using (var stream = VFS.OpenBinaryStream (preview.Entry))
                     {
-                        // ShowModelControls will handle the media type transition
-                        _mainWindow.ShowModelControls (context, plugin);
-                        _mainWindow.SetPreviewStatus ($"{plugin.Name}: {context.Info}");
-                    });
-                }
+                        context = plugin.Load (stream.AsStream, preview.Entry.Name);
+                    }
+                }, cancellationToken);
+
+                await _mainWindow.Dispatcher.InvokeAsync (() =>
+                {
+                    _mainWindow.ShowModelControls (context, plugin);
+                    _mainWindow.SetPreviewStatus ($"{plugin.Name}: {context.Info}");
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation
+            }
+            catch (Exception ex) when (ex is ObjectDisposedException)
+            {
+                Reset();
             }
             catch (Exception ex)
             {

@@ -11,11 +11,15 @@ using System.Windows.Threading;
 
 using GARbro.GUI.Preview;
 using GameRes;
+using System.Threading;
 
 namespace GARbro.GUI
 {
     public class VideoPreviewControl : Grid
     {
+        private  MainWindow _mainWindow;
+        private    DateTime _loadStartTime;
+
         private    MediaElement mediaPlayer;
         private       VideoData currentVideo;
         private          string currentVideoFile;
@@ -40,8 +44,9 @@ namespace GARbro.GUI
 
         public string CurrentCodecInfo { get; set; }
 
-        public VideoPreviewControl ()
+        public VideoPreviewControl (MainWindow mainWindow)
         {
+            _mainWindow = mainWindow;
             try
             {
                 MFStartup (MF_VERSION, MFSTARTUP_FULL);
@@ -64,6 +69,15 @@ namespace GARbro.GUI
             mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
             mediaPlayer.MediaEnded  += MediaPlayer_MediaEnded;
             mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
+
+            mediaPlayer.Loaded += (s, e) =>
+            {
+                if (IsPlaying && _mainWindow != null)
+                {
+                    Task.Delay(400).ContinueWith(_ => 
+                        _mainWindow?.Dispatcher.Invoke(() => _mainWindow.SetFileStatus("")));
+                }
+            };
 
             Children.Add (mediaPlayer);
 
@@ -120,9 +134,11 @@ namespace GARbro.GUI
                 else
                     currentVideoFile = videoData.FileName;
 
-                mediaPlayer.Source = new Uri (currentVideoFile);
                 UpdateCodecInfo (videoData);
-                SetVideoStatus (CurrentCodecInfo);
+
+                _loadStartTime = DateTime.Now;
+
+                mediaPlayer.Source = new Uri (currentVideoFile);
             }
             catch (Exception ex)
             {
@@ -163,8 +179,19 @@ namespace GARbro.GUI
                     video_name = "..." + video_name.Substring (video_name.Length - MAX_FILENAME + 3);
             }
 
-            CurrentCodecInfo = Localization.Format ("VideoCodecInfo",
-                video_name, videoData.Codec, videoData.Width, videoData.Height, videoData.FrameRate);
+            uint width = videoData.Width > 0 ? videoData.Width : (uint)mediaPlayer.NaturalVideoWidth;
+            uint height = videoData.Height > 0 ? videoData.Height : (uint)mediaPlayer.NaturalVideoHeight;
+
+            if (width == 0 || height == 0)
+            {
+                CurrentCodecInfo = Localization.Format ("VideoCodecInfo",
+                    video_name, videoData.Codec, "?", "?", videoData.FrameRate);
+            }
+            else
+            {
+                CurrentCodecInfo = Localization.Format ("VideoCodecInfo",
+                    video_name, videoData.Codec, width, height, videoData.FrameRate);
+            }
         }
 
         private void TryAlternativePlayer (string videoFile, string errorMessage = "")
@@ -240,6 +267,15 @@ namespace GARbro.GUI
 
         private void MediaPlayer_MediaOpened (object sender, RoutedEventArgs e)
         {
+            if (currentVideo != null && (currentVideo.Width == 0 || currentVideo.Height == 0))
+            {
+                currentVideo.Width = (uint)mediaPlayer.NaturalVideoWidth;
+                currentVideo.Height = (uint)mediaPlayer.NaturalVideoHeight;
+                UpdateCodecInfo (currentVideo);
+            }
+
+            SetVideoStatus (CurrentCodecInfo);
+
             // Auto-play on load
             Play();
         }
@@ -334,21 +370,39 @@ namespace GARbro.GUI
 
         public VideoPreviewHandler (MainWindow mainWindow, VideoPreviewControl videoControl)
         {
-            _mainWindow = mainWindow;
+            _mainWindow   = mainWindow;
             _videoControl = videoControl;
         }
 
-        public override void LoadContent (PreviewFile preview)
+        public override async Task LoadContentAsync (PreviewFile preview, CancellationToken cancellationToken)
         {
             VideoData videoData = null;
-            using (var input = VFS.OpenBinaryStream (preview.Entry))
+
+            try
             {
-                videoData = VideoFormat.Read (input);
-                if (videoData == null)
-                    throw new InvalidFormatException (Localization._T ("Video codec not found"));
+                await Task.Run(() =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    using (var input = VFS.OpenBinaryStream (preview.Entry))
+                    {
+                        videoData = VideoFormat.Read (input);
+                        if (videoData == null)
+                            throw new InvalidFormatException (Localization._T ("Video codec not found"));
+                    }
+                }, cancellationToken);
 
                 _mainWindow.ShowVideoPreview();
                 _videoControl.LoadVideo (videoData);
+            }
+            catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
+            {
+                videoData?.Dispose();
+            }
+            catch
+            {
+                videoData?.Dispose();
+                throw;
             }
         }
 

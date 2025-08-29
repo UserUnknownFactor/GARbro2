@@ -85,47 +85,6 @@ namespace JustView
             }
         }
 
-        byte[] m_test_buf = new byte[0x400];
-
-        public Encoding GuessEncoding (Stream file)
-        {
-            var enc = ScriptFormat.DetectEncoding(file, 1024);
-            file.Position = 0;
-            return enc;
-        }
-
-        private bool IsUTF8 ()
-        {
-            return 0xEF == m_test_buf[0] && 0xBB == m_test_buf[1] && 0xBF == m_test_buf[2];
-        }
-
-        private bool IsUTF16BE ()
-        {
-            return 0xFE == m_test_buf[0] && 0xFF == m_test_buf[1];
-        }
-
-        private bool IsUTF16LE ()
-        {
-            return 0xFF == m_test_buf[0] && 0xFE == m_test_buf[1];
-        }
-
-        public bool IsTextFile (Stream file)
-        {
-            int read = file.Read (m_test_buf, 0, m_test_buf.Length);
-            file.Position = 0;
-            if (read > 3 && (IsUTF8() || IsUTF16LE() || IsUTF16BE()))
-                return true;
-            bool found_eol = false;
-            for (int i = 0; i < read; ++i)
-            {
-                byte c = m_test_buf[i];
-                if (c < 9 || (c > 0x0d && c < 0x1a) || (c > 0x1b && c < 0x20))
-                    return false;
-                found_eol = found_eol || 0x0A == c;
-            }
-            return found_eol || read < 80;
-        }
-
         double GetFixedWidth (int char_width)
         {
             var block = new TextBlock();

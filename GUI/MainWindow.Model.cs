@@ -59,10 +59,6 @@ namespace GARbro.GUI
         {
             _currentModelPlugin = plugin;
 
-            ModelControlPanel.Visibility = Visibility.Visible;
-            MediaControlPanel.Visibility = Visibility.Visible;
-            _mediaControl?.ConfigureForMediaType(MediaType.Model);
-
             // Update state machine
             _previewStateMachine.TransitionToMedia(MediaType.Model, null);
 

@@ -159,26 +159,6 @@ namespace GARbro.GUI
             _isManualEncodingChange = false;
         }
 
-        private void HandleEncodingSelection (Entry entry, PreviewFile previousPreview)
-        {
-            if (!_isManualEncodingChange)
-            {
-                if (!m_current_preview.IsEqual (previousPreview?.Path, previousPreview?.Entry))
-                {
-                    if (entry.Type == "script" || entry.Type == "text" || entry.Type == "config" ||
-                        (string.IsNullOrEmpty (entry.Type) && entry.Size < 0x100000))
-                    {
-                        var fileIdentifier = GetFileIdentifier (m_current_preview);
-                        var rememberedEncoding = GetRememberedEncoding (fileIdentifier);
-                        if (rememberedEncoding != null)
-                            EncodingChoice.SelectedItem = rememberedEncoding;
-                        else
-                            EncodingChoice.SelectedItem = null;
-                    }
-                }
-            }
-        }
-
         internal string GetFileIdentifier (PreviewFile preview)
         {
             if (preview?.Path != null && preview.Path.Any())

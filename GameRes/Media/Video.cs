@@ -53,12 +53,12 @@ namespace GameRes
         private   Stream m_stream = null;
         private string m_tempFile = null;
 
-        public uint          Width { get; private set; }
-        public uint         Height { get; private set; }
-        public long       Duration { get; private set; }
-        public double    FrameRate { get; private set; }
-        public string        Codec { get; private set; }
-        public bool       HasAudio { get; private set; }
+        public uint          Width { get; set; }
+        public uint         Height { get; set; }
+        public long       Duration { get; set; }
+        public double    FrameRate { get; set; }
+        public string        Codec { get; set; }
+        public bool       HasAudio { get; set; }
         public string     FileName { get; set; }
         public string     TempFile { get { return m_tempFile; } }
         public Stream       Stream { get { return m_stream; } }

@@ -159,6 +159,8 @@ namespace GARbro.GUI
 
         private void OpenDirectoryEntry (DirectoryViewModel vm, EntryViewModel entry)
         {
+            CancelAllPreviewOperations();
+
             string old_dir = vm?.Path.Last() ?? "";
             string new_dir = entry.Source.Name;
             bool isGoingUp = (VFS.DIR_PARENT == new_dir);

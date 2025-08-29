@@ -31,23 +31,12 @@ namespace GARbro.GUI
             SpriteColumnsBox.Text = Settings.Default.FrameGridColumns.ToString();
             SpriteRowsBox.Text    = Settings.Default.FrameGridRows.ToString();
 
-            var currentMode = SpriteLayoutCombo.SelectedIndex;
-            if (currentMode == 2) // Grid mode
-            {
-                if (ImageCanvas.Source != null && _spriteAnimator == null)
-                    _spriteAnimator = new SpriteSheetAnimator (ImageCanvas.Source as BitmapSource);
-
-                _previewStateMachine.TransitionToMedia (MediaType.Sprite, null);
-
-                if (_mediaControl != null)
-                    _mediaControl.UpdateSpriteButtons (false);
-            }
-            else if (currentMode == 1) // Overlay mode
-            {
-                ShowOverlayEditor();
-            }
-            // else Static mode - controls stay hidden
+            // re-trigger the selection to apply current mode for relevant controls
+            var currentIndex = SpriteLayoutCombo.SelectedIndex;
+            SpriteLayoutCombo.SelectedIndex = -1;
+            SpriteLayoutCombo.SelectedIndex = currentIndex;
         }
+
 
         internal void OnSpriteModeSwitched (SpriteMode previousMode, SpriteMode newMode)
         {
