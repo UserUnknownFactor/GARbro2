@@ -196,7 +196,7 @@ ButtonConvert→Convert→→→
 LabelImageDestinationFormat→Choose destination format for images:→→→
 LabelAudioDestinationFormat→Choose destination format for audio:→→→
 TextConvertMedia→Media conversion→→→
-MsgConvertingFile→Converting file {0}→→→
+MsgConvertingFile→Converting {0}→→→
 TextMediaConvertError→Multimedia conversion error→→→
 LabelEncoding→Encoding→→→
 TextConvertAudio→Convert audio to common format→→→
@@ -265,7 +265,7 @@ TooltipCycleOn→Cycle Playback (On)→→→
 TooltipCycleOff→Cycle Playback (Off)→→→
 TooltipAutoOn→Auto Playback (On)→→→
 TooltipAutoOff→Auto Playback (Off)→→→
-MsgReachedLastAudio→Reached the last audio file.→→→
+MsgReachedLast→Reached the last {0} file→→→
 TooltipVolume→Volume→→→
 Manual→Manual→→→
 RepeatFile→Repeat (File)→→→
@@ -279,8 +279,10 @@ VideoCodecInfo→Video: {0} | Codec: {1} | Resolution: {2}x{3} | FPS: {4:F1}→�
 VideoPlaybackErrorText→Failed to play video with internal player: {0}. Would you like to open it with your default video player?→→→
 VideoPlaybackError→Video Playback Error→→→
 MediaFailedToLoad→Media failed to load→→→
+CodecNotFound→Video codec not found→→→
 AdditionalCodecsNeeded→This video format requires additional codecs to be installed on your system. Consider installing a codec pack like K-Lite Codec Pack.→→→
 Unknown→Unknown→→→
+FailedToReadScript→Failed to read script data→→→
 FailedToGenerateHexDump→Failed to generate hex dump: →→→
 HexHeader0→ Offset   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
 HexHeader1→--------  -----------------------------------------------  | ----------------→→→

@@ -27,23 +27,29 @@ namespace GARbro.GUI
         private readonly Ellipse    _cycleEllipse;
         private readonly Ellipse    _autoEllipse;
 
-        private double _currentVolume = 0.8;
+        private double _savedVolume = 0.8;
 
         private readonly Brush _pauseActiveColor = new SolidColorBrush (Color.FromRgb (0xFF, 0xCC, 0x80));  // brighter pastel orange
         private readonly Brush _playActiveColor  = new SolidColorBrush (Color.FromRgb (0x80, 0xE6, 0x80));  // green for play
         private readonly Brush _cycleActiveColor = new SolidColorBrush (Color.FromRgb (0xCC, 0x99, 0xE6));  // brighter pastel purple
         private readonly Brush _autoActiveColor  = new SolidColorBrush (Color.FromRgb (0x80, 0xE6, 0x80));  // brighter pastel green
-
         private readonly Brush _inactiveColor    = new SolidColorBrush (Color.FromRgb (0xB0, 0xB0, 0xB0));  // gray
 
-        private MediaType _currentMediaType = MediaType.None;
+        // Public properties for PreviewStateMachine to access
+        public StackPanel ControlPanel => _controlPanel;
+        public Button PauseButton => _pauseButton;
+        public Button StopButton => _stopButton;
+        public Button CycleButton => _cycleButton;
+        public Button AutoButton => _autoButton;
+        public StackPanel VolumeControlPanel => _volumeControlPanel;
+        public Slider VolumeSlider => _volumeSlider;
 
         public double Volume
         {
-            get { return _volumeSlider?.Value ?? _currentVolume; }
+            get { return _volumeSlider?.Value ?? _savedVolume; }
             set
             {
-                _currentVolume = value;
+                _savedVolume = value;
                 if (_volumeSlider != null)
                     _volumeSlider.Value = value;
             }
@@ -81,67 +87,21 @@ namespace GARbro.GUI
         }
 
         /// <summary>
-        /// Show or hide the media control panel.
+        /// Save current volume before controls are hidden
         /// </summary>
-        public void SetVisibility (Visibility visibility)
+        public void SaveVolume()
         {
-            _controlPanel.Visibility = visibility;
+            if (_volumeSlider != null && _volumeSlider.Visibility == Visibility.Visible)
+                _savedVolume = _volumeSlider.Value;
         }
 
         /// <summary>
-        /// Configure controls for specific media type.
+        /// Restore saved volume when controls become visible
         /// </summary>
-        public void ConfigureForMediaType (MediaType mediaType)
+        public void RestoreVolume()
         {
-            if (_volumeSlider != null)
-                _currentVolume = _volumeSlider.Value;
-
-            _currentMediaType = mediaType;
-
-            switch (mediaType)
-            {
-                case MediaType.Audio:
-                    _controlPanel.Visibility = Visibility.Visible;
-                    _cycleButton.Visibility = Visibility.Visible;
-                    _autoButton.Visibility = Visibility.Visible;
-                    _volumeControlPanel.Visibility = Visibility.Visible;
-                    SetPauseButtonIcon();
-                    break;
-
-                case MediaType.Video:
-                    _controlPanel.Visibility = Visibility.Visible;
-                    _cycleButton.Visibility = Visibility.Collapsed;
-                    _autoButton.Visibility = Visibility.Collapsed;
-                    _volumeControlPanel.Visibility = Visibility.Visible;
-                    SetPauseButtonIcon();
-                    break;
-
-                case MediaType.Sprite:
-                    _controlPanel.Visibility = Visibility.Visible;
-                    _cycleButton.Visibility = Visibility.Collapsed;
-                    _autoButton.Visibility = Visibility.Collapsed;
-                    _volumeControlPanel.Visibility = Visibility.Collapsed;
-                    SetPlayButtonIcon();
-                    break;
-
-                case MediaType.Model:
-                    _controlPanel.Visibility = Visibility.Visible;
-                    _cycleButton.Visibility = Visibility.Collapsed;
-                    _autoButton.Visibility = Visibility.Collapsed;
-                    _volumeControlPanel.Visibility = Visibility.Collapsed;
-                    SetPlayButtonIcon();
-                    break;
-
-                case MediaType.Text:
-                case MediaType.Image:
-                case MediaType.None:
-                default:
-                    _controlPanel.Visibility = Visibility.Collapsed;
-                    break;
-            }
-
             if (_volumeSlider != null && _volumeSlider.Visibility == Visibility.Visible)
-                _volumeSlider.Value = _currentVolume;
+                _volumeSlider.Value = _savedVolume;
         }
 
         /// <summary>
@@ -149,9 +109,6 @@ namespace GARbro.GUI
         /// </summary>
         public void UpdateButtonStates (bool isPaused, bool isAutoPlaying, bool isAutoCycling)
         {
-            if (_currentMediaType == MediaType.Sprite)
-                UpdateSpriteButtons(!isPaused);
-
             _pauseButton.ToolTip = isPaused ? Localization._T("TooltipResume") : Localization._T("TooltipPause");
             if (_pauseEllipse != null)
                 _pauseEllipse.Fill = isPaused ? _inactiveColor : _pauseActiveColor;
@@ -173,7 +130,7 @@ namespace GARbro.GUI
             if (isPlaying)
             {
                 SetPauseButtonIcon();
-                _pauseButton.ToolTip = Localization._T("PauseAnimation"); ;
+                _pauseButton.ToolTip = Localization._T("PauseAnimation");
                 if (_pauseEllipse != null)
                     _pauseEllipse.Fill = _pauseActiveColor;
             }
@@ -187,14 +144,6 @@ namespace GARbro.GUI
         }
 
         /// <summary>
-        /// Update controls for model preview
-        /// </summary>
-        public void UpdateForModelPreview()
-        {
-            _controlPanel.Visibility = Visibility.Collapsed;
-        }
-
-        /// <summary>
         /// Set pause button to show pause icon
         /// </summary>
         public void SetPauseButtonIcon()
@@ -203,7 +152,6 @@ namespace GARbro.GUI
             {
                 // Pause icon (two vertical bars)
                 _pauseIcon.Data = Geometry.Parse ("M 10 10 L 10 20 L 13 20 L 13 10 Z M 17 10 L 17 20 L 20 20 L 20 10 Z");
-
             }
         }
 
@@ -216,6 +164,28 @@ namespace GARbro.GUI
             {
                 // Play icon (triangle pointing right)
                 _pauseIcon.Data = Geometry.Parse ("M 10 8 L 10 22 L 22 15 Z");
+            }
+        }
+
+        /// <summary>
+        /// Update pause button appearance for current media type
+        /// </summary>
+        public void UpdatePauseButtonForMediaType (MediaType mediaType, bool isPaused = false)
+        {
+            switch (mediaType)
+            {
+                case MediaType.Audio:
+                case MediaType.Video:
+                    if (isPaused)
+                        SetPlayButtonIcon();
+                    else
+                        SetPauseButtonIcon();
+                    break;
+                    
+                case MediaType.Sprite:
+                case MediaType.Model:
+                    SetPlayButtonIcon();
+                    break;
             }
         }
     }

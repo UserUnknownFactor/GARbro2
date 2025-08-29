@@ -4,8 +4,8 @@ using System.Collections.Generic;
 public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
-    
-    private const int DEFAULT_CSV_SIZE = 16714; // Only load GARbro.en-US.csv if the size is not this
+
+    private const int DEFAULT_CSV_SIZE = 16805; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -46,7 +46,7 @@ public static partial class Localization
                 { "MsgWritingIndex", new LocalizationEntry { Singular = "Writing index..." } },
                 { "NPACompressContents", new LocalizationEntry { Singular = "Compress contents" } },
                 { "NPADescription", new LocalizationEntry { Singular = "Nitro+ resource archive" } },
-                { "NPAKeys", new LocalizationEntry { Singular = "Encryption keys\n(required even if contents is not encrypted)", Plural1 = "" } },
+                { "NPAKeys", new LocalizationEntry { Singular = "Encryption keys\n(required even if contents is not encrypted)" } },
                 { "NPASteinsGateDescription", new LocalizationEntry { Singular = "Nitro+ Steins;Gate resource archive" } },
                 { "NSADescription", new LocalizationEntry { Singular = "NScripter game engine resource archive" } },
                 { "ONSArchiveType", new LocalizationEntry { Singular = "Archive type" } },
@@ -103,7 +103,6 @@ public static partial class Localization
                 { "DefaultEncoding", new LocalizationEntry { Singular = "Default file names encoding" } },
                 { "ODNAudioSampleRate", new LocalizationEntry { Singular = "Default audio sampling rate" } },
                 { "Tim2AlphaFormat", new LocalizationEntry { Singular = "Choose Tim2 image alpha format.\nIt can't be read correctly from the file." } },
-                // GUI strings
                 { "ButtonCancel", new LocalizationEntry { Singular = "Cancel" } },
                 { "ButtonExtract", new LocalizationEntry { Singular = "Extract" } },
                 { "ButtonOK", new LocalizationEntry { Singular = "OK" } },
@@ -192,7 +191,7 @@ public static partial class Localization
                 { "LabelImageDestinationFormat", new LocalizationEntry { Singular = "Choose destination format for images:" } },
                 { "LabelAudioDestinationFormat", new LocalizationEntry { Singular = "Choose destination format for audio:" } },
                 { "TextConvertMedia", new LocalizationEntry { Singular = "Media conversion" } },
-                { "MsgConvertingFile", new LocalizationEntry { Singular = "Converting file {0}" } },
+                { "MsgConvertingFile", new LocalizationEntry { Singular = "Converting {0}" } },
                 { "TextMediaConvertError", new LocalizationEntry { Singular = "Multimedia conversion error" } },
                 { "LabelEncoding", new LocalizationEntry { Singular = "Encoding" } },
                 { "TextConvertAudio", new LocalizationEntry { Singular = "Convert audio to common format" } },
@@ -257,7 +256,7 @@ public static partial class Localization
                 { "TooltipCycleOff", new LocalizationEntry { Singular = "Cycle Playback (Off)" } },
                 { "TooltipAutoOn", new LocalizationEntry { Singular = "Auto Playback (On)" } },
                 { "TooltipAutoOff", new LocalizationEntry { Singular = "Auto Playback (Off)" } },
-                { "MsgReachedLastAudio", new LocalizationEntry { Singular = "Reached the last audio file." } },
+                { "MsgReachedLast", new LocalizationEntry { Singular = "Reached the last {0} file" } },
                 { "TooltipVolume", new LocalizationEntry { Singular = "Volume" } },
                 { "Manual", new LocalizationEntry { Singular = "Manual" } },
                 { "RepeatFile", new LocalizationEntry { Singular = "Repeat (File)" } },
@@ -271,9 +270,11 @@ public static partial class Localization
                 { "VideoPlaybackErrorText", new LocalizationEntry { Singular = "Failed to play video with internal player: {0}. Would you like to open it with your default video player?" } },
                 { "VideoPlaybackError", new LocalizationEntry { Singular = "Video Playback Error" } },
                 { "MediaFailedToLoad", new LocalizationEntry { Singular = "Media failed to load" } },
+                { "CodecNotFound", new LocalizationEntry { Singular = "Video codec not found" } },
                 { "AdditionalCodecsNeeded", new LocalizationEntry { Singular = "This video format requires additional codecs to be installed on your system. Consider installing a codec pack like K-Lite Codec Pack." } },
                 { "Unknown", new LocalizationEntry { Singular = "Unknown" } },
-                { "FailedToGenerateHexDump", new LocalizationEntry { Singular = "Failed to generate hex dump: {0}" } },
+                { "FailedToReadScript", new LocalizationEntry { Singular = "Failed to read script data" } },
+                { "FailedToGenerateHexDump", new LocalizationEntry { Singular = "Failed to generate hex dump: " } },
                 { "HexHeader0", new LocalizationEntry { Singular = " Offset   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII" } },
                 { "HexHeader1", new LocalizationEntry { Singular = "--------  -----------------------------------------------  | ----------------" } },
                 { "FailedToOpenExternalPlayer", new LocalizationEntry { Singular = "Failed to open external player: {0}" } },
@@ -319,8 +320,8 @@ public static partial class Localization
                 { "MsgExportedTo", new LocalizationEntry { Singular = "Exported to {0}" } },
                 { "MsgExportFail", new LocalizationEntry { Singular = "Export failed: {0}" } },
                 { "SelectOverlayImages", new LocalizationEntry { Singular = "Select images to overlay" } },
-                { "OverlayLayers", new LocalizationEntry { Singular = "Overlay mode: {0} layers" } },
-                { "nth_layer", new LocalizationEntry { Singular = "{0} layer" } },
+                { "OverlayLayers", new LocalizationEntry { Singular = "Overlay mode: {0} layer", Plural1 = "Overlay mode: {0} layers" } },
+                { "nth_layer", new LocalizationEntry { Singular = "{0} layer", Plural1 = "{0} layers" } },
                 { "n_frames", new LocalizationEntry { Singular = " ({0} frame)", Plural1 = " ({0} frames)" } },
                 { "Real encoding", new LocalizationEntry { Singular = "Real encoding" } },
                 { "Assumed encoding", new LocalizationEntry { Singular = "Assumed encoding" } },
@@ -332,7 +333,6 @@ public static partial class Localization
                 { "Overlays", new LocalizationEntry { Singular = "Overlays" } },
                 { "Opacity", new LocalizationEntry { Singular = "Opacity:" } },
                 { "KnownPasswords", new LocalizationEntry { Singular = "--- Known Passwords ---" } },
-                // GameRes strings
                 { "BMPExtensionsDesc", new LocalizationEntry { Singular = "Enables various extensions,\nsuch as transparency support" } },
                 { "BMPExtensionsText", new LocalizationEntry { Singular = "Enables BMP format extensions" } },
                 { "JPEGQualityText", new LocalizationEntry { Singular = "JPEG compression quality" } },
@@ -342,7 +342,7 @@ public static partial class Localization
                 { "MsgInvalidFileName", new LocalizationEntry { Singular = "Invalid file name" } },
                 { "MsgInvalidFormat", new LocalizationEntry { Singular = "Invalid file format" } },
                 { "MsgUnknownEncryption", new LocalizationEntry { Singular = "Unknown encryption scheme" } },
-                { "MsgUnknownFormat", new LocalizationEntry { Singular = "file could not be opened as resource archive" } },
+                { "MsgUnknownFormat", new LocalizationEntry { Singular = "file could not be opened as resource archive" } }
             });
     }
 }

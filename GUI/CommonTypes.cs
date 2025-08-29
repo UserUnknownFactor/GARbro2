@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Data;
@@ -16,10 +17,11 @@ namespace GARbro.GUI
     /// </summary>
     public class PreviewFile : IDisposable
     {
-        public IEnumerable<string> Path { get; set; }
-        public string              Name { get; set; }
-        public Entry              Entry { get; set; }
-        public string          TempFile { get; set; }
+        public IEnumerable<string>   Path { get; set; }
+        public string                Name { get; set; }
+        public Entry                Entry { get; set; }
+        public string            TempFile { get; set; }
+        public Encoding PreferredEncoding { get; set; } = Encoding.UTF8;
 
         public bool IsEqual (IEnumerable<string> path, Entry entry)
         {

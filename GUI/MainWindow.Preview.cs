@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,14 +9,78 @@ using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using GARbro.GUI.Preview;
 using GameRes;
+using System.Threading;
+using System.Text;
 
 namespace GARbro.GUI
 {
+    public class SequentialPreviewLoader
+    {
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim (1, 1);
+        private CancellationTokenSource _activeCts;
+        private CancellationTokenSource _latestCts;
+        private readonly object _lock = new object();
+
+        public async Task<T> LoadAsync<T> (
+            Func<CancellationToken, Task<T>> loadFunc,
+            CancellationToken cancellationToken = default)
+        {
+            CancellationTokenSource myCts;
+
+            lock (_lock)
+            {
+                if (_latestCts != null && _latestCts != _activeCts)
+                    _latestCts.Cancel();
+
+                myCts = CancellationTokenSource.CreateLinkedTokenSource (cancellationToken);
+                _latestCts = myCts;
+                _activeCts?.Cancel();
+            }
+
+            await _semaphore.WaitAsync (myCts.Token);
+            try
+            {
+                lock (_lock)
+                {
+                    if (_latestCts != myCts)
+                        throw new OperationCanceledException();
+
+                    _activeCts = myCts;
+                }
+
+                return await loadFunc (myCts.Token);
+            }
+            finally
+            {
+                lock (_lock)
+                {
+                    if (_activeCts == myCts) _activeCts = null;
+                    if (_latestCts == myCts) _latestCts = null;
+                }
+
+                _semaphore.Release();
+            }
+        }
+
+        public Task LoadAsync (Func<CancellationToken, Task> loadFunc, CancellationToken cancellationToken = default)
+        {
+            return LoadAsync<object>(async ct => { await loadFunc (ct); return null; }, cancellationToken);
+        }
+
+        public void CancelCurrent ()
+        {
+            lock (_lock)
+            {
+                _activeCts?.Cancel();
+                _latestCts?.Cancel();
+            }
+        }
+    }
+
     public partial class MainWindow
     {
-        //private readonly BackgroundWorker m_img_preview_worker = new BackgroundWorker();
         private PreviewFile m_current_preview = new PreviewFile();
-        //private bool m_preview_pending = false;
+        internal readonly SequentialPreviewLoader _previewLoader = new SequentialPreviewLoader();
 
         internal ImagePreviewHandler _imagePreviewHandler;
         internal AudioPreviewHandler _audioPreviewHandler;
@@ -29,20 +94,13 @@ namespace GARbro.GUI
         internal ImagePreviewControl m_animated_image_viewer;
         internal VideoPreviewControl m_video_preview_ctl;
 
-        private void InitializePreviewSystem()
+        private void InitializePreviewSystem ()
         {
-            /*m_img_preview_worker.DoWork += (s, e) => LoadPreviewImage (e.Argument as PreviewFile);
-            m_img_preview_worker.RunWorkerCompleted += (s, e) => {
-                if (m_preview_pending)
-                    RefreshPreviewPane();
-            };
-            */
-
             m_animated_image_viewer = new ImagePreviewControl();
             m_animated_image_viewer.Stretch = ImageCanvas.Stretch;
             m_animated_image_viewer.StretchDirection = ImageCanvas.StretchDirection;
 
-            m_video_preview_ctl = new VideoPreviewControl();
+            m_video_preview_ctl = new VideoPreviewControl (this);
             m_video_preview_ctl.StatusChanged   += (status) => SetPreviewStatus (status);
             m_video_preview_ctl.PositionChanged += (pos, dur) => UpdateVideoPosition (pos, dur);
             m_video_preview_ctl.MediaEnded += () => _previewStateMachine.OnMediaEnded();
@@ -61,13 +119,31 @@ namespace GARbro.GUI
             _textPreviewHandler  = new TextPreviewHandler (this);
             _overlayControl      = new ImageOverlayControl();
 
+            _overlayControl.LayersChanged += (sender, e) => UpdateOverlayStatus();
+
             PreviewPane.Children.Add (_overlayControl);
             Panel.SetZIndex (_overlayControl, 90);
 
             _previewStateMachine = new PreviewStateMachine (this);
         }
 
-        private void DisposePreviewHandlers()
+        private void CancelAllPreviewOperations ()
+        {
+            _previewLoader.CancelCurrent();
+
+            _imagePreviewHandler?.Reset();
+            _textPreviewHandler?.Reset();
+            //CancelAllManualPreviewOperations();
+        }
+
+        private void CancelAllManualPreviewOperations ()
+        {
+            _audioPreviewHandler?.Reset();
+            _videoPreviewHandler?.Reset();
+            _modelPreviewHandler?.Reset();
+        }
+
+        private void DisposePreviewHandlers ()
         {
             _imagePreviewHandler?.Dispose();
             _audioPreviewHandler?.Dispose();
@@ -85,7 +161,6 @@ namespace GARbro.GUI
 
         private void RefreshPreviewPane()
         {
-            //m_preview_pending = false;
             var current = CurrentDirectory.SelectedItem as EntryViewModel;
             if (null != current)
                 UpdatePreviewPane (current.Source);
@@ -119,7 +194,7 @@ namespace GARbro.GUI
             return entry.Type;
         }
 
-        private void UpdatePreviewPane (Entry entry)
+        private void UpdatePreviewPane(Entry entry)
         {
             var vm = ViewModel;
             var previousPreview = m_current_preview;
@@ -128,7 +203,27 @@ namespace GARbro.GUI
             RemoveGridOverlay();
             SetPreviewStatus ("");
 
-            HandleEncodingSelection (entry, previousPreview);
+            System.Text.Encoding preferredEnc = null;
+
+            // Check if this is a text-like file
+            bool isTextFile = entry.Type == "script" || entry.Type == "text" || entry.Type == "config" ||
+                              (string.IsNullOrEmpty(entry.Type) && entry.Size < 0x100000);
+
+            if (isTextFile)
+            {
+                if (_isManualEncodingChange)
+                {
+                    // User manually changed encoding - this is handled in OnEncodingSelect
+                    preferredEnc = EncodingChoice.SelectedItem as Encoding;
+                }
+                else
+                {
+                    // Use the priority logic from GetPreferredEncoding
+                    preferredEnc = GetPreferredEncoding(m_current_preview);
+                }
+            }
+
+            m_current_preview.PreferredEncoding = preferredEnc;
 
             if (!IsPreviewPossible (entry))
             {
@@ -136,117 +231,104 @@ namespace GARbro.GUI
                 return;
             }
 
-            var effectiveType = GetEffectiveEntryType (entry);
-            if (_previewStateMachine.CurrentMediaType == MediaType.Sprite && effectiveType == "image")
-                LoadPreviewContent (entry);
+            var entryType = GetEffectiveEntryType (entry);
+            if (_previewStateMachine.CurrentMediaType == MediaType.Sprite && entryType == "image")
+                LoadPreviewContent (m_current_preview);
             else
-                _previewStateMachine.TransitionToMedia (effectiveType, () => LoadPreviewContent (entry));
+                _previewStateMachine.TransitionToMedia (entryType, () => LoadPreviewContent (m_current_preview));
         }
 
-        private void LoadPreviewContent (Entry entry)
+        private async void LoadPreviewContent (PreviewFile pf)
         {
-            if (_modelPreviewHandler != null && _modelPreviewHandler.IsModelFile (entry))
+            try
             {
-                HideAllPreviewControls();
+                var eType = pf.Entry.Type;
+                if (_modelPreviewHandler != null && _modelPreviewHandler.IsModelFile (pf.Entry))
+                {
+                    HideAllPreviewControls();
+                    SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-                var modelType = _modelPreviewHandler.GetModelTypeInfo (entry);
-                SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{entry.Type}")));
+                    await _previewLoader.LoadAsync (async ct =>
+                    {
+                        await _modelPreviewHandler.LoadContentAsync (m_current_preview, ct);
+                        SetFileStatus ("");
+                    });
+                }
+                else if ("video" == eType)
+                {
+                    ShowVideoPreview();
+                    SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-                try
-                {
-                    _modelPreviewHandler.LoadContent (m_current_preview);
-                    SetFileStatus ("");
+                    await _previewLoader.LoadAsync (async ct =>
+                    {
+                        await _videoPreviewHandler.LoadContentAsync (m_current_preview, ct);
+                    });
                 }
-                catch (Exception ex)
+                else if ("audio" == eType)
                 {
-                    _modelPreviewHandler.Reset();
-                    SetPreviewStatus ("");
-                    SetFileStatus (Localization.Format ("Model Error: {0}", ex.Message));
-                }
-                return;
-            }
+                    SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-            if ("video" == entry.Type)
-            {
-                ShowVideoPreview();
-                SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{entry.Type}")));
-                try
-                {
-                    _videoPreviewHandler.LoadContent (m_current_preview);
-                    SetFileStatus ("");
+                    await _previewLoader.LoadAsync (async ct =>
+                    {
+                        await _audioPreviewHandler.LoadContentAsync (m_current_preview, ct);
+                        SetFileStatus ("");
+                    });
                 }
-                catch (Exception ex)
+                else if ("image" == eType)
                 {
-                    _videoPreviewHandler.Reset();
-                    SetPreviewStatus ("");
-                    SetFileStatus (ex.Message);
-                }
-            }
-            else if ("audio" == entry.Type)
-            {
-                SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{entry.Type}")));
-                try 
-                {
-                    _audioPreviewHandler.LoadContent (m_current_preview);
-                    SetFileStatus ("");
-                }
-                catch (Exception ex)
-                {
-                    _audioPreviewHandler.Reset();
-                    SetPreviewStatus ("");
-                    SetFileStatus (ex.Message);
-                }
-            }
-            else if ("image" != entry.Type)
-            {
-                _imagePreviewHandler.Reset();
-                ShowTextPreview();
-                try
-                {
-                    _textPreviewHandler.LoadContent (m_current_preview);
-                }
-                catch (Exception ex)
-                {
-                    _textPreviewHandler.Reset();
-                    SetPreviewStatus ("");
-                    SetFileStatus (ex.Message);
-                }
-            }
-            //else if (!m_img_preview_worker.IsBusy)
-            else // if ("image" == entry.Type)
-            {
-                ShowImagePreview();
-                LoadPreviewImage (m_current_preview);
-                //m_img_preview_worker.RunWorkerAsync (m_current_preview);
-                
-            }
-            /*else
-            {
-                m_preview_pending = true;
-            }*/
-        }
+                    ShowImagePreview();
 
-        private void LoadPreviewImage (PreviewFile preview)
-        {
-            if ((preview.Entry.Name.EndsWith (".gif") || preview.Entry.Name.EndsWith (".webp")) && preview.Entry.Size > 3000000)
-            {
-                SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{preview.Entry.Type}")));
-                //SetBusyState();
+                    await _previewLoader.LoadAsync (async ct =>
+                    {
+                        await _imagePreviewHandler.LoadContentAsync (m_current_preview, ct);
+                    });
+                }
+                else // text, script, or unknown
+                {
+                    //_imagePreviewHandler.Reset();
+                    ShowTextPreview();
+
+                    await _previewLoader.LoadAsync (async ct =>
+                    {
+                        await _textPreviewHandler.LoadContentAsync (m_current_preview, ct);
+                    });
+                }
             }
-            try 
-            { 
-                _imagePreviewHandler.LoadContent (preview);
+            catch (OperationCanceledException)
+            {
+                // Normal - user navigated away
                 SetFileStatus ("");
             }
             catch (Exception ex)
             {
                 SetFileStatus (ex.Message);
+                ResetPreviewPane();
+            }
+        }
+
+        // Fix the other LoadPreviewImageAsync method
+        private async Task LoadPreviewImageAsync (PreviewFile preview)
+        {
+            try
+            {
+                await _previewLoader.LoadAsync (async ct =>
+                {
+                    await _imagePreviewHandler.LoadContentAsync (preview, ct);
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal - user navigated away
+            }
+            catch (Exception ex)
+            {
+                SetFileStatus (Localization.Format ("ImagePreviewError", ex.Message));
                 _imagePreviewHandler.Reset();
                 //SetFileStatus (Localization._T (ex.Message));
             }
         }
 
-        internal void ApplyDownScaleSetting()
+        internal void ApplyDownScaleSetting ()
         {
             bool image_need_scale = DownScaleImage.Get<bool>();
 
@@ -290,7 +372,7 @@ namespace GARbro.GUI
             RedrawGridIfExists();
         }
 
-        internal void ApplyScalingToAnimatedViewer()
+        internal void ApplyScalingToAnimatedViewer ()
         {
             bool downscale_enabled = DownScaleImage.Get<bool>();
 
@@ -347,7 +429,7 @@ namespace GARbro.GUI
             }
         }
 
-        private void RedrawGridIfExists()
+        private void RedrawGridIfExists ()
         {
             if (_gridOverlay != null && SpriteLayoutCombo.SelectedIndex == 2)
             {
@@ -419,7 +501,7 @@ namespace GARbro.GUI
         }
 
         // UI Element management methods used by PreviewStateMachine
-        internal void ShowImagePreview()
+        internal void ShowImagePreview ()
         {
             m_animated_image_viewer.Visibility = Visibility.Collapsed;
             if (m_video_preview_ctl != null)
@@ -428,7 +510,7 @@ namespace GARbro.GUI
             TextView.Visibility = Visibility.Collapsed;
         }
 
-        internal void ShowAnimatedImagePreview()
+        internal void ShowAnimatedImagePreview ()
         {
             ImageCanvas.Visibility = Visibility.Collapsed;
             if (m_video_preview_ctl != null)
@@ -437,7 +519,7 @@ namespace GARbro.GUI
             m_animated_image_viewer.Visibility = Visibility.Visible;
         }
 
-        internal void ShowVideoPreview()
+        internal void ShowVideoPreview ()
         {
             ImageCanvas.Visibility = Visibility.Collapsed;
             m_animated_image_viewer.Visibility = Visibility.Collapsed;
@@ -445,7 +527,7 @@ namespace GARbro.GUI
             m_video_preview_ctl.Visibility = Visibility.Visible;
         }
 
-        internal void ShowTextPreview()
+        internal void ShowTextPreview ()
         {
             ImageCanvas.Visibility = Visibility.Collapsed;
             m_animated_image_viewer.Visibility = Visibility.Collapsed;
@@ -454,7 +536,7 @@ namespace GARbro.GUI
             TextView.Visibility = Visibility.Visible;
         }
 
-        public void HideAllPreviewControls()
+        public void HideAllPreviewControls ()
         {
             HideAnimatedImagePreview();
             HideImagePreview();
@@ -465,22 +547,22 @@ namespace GARbro.GUI
                 _overlayControl.Visibility = Visibility.Collapsed;
         }
 
-        internal void HideImagePreview()
+        internal void HideImagePreview ()
         {
             ImageCanvas.Visibility = Visibility.Collapsed;
         }
 
-        internal void HideAnimatedImagePreview()
+        internal void HideAnimatedImagePreview ()
         {
             m_animated_image_viewer.Visibility = Visibility.Collapsed;
         }
 
-        internal void HideVideoPreview()
+        internal void HideVideoPreview ()
         {
             m_video_preview_ctl.Visibility = Visibility.Collapsed;
         }
 
-        internal void HideTextPreview()
+        internal void HideTextPreview ()
         {
             TextView.Visibility = Visibility.Collapsed;
         }

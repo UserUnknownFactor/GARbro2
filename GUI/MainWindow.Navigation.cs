@@ -140,7 +140,7 @@ namespace GARbro.GUI
             switch (entry.Type)
             {
             case "audio":
-                SetFileStatus(Localization.Format("LoadingFile", Localization._T($"Type_{entry.Type}")));
+                SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{entry.Type}")));
                 _previewStateMachine.StartAudioPlayback (entry.Source);
                 return;
             case "video":
@@ -159,13 +159,15 @@ namespace GARbro.GUI
 
         private void OpenDirectoryEntry (DirectoryViewModel vm, EntryViewModel entry)
         {
+            CancelAllPreviewOperations();
+
             string old_dir = vm?.Path.Last() ?? "";
             string new_dir = entry.Source.Name;
             bool isGoingUp = (VFS.DIR_PARENT == new_dir);
 
             if (isGoingUp && VFS.CurrentArchive != null)
             {
-                if (string.IsNullOrEmpty(vm?.Path.Last()) && vm.Path.Count > 1)
+                if (string.IsNullOrEmpty (vm?.Path.Last()) && vm.Path.Count > 1)
                 {
                     old_dir = vm.Path[vm.Path.Count - 2];
                 }
@@ -176,24 +178,21 @@ namespace GARbro.GUI
             Trace.WriteLine (new_dir, "OpenDirectoryEntry");
             int old_fs_count = VFS.Count;
 
-            // Special handling for ".." in archives
             if (isGoingUp && VFS.IsVirtual)
             {
                 try
                 {
-                    // Just change directory without trying to recreate the full path
                     VFS.ChDir (entry.Source);
                     vm = new DirectoryViewModel (VFS.FullPath, VFS.GetFiles(), VFS.IsVirtual);
                 }
                 catch (Exception ex)
                 {
-                    SetFileStatus (string.Format ("{0}: {1}", Path.GetFileName (new_dir), ex.Message));
+                    SetFileStatus (ex.Message);
                     return;
                 }
             }
             else
             {
-                // Normal navigation - this can use TryCreateViewModel
                 vm = TryCreateViewModel (new_dir);
                 if (null == vm)
                 {
@@ -209,30 +208,36 @@ namespace GARbro.GUI
                 }
             }
 
-            // Check if this directory exists in history
-            var searchPos = new DirectoryPosition (vm, null, 0);
-            int existingIndex = m_history.FindState (searchPos);
+            // Check if we're navigating to a directory that exists in history
+            DirectoryPosition targetPosition = null;
+            bool usingHistory = false;
 
-            if (isGoingUp && existingIndex >= 0 && existingIndex < m_history.CurrentIndex)
+            if (isGoingUp)
             {
-                m_history.NavigateTo (currentPos);
-                var historyState = m_history.NavigateToIndex (existingIndex);
+                var searchPos = new DirectoryPosition (vm, null, 0);
+                int existingIndex = m_history.FindState (searchPos);
 
-                ViewModel = vm;
-
-                if (VFS.Count > old_fs_count && null != VFS.CurrentArchive)
-                    ShowCurrentArchiveStatus();
-                else
-                    SetFileStatus ("");
-
-                var itemName = VFS.GetFileName (old_dir);
-                RestoreNavigationPosition (historyState, itemName);
-                return;
+                if (existingIndex >= 0 && existingIndex < m_history.CurrentIndex)
+                {
+                    // We're going back in history - save current and jump to the historical position
+                    m_history.NavigateTo (currentPos);
+                    targetPosition = m_history.NavigateToIndex (existingIndex);
+                    usingHistory = true;
+                }
             }
 
-            // Normal navigation
-            m_history.NavigateTo (currentPos);
+            // If not using history, create new position
+            if (targetPosition == null)
+            {
+                string itemToSelect = isGoingUp ? VFS.GetFileName (old_dir) : null;
+                targetPosition = new DirectoryPosition (vm, null, 0);
 
+                // Only save to history if we're not jumping back in history
+                if (!usingHistory)
+                    m_history.NavigateTo (currentPos);
+            }
+
+            // Apply the view model
             ViewModel = vm;
 
             if (VFS.Count > old_fs_count && null != VFS.CurrentArchive)
@@ -240,70 +245,57 @@ namespace GARbro.GUI
             else
                 SetFileStatus ("");
 
-            HandleNavigationPosition (isGoingUp, old_dir);
+            RestorePosition (targetPosition, isGoingUp ? VFS.GetFileName (old_dir) : null);
 
-            var newPos = GetCurrentPosition();
-            m_history.NavigateTo (newPos);
-        }
-
-        private void HandleNavigationPosition (bool isGoingUp, string old_dir)
-        {
-            if (isGoingUp)
+            // Save new position if we didn't jump back in history
+            if (!usingHistory)
             {
-                var itemName = VFS.GetFileName (old_dir);
-
-                if (!string.IsNullOrEmpty (itemName))
-                {
-                    // Check if we have history for this directory
-                    var historyPos = m_history.Current;
-                    if (historyPos != null && historyPos.Path.SequenceEqual (ViewModel.Path))
-                    {
-                        // Restore from history (like Back button would)
-                        RestoreNavigationPosition (historyPos, itemName);
-                    }
-                    else
-                    {
-                        // No history - just select and ensure visible
-                        SelectAndFocusItem (itemName, true);
-                    }
-                }
-            }
-            else
-            {
-                lv_SelectItem (0);
+                var newPos = GetCurrentPosition();
+                m_history.NavigateTo (newPos);
             }
         }
 
-        private void RestoreNavigationPosition (DirectoryPosition historyPos, string preferredItem = null)
+        // New unified method to restore position
+        private void RestorePosition (DirectoryPosition position, string preferredItem)
         {
-            Dispatcher.BeginInvoke (new Action (() =>
-            {
-                // Restore scroll position first
-                var scrollViewer = GetScrollViewer (CurrentDirectory);
-                if (scrollViewer != null && historyPos.ScrollOffset > 0)
-                    scrollViewer.ScrollToVerticalOffset (historyPos.ScrollOffset);
+            // Determine what to select
+            string itemToSelect = preferredItem ?? position.Item;
 
-                // Select the preferred item or the one from history
-                var itemToSelect = preferredItem ?? historyPos.Item;
+            Dispatcher.BeginInvoke (new Action(() =>
+            {
+                // Select the item
                 if (!string.IsNullOrEmpty (itemToSelect))
-                    lv_SelectItem (itemToSelect, false); // Don't auto-scroll since we restored position
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
-        }
+                    lv_SelectItem (itemToSelect, false); // Don't scroll yet
+                else if (ViewModel.Count > 0)
+                    lv_SelectItem (0);
 
-        private void SelectAndFocusItem (string itemName, bool scrollIntoView)
-        {
-            Dispatcher.BeginInvoke (new Action (() =>
-            {
-                var item = ViewModel.Find (itemName);
-                if (item != null)
+                // Restore scroll position
+                var scrollViewer = GetScrollViewer (CurrentDirectory);
+                if (scrollViewer != null)
                 {
-                    CurrentDirectory.SelectedItem = item;
-                    if (scrollIntoView)
-                        CurrentDirectory.ScrollIntoView (item);
-                    var lvi = (ListViewItem)CurrentDirectory.ItemContainerGenerator.ContainerFromItem (item);
-                    lvi?.Focus();
+                    if (position.ScrollOffset > 0)
+                    {
+                        // Restore exact scroll position from history
+                        CurrentDirectory.UpdateLayout();
+                        scrollViewer.ScrollToVerticalOffset (position.ScrollOffset);
+                    }
+                    else if (!string.IsNullOrEmpty (itemToSelect))
+                    {
+                        // No saved scroll - ensure selected item is visible
+                        var item = ViewModel.Find (itemToSelect);
+                        if (item != null)
+                        {
+                            var lvi = (ListViewItem)CurrentDirectory.ItemContainerGenerator.ContainerFromItem (item);
+                            if (lvi != null && !IsItemVisible (lvi, scrollViewer))
+                                CurrentDirectory.ScrollIntoView (item);
+                        }
+                    }
                 }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }), System.Windows.Threading.DispatcherPriority.Input);
+
+            // Ensure focus after everything is set
+            Dispatcher.BeginInvoke (new Action(() => ListViewFocus()),
+                System.Windows.Threading.DispatcherPriority.Input);
         }
 
         private void ShowCurrentArchiveStatus ()
@@ -442,8 +434,11 @@ namespace GARbro.GUI
                             }
                         }
                     }
-                }), System.Windows.Threading.DispatcherPriority.Loaded);
+                }), System.Windows.Threading.DispatcherPriority.Input);
 
+                // second call allows proper ← ↓ navigation, don't ask why...
+                Dispatcher.BeginInvoke (new Action(() => ListViewFocus()), 
+                            System.Windows.Threading.DispatcherPriority.Input);
                 return true;
             }
             catch (Exception ex)
@@ -469,18 +464,14 @@ namespace GARbro.GUI
         {
             var previous = m_history.GoBack();
             if (previous != null)
-            {
                 SetCurrentPosition (previous);
-            }
         }
 
         private void NavigateForward()
         {
             var next = m_history.GoForward();
             if (next != null)
-            {
                 SetCurrentPosition (next);
-            }
         }
 
         public void ChangePosition (DirectoryPosition new_pos)

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace GameRes.Formats
 {
@@ -777,5 +778,80 @@ namespace GameRes.Formats
                 base.Dispose (disposing);
             }
         }
+    }
+
+    public sealed class DebugStream : Stream
+    {
+        private readonly Stream _inner;
+        private int _col; // hex bytes per line
+
+        public DebugStream(Stream inner)
+        {
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+        }
+
+        // Logging helpers
+        private void LogByte(byte b)
+        {
+            System.Diagnostics.Debug.Write($"{b:X2} ");
+            _col++;
+            if ((_col & 0x0F) == 0) System.Diagnostics.Debug.Write('\n');
+        }
+
+        private void LogBytes(byte[] buffer, int offset, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                System.Diagnostics.Debug.Write($"{buffer[offset + i]:X2} ");
+                _col++;
+                if ((_col & 0x0F) == 0) System.Diagnostics.Debug.Write('\n');
+            }
+        }
+
+        public override void WriteByte(byte value)
+        {
+            _inner.WriteByte(value);
+            LogByte(value);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _inner.Write(buffer, offset, count);
+            LogBytes(buffer, offset, count);
+        }
+
+        public override int ReadByte()
+        {
+            var ret = (byte)_inner.ReadByte();
+            LogByte(ret);
+            return ret;
+        }
+
+        public override int Read([In][Out] byte[] buffer, int offset, int count)
+        {
+            var ret = _inner.Read(buffer, offset, count);
+            LogBytes(buffer, offset, count);
+            return ret;
+        }
+
+        // Forward everything else
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => _inner.CanWrite;
+        public override long Length => _inner.Length;
+
+        public override long Position
+        {
+            get => _inner.Position;
+            set => _inner.Position = value;
+        }
+
+        public override void Flush() => _inner.Flush();
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            _inner.Seek(offset, origin);
+
+        public override void SetLength(long value) =>
+            _inner.SetLength(value);
     }
 }

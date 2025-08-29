@@ -50,7 +50,7 @@ namespace GameRes.Formats.Sas5
                 return null;
 
             var index = Sec5Opener.LookupIndex (file.Name);
-            string base_name = Path.GetFileNameWithoutExtension (file.Name);
+            string base_name = Path.GetFileNameWithoutExtension (VFS.GetFileName (file.Name));
             Func<int, Entry> CreateEntry;
             if (null == index)
                 CreateEntry = n => GetDefaultEntry (base_name, n);

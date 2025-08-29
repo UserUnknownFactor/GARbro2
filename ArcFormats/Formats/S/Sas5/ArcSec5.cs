@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using GameRes.Utility;
 using System.Text;
+using System.Linq;
 
 namespace GameRes.Formats.Sas5
 {
@@ -75,39 +76,56 @@ namespace GameRes.Formats.Sas5
             return arc_map;
         }
 
-        static internal Dictionary<string, Dictionary<int, Entry>> FindSec5Resr (string arc_name)
+        static internal Dictionary<string, Dictionary<int, Entry>> FindSec5Resr(string arc_name)
         {
-            string dir_name = Path.GetDirectoryName (arc_name);
-            var match = Directory.GetFiles (dir_name, "*.sec5");
-            if (0 == match.Length)
+            string dir_name = VFS.GetDirectoryName(arc_name);
+            IEnumerable<Entry> match = null;
+
+            try
             {
-                string parent = Path.GetDirectoryName (dir_name);
-                if (!string.IsNullOrEmpty (parent))
-                    match = Directory.GetFiles (parent, "*.sec5");
+                var pattern = VFS.CombinePath(dir_name, "*.sec5");
+                match = VFS.GetFiles(pattern).ToList();
+                if (!match.Any())
+                {
+                    string parent = VFS.GetDirectoryName(dir_name);
+                    if (!string.IsNullOrEmpty(parent))
+                    {
+                        pattern = VFS.CombinePath(parent, "*.sec5");
+                        match = VFS.GetFiles(pattern).ToList();
+                    }
+                }
             }
-            if (0 == match.Length)
-                return null;
-            using (var sec5 = new ArcView (match[0]))
+            catch
             {
-                if (!sec5.View.AsciiEqual (0, "SEC5"))
+                return null;
+            }
+
+            if (!match.Any())
+                return null;
+
+            var sec5_entry = match.First();
+            using (var sec5 = VFS.OpenView(sec5_entry))
+            {
+                if (!sec5.View.AsciiEqual(0, "SEC5"))
                     return null;
+
                 uint offset = 8;
                 while (offset < sec5.MaxOffset)
                 {
-                    string id = sec5.View.ReadString (offset, 4, Encoding.ASCII);
+                    string id = sec5.View.ReadString(offset, 4, Encoding.ASCII);
                     if ("ENDS" == id)
                         break;
-                    uint section_size = sec5.View.ReadUInt32 (offset+4);
+                    uint section_size = sec5.View.ReadUInt32(offset + 4);
                     offset += 8;
                     if ("RESR" == id)
                     {
-                        using (var resr = sec5.CreateStream (offset, section_size))
-                            return ReadResrSection (resr);
+                        using (var resr = sec5.CreateStream(offset, section_size))
+                            return ReadResrSection(resr);
                     }
                     if ("RES2" == id)
                     {
-                        using (var res2 = sec5.CreateStream (offset, section_size))
-                            return ReadRes2Section (res2);
+                        using (var res2 = sec5.CreateStream(offset, section_size))
+                            return ReadRes2Section(res2);
                     }
                     offset += section_size;
                 }

@@ -9,10 +9,10 @@ namespace GameRes
     [Export(typeof(VideoFormat))]
     public class Mp4Format : VideoFormat
     {
-        public override string Tag { get { return "MP4"; } }
+        public override string         Tag { get { return "MP4"; } }
         public override string Description { get { return "MPEG-4 Video"; } }
-        public override uint Signature { get { return 0; } } // "ftyp"
-        public override bool CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0; } } // "ftyp"
+        public override bool      CanWrite { get { return  false; } }
 
         // MP4 box types
         private static readonly uint FTYP = 0x70797466; // 'ftyp'

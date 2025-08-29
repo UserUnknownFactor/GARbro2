@@ -314,7 +314,8 @@ namespace GameRes
                 if ((b & 0xE0) == 0xC0) sequenceLength = 2;
                 else if ((b & 0xF0) == 0xE0) sequenceLength = 3;
                 else if ((b & 0xF8) == 0xF0) sequenceLength = 4;
-                else return false; // Invalid UTF-8 start byte
+                else 
+                    return false; // Invalid UTF-8 start byte
 
                 if (i + sequenceLength > length)
                     return false;

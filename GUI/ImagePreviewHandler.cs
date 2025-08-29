@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -15,6 +17,7 @@ namespace GARbro.GUI.Preview
         private readonly          MainWindow _mainWindow;
         private readonly               Image _imageCanvas;          // This is the static image viewer
         private readonly ImagePreviewControl _animatedImageViewer;  // This is for animated images
+        private readonly    AsyncImageLoader _imageLoader;
 
         public override bool IsActive => _imageCanvas.Visibility == Visibility.Visible || 
                                          _animatedImageViewer.Visibility == Visibility.Visible;
@@ -24,104 +27,117 @@ namespace GARbro.GUI.Preview
             _mainWindow = mainWindow;
             _imageCanvas = imageCanvas;
             _animatedImageViewer = animatedImageViewer;
+            _imageLoader = new AsyncImageLoader();
         }
 
-        public override void LoadContent (PreviewFile preview)
+        public override async Task LoadContentAsync (PreviewFile preview, CancellationToken cancellationToken)
         {
-            using (var data = VFS.OpenImage (preview.Entry))
+            try
             {
-                if (data.Image is AnimatedImageData animData && animData.IsAnimated)
-                    SetAnimatedImage (preview, data);
-                else
-                    SetStaticImage (preview, data);
-            }
-        }
-
-       private void SetStaticImage (PreviewFile preview, IImageDecoder image)
-        {
-            if (image?.Image == null)
-                return;
-
-            var bitmap = image.Image.Bitmap;
-            if (!bitmap.IsFrozen)
-                bitmap.Freeze();
-
-            _mainWindow.Dispatcher.Invoke(() =>
-            {
-                _mainWindow.ShowImagePreview();
-                _imageCanvas.Source = bitmap;
-
-                // Apply DPI scaling transform to show at pixel dimensions
-                double dpiScaleX = bitmap.DpiX / Desktop.DpiX;
-                double dpiScaleY = bitmap.DpiY / Desktop.DpiY;
-
-                if (Math.Abs(dpiScaleX - 1.0) > 0.001 || Math.Abs(dpiScaleY - 1.0) > 0.001)
-                    _imageCanvas.LayoutTransform = new ScaleTransform(dpiScaleX, dpiScaleY);
-                else
-                    _imageCanvas.LayoutTransform = Transform.Identity;
-
-                _mainWindow.ApplyDownScaleSetting();
-
-                _mainWindow.RemoveGridOverlay();
-                _mainWindow.StopSpriteAnimation();
-
-                _mainWindow._spriteAnimator = new SpriteSheetAnimator(bitmap);
-
-                if (_mainWindow.SpriteSheetPanel.Visibility != Visibility.Visible)
-                    _mainWindow.ShowSpriteSheetControls();
-
-                _mainWindow.SetPreviewStatus ((image.SourceFormat?.Tag ?? "?") +
-                    ((IImageComment)image.Info)?.GetComment() ?? "");
-            });
-        }
-
-        private void SetAnimatedImage(PreviewFile preview, IImageDecoder image)
-        {
-            if (image?.Image == null)
-                return;
-
-            var animation = image.Image as AnimatedImageData;
-            var frames = animation.Frames;
-            var delays = animation.FrameDelays;
-
-            var processedFrames = new List<BitmapSource>();
-            foreach (var frame in frames)
-            {
-                if (!frame.IsFrozen)
+                bool showLoading = ShouldShowLoadingIndicator (preview.Entry);
+                if (showLoading)
                 {
-                    // For writable bitmaps, we need to freeze them
-                    if (frame is WriteableBitmap)
-                        frame.Freeze();
+                    _mainWindow.SetFileStatus (Localization.Format ("LoadingFile",
+                        Localization._T ($"Type_{preview.Entry.Type}")));
                 }
-                processedFrames.Add (frame);
-            }
 
-            _mainWindow.Dispatcher.Invoke (() =>
-            {
-                _mainWindow.ShowAnimatedImagePreview();
+                var result = await _imageLoader.LoadImageAsync (preview.Entry, cancellationToken);
 
-                if (processedFrames.Count > 0)
+                if (result.IsCancelled)
+                    return;
+
+                if (result.HasError)
                 {
-                    var firstFrame = processedFrames[0];
-                    double dpiScaleX = firstFrame.DpiX / Desktop.DpiX;
-                    double dpiScaleY = firstFrame.DpiY / Desktop.DpiY;
+                    _mainWindow.SetFileStatus (result.Error);
+                    Reset();
+                    return;
+                }
 
-                    if (Math.Abs(dpiScaleX - 1.0) > 0.001 || Math.Abs(dpiScaleY - 1.0) > 0.001)
-                        _animatedImageViewer.LayoutTransform = new ScaleTransform(dpiScaleX, dpiScaleY);
+                await _mainWindow.Dispatcher.InvokeAsync(() =>
+                {
+                    if (result.IsAnimated)
+                        SetAnimatedImage (preview, result);
                     else
-                        _animatedImageViewer.LayoutTransform = Transform.Identity;
-                }
+                        SetStaticImage (preview, result);
 
-                _animatedImageViewer.LoadAnimatedImage (processedFrames, delays);
-                _mainWindow.ApplyScalingToAnimatedViewer();
+                    _mainWindow.SetFileStatus ("");
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation
+            }
+            catch
+            {
+                Reset();
+                throw;
+            }
+        }
 
-                _mainWindow.SetPreviewStatus ((image.SourceFormat?.Tag ?? "?") + 
-                    ((IImageComment)image.Info)?.GetComment() ?? "");
-            });
+        private bool ShouldShowLoadingIndicator (Entry entry)
+        {
+            // Show loading for GIF/WebP files larger than 3MB
+            return (entry.Name.EndsWith (".gif", StringComparison.OrdinalIgnoreCase) || 
+                    entry.Name.EndsWith (".webp", StringComparison.OrdinalIgnoreCase)) && 
+                   entry.Size > 3_000_000;
+        }
+
+        private void SetStaticImage (PreviewFile preview, ImageLoadResult result)
+        {
+            _mainWindow.ShowImagePreview();
+            _imageCanvas.Source = result.StaticImage;
+
+            // Apply DPI scaling transform
+            double dpiScaleX = result.StaticImage.DpiX / Desktop.DpiX;
+            double dpiScaleY = result.StaticImage.DpiY / Desktop.DpiY;
+
+            if (Math.Abs (dpiScaleX - 1.0) > 0.001 || Math.Abs (dpiScaleY - 1.0) > 0.001)
+                _imageCanvas.LayoutTransform = new ScaleTransform (dpiScaleX, dpiScaleY);
+            else
+                _imageCanvas.LayoutTransform = Transform.Identity;
+
+            _mainWindow.ApplyDownScaleSetting();
+            _mainWindow.RemoveGridOverlay();
+            _mainWindow.StopSpriteAnimation();
+
+            _mainWindow._spriteAnimator = new SpriteSheetAnimator (result.StaticImage);
+
+            if (_mainWindow.SpriteSheetPanel.Visibility != Visibility.Visible)
+                _mainWindow.ShowSpriteSheetControls();
+
+            // Use Tag property if available, otherwise use class name
+            string formatTag = result.SourceFormat?.Tag ?? result.SourceFormat?.GetType().Name ?? "?";
+            _mainWindow.SetPreviewStatus (formatTag + (result.Info?.GetComment() ?? ""));
+        }
+
+        private void SetAnimatedImage (PreviewFile preview, ImageLoadResult result)
+        {
+            _mainWindow.ShowAnimatedImagePreview();
+
+            if (result.AnimatedFrames.Count > 0)
+            {
+                var firstFrame = result.AnimatedFrames[0];
+                double dpiScaleX = firstFrame.DpiX / Desktop.DpiX;
+                double dpiScaleY = firstFrame.DpiY / Desktop.DpiY;
+
+                if (Math.Abs (dpiScaleX - 1.0) > 0.001 || Math.Abs (dpiScaleY - 1.0) > 0.001)
+                    _animatedImageViewer.LayoutTransform = new ScaleTransform (dpiScaleX, dpiScaleY);
+                else
+                    _animatedImageViewer.LayoutTransform = Transform.Identity;
+            }
+
+            _animatedImageViewer.LoadAnimatedImage (result.AnimatedFrames, result.FrameDelays);
+            _mainWindow.ApplyScalingToAnimatedViewer();
+
+            // Use Tag property if available, otherwise use class name
+            string formatTag = result.SourceFormat?.Tag ?? result.SourceFormat?.GetType().Name ?? "?";
+            _mainWindow.SetPreviewStatus (formatTag + (result.Info?.GetComment() ?? ""));
         }
 
         public override void Reset ()
         {
+            _imageLoader.CancelCurrentLoad();
+
             _imageCanvas.Source = null;
             _animatedImageViewer.Reset();
             _animatedImageViewer.Visibility = Visibility.Collapsed;
@@ -129,6 +145,13 @@ namespace GARbro.GUI.Preview
 
             _mainWindow.HideSpriteSheetControls();
             _mainWindow._spriteAnimator = null;
+        }
+
+        protected override void Dispose (bool disposing)
+        {
+            if (!_disposed && disposing)
+                _imageLoader.CancelCurrentLoad();
+            base.Dispose (disposing);
         }
     }
 }

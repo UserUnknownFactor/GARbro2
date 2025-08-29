@@ -132,7 +132,7 @@ namespace GARbro.GUI
             m_progress_dialog = new ProgressDialog ()
             {
                 WindowTitle = Localization._T("TextTitle"),
-                Text        = Localization._T("Converting image"),
+                Text        = Localization.Format("MsgConvertingFile", Localization._T("Type_image")),
                 Description = "",
                 MinimizeBox = true,
             };

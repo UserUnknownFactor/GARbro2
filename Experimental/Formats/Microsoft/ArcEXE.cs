@@ -1,3 +1,4 @@
+/*
 using GameRes.Utility;
 using System;
 using System.Collections.Generic;
@@ -760,3 +761,4 @@ internal class VersionInfoParser
         }
     }
 }
+*/

@@ -46,6 +46,7 @@ namespace GARbro.GUI
         private readonly LinkedList<FileEncodingEntry> _fileEncodingHistory = new LinkedList<FileEncodingEntry>();
         private const int MAX_ENCODING_HISTORY = 20;
         private bool _isManualEncodingChange = false;
+        private Encoding _lastManualEncoding = null;
 
         private IEnumerable<Encoding> m_encoding_list = GetEncodingList();
         public IEnumerable<Encoding> TextEncodings { get { return m_encoding_list; } }
@@ -148,6 +149,7 @@ namespace GARbro.GUI
                 return;
 
             _isManualEncodingChange = true;
+            _lastManualEncoding = enc;
 
             if (m_current_preview != null)
             {
@@ -157,26 +159,6 @@ namespace GARbro.GUI
 
             RefreshPreviewPane();
             _isManualEncodingChange = false;
-        }
-
-        private void HandleEncodingSelection (Entry entry, PreviewFile previousPreview)
-        {
-            if (!_isManualEncodingChange)
-            {
-                if (!m_current_preview.IsEqual (previousPreview?.Path, previousPreview?.Entry))
-                {
-                    if (entry.Type == "script" || entry.Type == "text" || entry.Type == "config" ||
-                        (string.IsNullOrEmpty (entry.Type) && entry.Size < 0x100000))
-                    {
-                        var fileIdentifier = GetFileIdentifier (m_current_preview);
-                        var rememberedEncoding = GetRememberedEncoding (fileIdentifier);
-                        if (rememberedEncoding != null)
-                            EncodingChoice.SelectedItem = rememberedEncoding;
-                        else
-                            EncodingChoice.SelectedItem = null;
-                    }
-                }
-            }
         }
 
         internal string GetFileIdentifier (PreviewFile preview)
@@ -227,6 +209,32 @@ namespace GARbro.GUI
                     _fileEncodingCache.Remove (fileIdentifier);
                 }
             }
+            return null;
+        }
+
+        internal bool HasRememberedEncoding (string fileIdentifier)
+        {
+            return !string.IsNullOrEmpty (fileIdentifier) &&
+                   _fileEncodingCache.ContainsKey (fileIdentifier);
+        }
+
+        internal Encoding GetPreferredEncoding (PreviewFile preview)
+        {
+            if (preview == null)
+                return null;
+
+            var fileIdentifier = GetFileIdentifier (preview);
+
+            // Priority 1: File-specific encoding (for old files)
+            var fileSpecificEncoding = GetRememberedEncoding (fileIdentifier);
+            if (fileSpecificEncoding != null)
+                return fileSpecificEncoding;
+
+            // Priority 2: Last manual encoding (for new files)
+            if (_lastManualEncoding != null)
+                return _lastManualEncoding;
+
+            // Priority 3: null (will trigger auto-detection)
             return null;
         }
     }

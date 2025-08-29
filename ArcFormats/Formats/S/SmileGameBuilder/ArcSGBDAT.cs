@@ -9,11 +9,11 @@ namespace GameRes.Formats.SgbPack
     [Export(typeof(ArchiveFormat))]
     public class SgbPackOpener : ArchiveFormat
     {
-        public override string Tag => "SGBPACK";
-        public override string Description => "Smaile Game Builder archive";
-        public override uint Signature => 0x44424753; // 'SGBD'
-        public override bool IsHierarchic => true;
-        public override bool CanWrite => false;
+        public override string         Tag { get { return "SGBPACK"; } }
+        public override string Description { get { return "Smaile Game Builder archive"; } }
+        public override uint     Signature { get { return  0x44424753; } } // 'SGBD
+        public override bool  IsHierarchic { get { return  true; } }
+        public override bool      CanWrite { get { return  false; } }
 
         static readonly byte[] Key1 = {
             0x48, 0x09, 0x14, 0x9A, 0x30, 0xA9, 0x54, 0xE1,
@@ -27,16 +27,16 @@ namespace GameRes.Formats.SgbPack
             0x50, 0x4B, 0x03, 0x04, 0x20, 0x00, 0x00, 0x00
         };
 
-        public override ArcFile TryOpen(ArcView file)
+        public override ArcFile TryOpen (ArcView file)
         {
-            if (!file.View.AsciiEqual(0, "SGBDAT"))
+            if (!file.View.AsciiEqual (0, "SGBDAT"))
                 return null;
 
-            var decrypted = new SubtractedStream(file.CreateStream(8), Key1);
-            var input = new PrefixStream(ZipHeader, decrypted);
+            var decrypted = new SubtractedStream (file.CreateStream (8), Key1);
+            var input = new PrefixStream (ZipHeader, decrypted);
             try
             {
-                return OpenZipArchive(file, input);
+                return OpenZipArchive (file, input);
             }
             catch
             {
@@ -45,31 +45,31 @@ namespace GameRes.Formats.SgbPack
             }
         }
 
-        internal ArcFile OpenZipArchive(ArcView file, Stream input)
+        internal ArcFile OpenZipArchive (ArcView file, Stream input)
         {
-            var zip = new SharpZip.ZipFile(input);
+            var zip = new SharpZip.ZipFile (input);
             zip.StringCodec = SharpZip.StringCodec.Default;
             try
             {
-                var files = zip.Cast<SharpZip.ZipEntry>().Where(z => !z.IsDirectory);
-                var dir = files.Select(z => new ZipEntry(z) as Entry).ToList();
-                return new PkZipArchive(file, this, dir, zip);
+                var files = zip.Cast<SharpZip.ZipEntry>().Where (z => !z.IsDirectory);
+                var dir = files.Select (z => new ZipEntry (z) as Entry).ToList();
+                return new PkZipArchive (file, this, dir, zip);
             }
             catch
             {
                 zip.Close();
                 throw;
             }
-        }
+        } 
 
-        public override Stream OpenEntry(ArcFile arc, Entry entry)
+        public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
             var zarc = (PkZipArchive)arc;
             var zent = (ZipEntry)entry;
-            var file_result = zarc.Native.GetInputStream(zent.NativeEntry);
-            var result = new SubtractedStream(file_result, Key2);
-            //Dump.StreamToFile(result, $"{Path.GetFileName(entry.Name)}.dat");
-            entry.ChangeType(FormatCatalog.Instance.GetTypeFromName(entry.Name));
+            var file_result = zarc.Native.GetInputStream (zent.NativeEntry);
+            var result = new SubtractedStream (file_result, Key2);
+            //Dump.StreamToFile (result, $"{Path.GetFileName (entry.Name)}.dat");
+            entry.ChangeType (FormatCatalog.Instance.GetTypeFromName (entry.Name));
             return result;
         }
     }

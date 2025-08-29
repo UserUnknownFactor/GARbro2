@@ -518,7 +518,7 @@ namespace GARbro.GUI
                     if (visibleCount > 0 && totalCount > 0)
                         SetFileStatus (Localization.Format ("FilterItems", visibleCount, totalCount));
                     else
-                        SetFileStatus (Localization._T ("FilterNoMatching"));
+                        SetFileStatus (Localization._T ("FilterNoMatchingEntries"));
                 }
                 else
                     SetFileStatus ("");

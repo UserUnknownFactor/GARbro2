@@ -22,10 +22,10 @@ namespace GameRes
     [Export(typeof(VideoFormat))]
     public class MkvFormat : VideoFormat
     {
-        public override string Tag { get { return "MKV"; } }
+        public override string         Tag { get { return "MKV"; } }
         public override string Description { get { return "Matroska Video"; } }
-        public override uint Signature { get { return 0x1A45DFA3; } } // EBML header (same as WebM)
-        public override bool CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0xA3DF451A; } } // EBML header (same as WebM)
+        public override bool      CanWrite { get { return  false; } }
 
         // EBML element IDs - same as WebM but with different DocType
         private static readonly uint EBML_ID = 0x1A45DFA3;
@@ -42,6 +42,11 @@ namespace GameRes
         private static readonly ushort CODEC_ID_ID = 0x86;
         private static readonly uint DURATION_ID = 0x4489;
         private static readonly uint TIMECODE_SCALE_ID = 0x2AD7B1;
+
+        public MkvFormat()
+        {
+            Extensions = new string[] { "mkv" };
+        }
 
         public override VideoData Read (IBinaryStream file, VideoMetaData info)
         {

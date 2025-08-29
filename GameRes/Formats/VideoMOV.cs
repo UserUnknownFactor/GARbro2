@@ -22,10 +22,10 @@ namespace GameRes
     [Export(typeof(VideoFormat))]
     public class MovFormat : VideoFormat
     {
-        public override string Tag { get { return "MOV"; } }
+        public override string         Tag { get { return "MOV"; } }
         public override string Description { get { return "QuickTime Movie"; } }
-        public override uint Signature { get { return 0x00000020; } } // Size field followed by type
-        public override bool CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0x00000020; } } // Size field followed by type
+        public override bool      CanWrite { get { return  false; } }
 
         // MOV atom types
         private static readonly uint FTYP_ATOM = 0x70797466; // 'ftyp'
@@ -42,6 +42,11 @@ namespace GameRes
         private static readonly uint STSD_ATOM = 0x64737473; // 'stsd'
         private static readonly uint VIDE_HANDLER = 0x65646976; // 'vide'
         private static readonly uint SOUN_HANDLER = 0x6E756F73; // 'soun'
+
+        public MovFormat()
+        {
+            Extensions = new string[] { "mov" };
+        }
 
         public override VideoData Read (IBinaryStream file, VideoMetaData info)
         {

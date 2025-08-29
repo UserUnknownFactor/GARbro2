@@ -1,7 +1,11 @@
 using System;
 using System.Windows.Threading;
+using System.Threading.Tasks;
+
 using GameRes;
 using NAudio.Wave;
+using System.Threading;
+using NAudio.CoreAudioApi;
 
 namespace GARbro.GUI.Preview
 {
@@ -12,113 +16,140 @@ namespace GARbro.GUI.Preview
         private          WaveStream _currentAudio;
         private     DispatcherTimer _playbackTimer;
         private                bool _isAudioPaused = false;
+        private                bool _useWasapi = false;
+        //private                 int _desiredLatency = 200;
 
         public override bool IsActive => _audioDevice != null;
         
         public bool IsPlaying => _audioDevice?.PlaybackState == PlaybackState.Playing;
-        public bool IsPaused => _isAudioPaused;
+        public bool IsPaused  => _isAudioPaused;
 
-        public AudioPreviewHandler(MainWindow mainWindow)
+        public AudioPreviewHandler (MainWindow mainWindow)
         {
             _mainWindow = mainWindow;
         }
 
-        public override void LoadContent(PreviewFile preview)
+        public override async Task LoadContentAsync (PreviewFile preview, CancellationToken cancellationToken)
         {
             IBinaryStream input = null;
-            SoundInput sound = null;
+            SoundInput sound    = null;
             try
             {
-                input = VFS.OpenBinaryStream(preview.Entry);
-                _mainWindow.RegisterStream(input);
-
-                FormatCatalog.Instance.LastError = null;
-                sound = AudioFormat.Read(input);
-                if (null == sound)
+                await Task.Run(() =>
                 {
-                    if (null != FormatCatalog.Instance.LastError)
-                        throw FormatCatalog.Instance.LastError;
-                    return;
-                }
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    input = VFS.OpenBinaryStream (preview.Entry);
+                    _mainWindow.RegisterStream (input);
+                    FormatCatalog.Instance.LastError = null;
+                    sound = AudioFormat.Read (input);
+
+                    if (null == sound)
+                    {
+                        if (null != FormatCatalog.Instance.LastError)
+                            throw FormatCatalog.Instance.LastError;
+                        throw new InvalidFormatException (Localization._T ("FormatNotRecognized"));
+                    }
+                }, cancellationToken);
 
                 Reset();
 
-                _currentAudio = new WaveStreamImpl(sound);
-                _mainWindow.RegisterStream(_currentAudio);
+                _currentAudio = new WaveStreamImpl (sound);
+                _mainWindow.RegisterStream (_currentAudio);
 
-                SetUpAudioDevice(sound);
+                SetUpAudioDevice (sound);
                 _mainWindow.UpdateAudioControls();
-                _mainWindow.UpdateMediaControlsVisibility(MediaType.Audio);
 
                 var fmt = _currentAudio.WaveFormat;
                 string autoStatus = _mainWindow.GetAutoPlayStatus();
+
+                string filename = VFS.GetFileName(preview.Entry.Name);
+
                 _mainWindow.SetPreviewStatus(
-                    Localization.Format("MsgPlaying",
-                    preview.Entry.Name, autoStatus, fmt.SampleRate, sound.SourceBitrate / 1000,
-                    "0:00", _currentAudio.TotalTime.ToString("m':'ss")));
+                    Localization.Format ("MsgPlaying",
+                    filename, autoStatus, fmt.SampleRate, sound.SourceBitrate / 1000,
+                    "0:00", _currentAudio.TotalTime.ToString ("m':'ss")));
 
-                SetUpStatusTimer(preview.Entry, sound, fmt);
-
-                input = null; // Ownership transferred
+                SetUpStatusTimer (preview.Entry, sound, fmt);
             }
-            catch (Exception X)
+            catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
             {
-                _mainWindow.SetFileStatus(X.Message);
-                sound?.Dispose();
+                CleanupOnError (input, sound);
             }
-            finally
+            catch (Exception ex)
             {
-                if (input != null)
-                {
-                    _mainWindow.RemoveStream(input);
-                    input.Dispose();
-                }
+                _mainWindow.SetFileStatus (ex.Message);
+                CleanupOnError (input, sound);
+                throw;
             }
         }
 
-        private void SetUpAudioDevice(SoundInput sound)
+        private void CleanupOnError (IBinaryStream input, SoundInput sound)
         {
-            _audioDevice = new WaveOutEvent();
-            _mainWindow.RegisterStream(_audioDevice);
+            sound?.Dispose();
+            if (input != null)
+            {
+                _mainWindow.RemoveStream (input);
+                input.Dispose();
+            }
+        }
+
+        private void SetUpAudioDevice (SoundInput sound)
+        {
+            /*try
+            {
+                // NOTE: it hiccups on delays and handles end of track detection worse even in Shared mode
+                _audioDevice = new WasapiOut(AudioClientShareMode.Shared, false, _desiredLatency);
+                _useWasapi   = true;
+            }
+            catch
+            {*/
+                _audioDevice = new WaveOutEvent();
+                _useWasapi   = false;
+            //}
+            _mainWindow.RegisterStream (_audioDevice);
 
             if ("wav" == sound.SourceFormat || 8 == sound.Format.BitsPerSample)
-                _audioDevice.Init(_currentAudio.ToSampleProvider());
+                _audioDevice.Init (_currentAudio.ToSampleProvider());
             else
-                _audioDevice.Init(_currentAudio);
+                _audioDevice.Init (_currentAudio);
                 
             _audioDevice.PlaybackStopped += _mainWindow.OnPlaybackStopped;
-            _audioDevice.Volume = (float)_mainWindow.MediaVolumeSlider.Value;
+            
+            SetVolume((float)_mainWindow.MediaVolumeSlider.Value);
+
             _audioDevice.Play();
             _isAudioPaused = false;
         }
 
-        private void SetUpStatusTimer(Entry entry, SoundInput sound, NAudio.Wave.WaveFormat fmt)
+        private void SetUpStatusTimer (Entry entry, SoundInput sound, NAudio.Wave.WaveFormat fmt)
         {
-            _playbackTimer  = new DispatcherTimer();
-            _playbackTimer.Interval = TimeSpan.FromMilliseconds(200);
-            _playbackTimer.Tick += (s, e) => UpdatePlaybackTime(entry, fmt, sound.SourceBitrate);
+            _playbackTimer = new DispatcherTimer();
+            _playbackTimer.Interval = TimeSpan.FromMilliseconds (200);
+            _playbackTimer.Tick += (s, e) => UpdatePlaybackTime (entry, fmt, sound.SourceBitrate);
             _playbackTimer.Start();
         }
 
         /// <summary>
-        /// Update playback time display
+        /// Updates playback time string
         /// </summary>
-        private void UpdatePlaybackTime(Entry entry, NAudio.Wave.WaveFormat fmt, int sourceBitrate)
+        private void UpdatePlaybackTime (Entry entry, NAudio.Wave.WaveFormat fmt, int sourceBitrate)
         {
             if (this.IsActive)
             {
-                var currentTime = _currentAudio.CurrentTime;
-                var totalTime = _currentAudio.TotalTime;
+                var currentTime   = _currentAudio.CurrentTime;
+                var totalTime     = _currentAudio.TotalTime;
                 string autoStatus = _mainWindow.GetAutoPlayStatus();
+                string filename   = VFS.GetFileName(entry.Name);
 
                 _mainWindow.SetPreviewStatus(
-                    Localization.Format("MsgPlaying",
-                    entry.Name, autoStatus, fmt.SampleRate, sourceBitrate / 1000,
-                    currentTime.ToString("m':'ss"), totalTime.ToString("m':'ss")));
+                    Localization.Format ("MsgPlaying",
+                    filename, autoStatus, fmt.SampleRate, sourceBitrate / 1000,
+                    currentTime.ToString ("m':'ss"), totalTime.ToString ("m':'ss")));
             }
         }
 
-        public void Pause()
+        public void Pause ()
         {
             if (_audioDevice != null)
             {
@@ -141,10 +172,10 @@ namespace GARbro.GUI.Preview
         public void SetVolume(float volume)
         {
             if (_audioDevice != null)
-                _audioDevice.Volume = volume;
+                _audioDevice.Volume = _useWasapi ? volume * 0.4f : volume;
         }
 
-        public override void Reset()
+        public override void Reset ()
         {
             _playbackTimer?.Stop();
             _playbackTimer = null;
@@ -152,16 +183,17 @@ namespace GARbro.GUI.Preview
             if (_audioDevice != null)
             {
                 _audioDevice.PlaybackStopped -= _mainWindow.OnPlaybackStopped;
-                System.Threading.Thread.Sleep(200); // _audioDevice.DesiredLatency
+                System.Threading.Thread.Sleep (200); // roughly _audioDevice.DesiredLatency
                 _audioDevice.Stop();
-                _mainWindow.RemoveStream(_audioDevice);
+                _mainWindow.RemoveStream (_audioDevice);
                 _audioDevice.Dispose();
                 _audioDevice = null;
+                _mainWindow.SetPreviewStatus("");
             }
 
             if (_currentAudio != null)
             {
-                _mainWindow.RemoveStream(_currentAudio);
+                _mainWindow.RemoveStream (_currentAudio);
                 _currentAudio.Dispose();
                 _currentAudio = null;
             }

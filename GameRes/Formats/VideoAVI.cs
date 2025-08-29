@@ -25,8 +25,8 @@ namespace GameRes
     {
         public override string         Tag { get { return "AVI"; } }
         public override string Description { get { return "Audio Video Interleave"; } }
-        public override uint     Signature { get { return 0x46464952; } } // "RIFF"
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0x46464952; } } // "RIFF"
+        public override bool      CanWrite { get { return  false; } }
 
         // AVI chunk IDs
         private static readonly uint RIFF_ID = 0x46464952; // "RIFF"

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Windows;
 using GameRes;
 
@@ -30,12 +31,15 @@ namespace GARbro.GUI
     public class PreviewStateMachine
     {
         private readonly MainWindow _mainWindow;
-        private MediaType _currentMediaType = MediaType.None;
-        private SpriteMode _currentSpriteMode = SpriteMode.None;
-        private bool _audioPlaybackActive = false;
 
-        public MediaType   CurrentMediaType { get { return _currentMediaType; } }
-        public SpriteMode CurrentSpriteMode { get { return _currentSpriteMode; } }
+        private    MediaType _currentMediaType = MediaType.None;
+        private MediaType _backgroundMediaType = MediaType.None;
+        private  SpriteMode _currentSpriteMode = SpriteMode.None;
+        private      bool _audioPlaybackActive = false;
+
+        public MediaType CurrentMediaType   => _currentMediaType;
+        public SpriteMode CurrentSpriteMode => _currentSpriteMode;
+        public bool IsAudioActive           => _audioPlaybackActive;
 
         public PreviewStateMachine (MainWindow mainWindow)
         {
@@ -58,6 +62,7 @@ namespace GARbro.GUI
                 case MediaType.Video:
                     StopVideoPlayback();
                     break;
+                case MediaType.Image:
                 case MediaType.Sprite:
                     _mainWindow.StopSpriteAnimation();
                     _mainWindow.HideSpriteSheetControls();
@@ -73,6 +78,7 @@ namespace GARbro.GUI
             case MediaType.Audio:
                 _audioPlaybackActive = true;
                 _currentMediaType = MediaType.Audio;
+                _backgroundMediaType = MediaType.None;
                 break;
 
             case MediaType.Video:
@@ -93,35 +99,26 @@ namespace GARbro.GUI
                 // Don't stop audio if it's playing in background
                 if (!_audioPlaybackActive)
                     StopAudioPlayback();
+                else
+                    _backgroundMediaType = MediaType.Audio;
                 break;
 
             case MediaType.Text:
-                _mainWindow._imagePreviewHandler.Reset();
                 _currentMediaType = MediaType.Text;
                 _currentSpriteMode = SpriteMode.None;
+                if (_audioPlaybackActive)
+                    _backgroundMediaType = MediaType.Audio;
                 break;
 
             case MediaType.Image:
                 _currentMediaType = MediaType.Image;
                 if (_audioPlaybackActive)
-                {
-                    // Keep audio controls visible
-                    if (loadAction != null)
-                        loadAction();
-                    return;
-                }
+                    _backgroundMediaType = MediaType.Audio;
                 break;
 
             case MediaType.None:
                 _currentSpriteMode = SpriteMode.None;
-                if (_audioPlaybackActive)
-                {
-                    // Keep audio controls visible
-                    if (loadAction != null)
-                        loadAction();
-                    return;
-                }
-                else
+                if (!_audioPlaybackActive)
                 {
                     _currentMediaType = MediaType.None;
                     _mainWindow.SetFileStatus ("");
@@ -131,6 +128,7 @@ namespace GARbro.GUI
             }
 
             UpdateMediaControlsVisibility();
+
             if (loadAction != null)
                 loadAction();
         }
@@ -164,15 +162,12 @@ namespace GARbro.GUI
         {
             if (!_audioPlaybackActive)
             {
-                _currentMediaType = MediaType.None;
-                _currentSpriteMode = SpriteMode.None;
+                _currentMediaType    = MediaType.None;
+                _currentSpriteMode   = SpriteMode.None;
+                _backgroundMediaType = MediaType.None;
                 UpdateMediaControlsVisibility();
-                ResetPreviewPanes();
             }
-            else
-            {
-                ResetPreviewPanes();
-            }
+            ResetPreviewPanes();
         }
 
         private void ResetPreviewPanes ()
@@ -182,8 +177,88 @@ namespace GARbro.GUI
             _mainWindow._textPreviewHandler?.Reset();
         }
 
-        public void StartAudioPlayback (Entry entry)
+        /// <summary>
+        /// Configure media controls visibility based on current state
+        /// </summary>
+        private void ConfigureMediaControlsVisibility (MediaType mediaType)
         {
+            var mc = _mainWindow._mediaControl;
+            mc.SaveVolume();
+
+            switch (mediaType)
+            {
+            case MediaType.Audio:
+                mc.ControlPanel.Visibility = Visibility.Visible;
+                mc.CycleButton.Visibility = Visibility.Visible;
+                mc.AutoButton.Visibility = Visibility.Visible;
+                mc.VolumeControlPanel.Visibility = Visibility.Visible;
+                mc.UpdatePauseButtonForMediaType (MediaType.Audio, _mainWindow._audioPreviewHandler?.IsPaused ?? false);
+                break;
+
+            case MediaType.Video:
+                mc.ControlPanel.Visibility = Visibility.Visible;
+                mc.CycleButton.Visibility = Visibility.Visible;
+                mc.AutoButton.Visibility = Visibility.Visible;
+                mc.VolumeControlPanel.Visibility = Visibility.Visible;
+                mc.UpdatePauseButtonForMediaType (MediaType.Video, !(_mainWindow._videoPreviewHandler?.IsPlaying ?? false));
+                break;
+
+            case MediaType.Sprite:
+                mc.ControlPanel.Visibility = Visibility.Visible;
+                mc.CycleButton.Visibility = Visibility.Collapsed;
+                mc.AutoButton.Visibility = Visibility.Collapsed;
+                mc.VolumeControlPanel.Visibility = Visibility.Collapsed;
+                mc.UpdatePauseButtonForMediaType (MediaType.Sprite);
+                break;
+
+            case MediaType.Model:
+                mc.ControlPanel.Visibility = Visibility.Visible;
+                mc.CycleButton.Visibility = Visibility.Collapsed;
+                mc.AutoButton.Visibility = Visibility.Collapsed;
+                mc.VolumeControlPanel.Visibility = Visibility.Collapsed;
+                mc.UpdatePauseButtonForMediaType (MediaType.Model);
+                break;
+
+            case MediaType.Text:
+            case MediaType.Image:
+            case MediaType.None:
+            default:
+                mc.ControlPanel.Visibility = Visibility.Collapsed;
+                break;
+            }
+
+            mc.RestoreVolume();
+        }
+
+        /// <summary>
+        /// Determine which media type controls should be shown
+        /// </summary>
+        private MediaType DeterminePlayingMediaType()
+        {
+            // If we have a background media type (audio playing during other preview), show those controls
+            if (_backgroundMediaType != MediaType.None)
+                return _backgroundMediaType;
+
+            // Otherwise show controls for current media type
+            return _currentMediaType;
+        }
+
+        /// <summary>
+        /// Update media controls visibility based on current state
+        /// </summary>
+        private void UpdateMediaControlsVisibility()
+        {
+            _mainWindow.Dispatcher.Invoke (() =>
+            {
+                MediaType displayType = DeterminePlayingMediaType();
+                ConfigureMediaControlsVisibility (displayType);
+            });
+        }
+
+        public async void StartAudioPlayback (Entry entry)
+        {
+            _mainWindow._previewLoader.CancelCurrent();
+
             StopVideoPlayback();
             StopAudioPlayback();
 
@@ -197,14 +272,30 @@ namespace GARbro.GUI
 
             _audioPlaybackActive = true;
             _currentMediaType = MediaType.Audio;
+            _backgroundMediaType = MediaType.None;
             UpdateMediaControlsVisibility();
 
-            _mainWindow._audioPreviewHandler.LoadContent (preview);
-            _mainWindow._mediaControl.SetPauseButtonIcon();
+            try
+            {
+                await _mainWindow._audioPreviewHandler.LoadContentAsync (preview, CancellationToken.None);
+                UpdateAudioControls();
+                _mainWindow.SetFileStatus ("");
+            }
+            catch (Exception ex)
+            {
+                _mainWindow.SetFileStatus (ex.Message);
+                _audioPlaybackActive = false;
+                _currentMediaType = MediaType.None;
+                UpdateMediaControlsVisibility();
+            }
         }
 
-        public void StartVideoPlayback (Entry entry)
+        public async void StartVideoPlayback (Entry entry)
         {
+            _mainWindow._previewLoader.CancelCurrent();
+
+            StopAllPlayback();
+
             var preview = new PreviewFile
             {
                 Entry = entry,
@@ -213,22 +304,22 @@ namespace GARbro.GUI
                 TempFile = null
             };
 
-            TransitionToMedia(MediaType.Video, () => 
+            _currentMediaType = MediaType.Video;
+            UpdateMediaControlsVisibility();
+
+            try
             {
-                try
-                {
-                    _mainWindow.ShowVideoPreview();
-                    _mainWindow._videoPreviewHandler.LoadContent(preview);
-                    _mainWindow.SetFileStatus("");
-                }
-                catch (Exception ex)
-                {
-                    _mainWindow._videoPreviewHandler.Reset();
-                    _mainWindow.SetFileStatus(ex.Message);
-                    _currentMediaType = MediaType.None;
-                    UpdateMediaControlsVisibility();
-                }
-            });
+                _mainWindow.ShowVideoPreview();
+                await _mainWindow._videoPreviewHandler.LoadContentAsync (preview, CancellationToken.None);
+                _mainWindow.SetFileStatus ("");
+            }
+            catch (Exception ex)
+            {
+                _mainWindow._videoPreviewHandler.Reset();
+                _mainWindow.SetFileStatus (ex.Message);
+                _currentMediaType = MediaType.None;
+                UpdateMediaControlsVisibility();
+            }
         }
 
         public void StopAllPlayback ()
@@ -238,29 +329,10 @@ namespace GARbro.GUI
             StopAnimationPlayback();
         }
 
-        public void StopCurrentPlayback ()
+        public void PauseCurrentPlayback()
         {
-            switch (_currentMediaType)
-            {
-            case MediaType.Audio:
-                StopAudioPlayback();
-                break;
-            case MediaType.Video:
-                StopVideoPlayback();
-                break;
-            case MediaType.Sprite:
-                _mainWindow.StopSpriteAnimation();
-                //_mainWindow.SpriteLayoutCombo.SelectedIndex = 0;
-                break;
-            case MediaType.Model:
-                _mainWindow.StopModelPlayback();
-                break;
-            }
-        }
-
-        public void PauseCurrentPlayback ()
-        {
-            switch (_currentMediaType)
+            MediaType effectiveType = DeterminePlayingMediaType();
+            switch (effectiveType)
             {
             case MediaType.Audio:
                 PauseAudioPlayback();
@@ -278,13 +350,36 @@ namespace GARbro.GUI
                 _mainWindow.ToggleModelPlayback();
                 break;
             }
+
+            UpdateAudioControls();
+        }
+
+        public void StopCurrentPlayback()
+        {
+            MediaType effectiveType = DeterminePlayingMediaType();
+            switch (effectiveType)
+            {
+            case MediaType.Audio:
+                StopAudioPlayback();
+                break;
+            case MediaType.Video:
+                StopVideoPlayback();
+                break;
+            case MediaType.Sprite:
+                _mainWindow.StopSpriteAnimation();
+                break;
+            case MediaType.Model:
+                _mainWindow.StopModelPlayback();
+                break;
+            }
+            UpdateAudioControls();
         }
 
         public void SetVolume (float volume)
         {
-            if (_currentMediaType == MediaType.Audio && _mainWindow._audioPreviewHandler != null)
+            if (_mainWindow._audioPreviewHandler?.IsActive == true)
                 _mainWindow._audioPreviewHandler.SetVolume (volume);
-            else if (_currentMediaType == MediaType.Video && _mainWindow._videoPreviewHandler != null)
+            if (_mainWindow._videoPreviewHandler?.IsActive == true)
                 _mainWindow._videoPreviewHandler.SetVolume (volume);
         }
 
@@ -294,12 +389,15 @@ namespace GARbro.GUI
             {
                 _mainWindow._audioPreviewHandler.Reset();
                 _audioPlaybackActive = false;
+                _backgroundMediaType = MediaType.None;
+
                 if (_currentMediaType == MediaType.Audio)
                 {
                     _currentMediaType = MediaType.None;
-                    UpdateMediaControlsVisibility();
                     _mainWindow.SetPreviewStatus ("");
                 }
+
+                UpdateMediaControlsVisibility();
             }
         }
 
@@ -308,11 +406,11 @@ namespace GARbro.GUI
             if (_mainWindow._videoPreviewHandler != null && _mainWindow._videoPreviewHandler.IsActive)
             {
                 _mainWindow._videoPreviewHandler.Reset();
-                if (_currentMediaType == MediaType.Video && !_audioPlaybackActive)
+                if (_currentMediaType == MediaType.Video)
                 {
                     _currentMediaType = MediaType.None;
-                    UpdateMediaControlsVisibility();
                     _mainWindow.SetPreviewStatus ("");
+                    UpdateMediaControlsVisibility();
                 }
             }
         }
@@ -325,23 +423,34 @@ namespace GARbro.GUI
 
         private void PauseAudioPlayback ()
         {
-            _mainWindow._mediaControl.SetPlayButtonIcon();
             _mainWindow._audioPreviewHandler?.Pause();
         }
 
         public void UpdateAudioControls ()
         {
-            bool isPaused = _mainWindow._audioPreviewHandler?.IsPaused ?? false;
-            if (_currentMediaType == MediaType.Video)
-                isPaused = !(_mainWindow._videoPreviewHandler?.IsPlaying ?? false);
+            bool isPaused = false;
+            MediaType controlType = DeterminePlayingMediaType();
+
+            switch (controlType)
+            {
+                case MediaType.Audio:
+                    isPaused = _mainWindow._audioPreviewHandler?.IsPaused ?? false;
+                    break;
+                case MediaType.Video:
+                    isPaused = !(_mainWindow._videoPreviewHandler?.IsPlaying ?? false);
+                    break;
+                case MediaType.Sprite:
+                    isPaused = !_mainWindow._isSpriteAnimating;
+                    break;
+            }
 
             _mainWindow._mediaControl.UpdateButtonStates (isPaused, _mainWindow._isAutoPlaying, _mainWindow._isAutoCycling);
-        }
 
-        private void UpdateMediaControlsVisibility()
-        {
-            _mainWindow.Dispatcher.Invoke (() =>
-                _mainWindow._mediaControl.ConfigureForMediaType (_currentMediaType));
+            // Update pause button icon based on current state
+            if (controlType == MediaType.Sprite)
+                _mainWindow._mediaControl.UpdateSpriteButtons(!isPaused);
+            else
+                _mainWindow._mediaControl.UpdatePauseButtonForMediaType (controlType, isPaused);
         }
 
         public void OnAudioPlaybackStopped ()
@@ -353,7 +462,7 @@ namespace GARbro.GUI
                     if (PlayNextAudio())
                         return;
                     else if (_mainWindow._isAutoPlaying && !_mainWindow._isAutoCycling)
-                            _mainWindow.SetFileStatus (Localization._T("MsgReachedLastAudio"));
+                        _mainWindow.SetFileStatus (Localization.Format ("MsgReachedLast", Localization._T("Type_audio") ));
                 }
                 StopAudioPlayback();
             }
@@ -378,7 +487,7 @@ namespace GARbro.GUI
             _mainWindow.CurrentDirectory.SelectedIndex = nextIndex;
 
             if (_mainWindow.CurrentDirectory.IsFocused || _mainWindow.CurrentDirectory.IsKeyboardFocusWithin)
-                _mainWindow.CurrentDirectory.ScrollIntoView(nextEntry);
+                _mainWindow.CurrentDirectory.ScrollIntoView (nextEntry);
 
             StartAudioPlayback (nextEntry.Source);
             return true;
@@ -387,7 +496,38 @@ namespace GARbro.GUI
         public void OnMediaEnded ()
         {
             if (_currentMediaType == MediaType.Video)
+            {
+                if (_mainWindow._isAutoCycling || _mainWindow._isAutoPlaying)
+                {
+                    if (PlayNextVideo())
+                        return;
+                    else if (_mainWindow._isAutoPlaying && !_mainWindow._isAutoCycling)
+                         _mainWindow.SetFileStatus (Localization.Format ("MsgReachedLast", Localization._T("Type_video") ));
+                }
+
                 StopVideoPlayback();
+            }
+        }
+
+        private bool PlayNextVideo()
+        {
+            int nextIndex = _mainWindow.GetNextFileIndex(
+                _mainWindow.CurrentDirectory.SelectedIndex,
+                allowCycling: _mainWindow._isAutoCycling,
+                skipCurrent: !(_mainWindow._isAutoCycling && !_mainWindow._isAutoPlaying),
+                fileFilter: entry => entry.Type == "video");
+
+            if (nextIndex < 0)
+                return false;
+
+            var nextEntry = _mainWindow.CurrentDirectory.Items[nextIndex] as EntryViewModel;
+            _mainWindow.CurrentDirectory.SelectedIndex = nextIndex;
+
+            if (_mainWindow.CurrentDirectory.IsFocused || _mainWindow.CurrentDirectory.IsKeyboardFocusWithin)
+                _mainWindow.CurrentDirectory.ScrollIntoView (nextEntry);
+
+            StartVideoPlayback (nextEntry.Source);
+            return true;
         }
 
         public void OnPlaybackStateChanged (bool isPlaying)
@@ -406,6 +546,7 @@ namespace GARbro.GUI
             case "sprite":
                 return MediaType.Sprite;
             case "script":
+            case "text":
                 return MediaType.Text;
             case "image":
                 return MediaType.Image;
