@@ -117,7 +117,7 @@ namespace GameRes
         /// </summary>
         public static IDisposable ReadLock()
         {
-            return new ReadLockHolder(_vfsLock);
+            return new ReadLockHolder (_vfsLock);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace GameRes
         /// </summary>
         public static IDisposable WriteLock()
         {
-            return new WriteLockHolder(_vfsLock);
+            return new WriteLockHolder (_vfsLock);
         }
 
         private class ReadLockHolder : IDisposable
@@ -134,7 +134,7 @@ namespace GameRes
             private readonly ReaderWriterLockSlim _lock;
             private bool _disposed;
 
-            public ReadLockHolder(ReaderWriterLockSlim lockObj)
+            public ReadLockHolder (ReaderWriterLockSlim lockObj)
             {
                 _lock = lockObj;
                 _lock.EnterReadLock();
@@ -155,7 +155,7 @@ namespace GameRes
             private readonly ReaderWriterLockSlim _lock;
             private bool _disposed;
 
-            public WriteLockHolder(ReaderWriterLockSlim lockObj)
+            public WriteLockHolder (ReaderWriterLockSlim lockObj)
             {
                 _lock = lockObj;
                 _lock.EnterWriteLock();
@@ -384,9 +384,11 @@ namespace GameRes
             return filename;
         }
 
-        public static string NormalizePath (string filename)
+        public static string NormalizePath (string path)
         {
-            return filename.Replace('/', Path.DirectorySeparatorChar);
+            if (string.IsNullOrEmpty (path))
+                return path;
+            return path.Replace('/', Path.DirectorySeparatorChar);
         }
 
         public static string SanitizeFileName (string filename)
@@ -546,7 +548,7 @@ namespace GameRes
             return m_arc.Dir.Where (f => glob.IsMatch (f.Name));
         }
 
-        public override string CombinePath(params string[] paths)
+        public override string CombinePath (params string[] paths)
         {
             // Flat archives don't have subdirectories
             return paths?.LastOrDefault() ?? string.Empty;
@@ -584,10 +586,9 @@ namespace GameRes
     {
         private string  m_cwd;
         private readonly ConcurrentDictionary<string, FileSystemStats> _statsCache = new ConcurrentDictionary<string, FileSystemStats>();
+        private static readonly char[] m_path_delimiters = { '/', '\\' };
 
         private static string PathDelimiter { get; set; }
-
-        private static readonly char[] m_path_delimiters = { '/', '\\' };
 
         public TreeArchiveFileSystem (ArcFile arc) : base (arc)
         {
@@ -615,11 +616,13 @@ namespace GameRes
             return string.Join (PathDelimiter, paths);
         }
 
-        private string NormalizePath (string filename)
+        private string NormalizePath (string path)
         {
+            if (string.IsNullOrEmpty (path))
+                return path;
             if (PathDelimiter != "\\")
-                return filename.Replace ("\\", PathDelimiter);
-            return filename;
+                return path.Replace ("\\", PathDelimiter);
+            return path;
         }
 
         public override Entry FindFile (string filename)
@@ -1032,7 +1035,7 @@ namespace GameRes
                             else
                             {
                                 // Middle component shouldn't be just a directory
-                                throw new DirectoryNotFoundException($"Cannot navigate through directory: {desired[Count-1]}");
+                                throw new DirectoryNotFoundException ($"Cannot navigate through directory: {desired[Count-1]}");
                             }
                         }
                         m_vfs.ChDir (entry);
@@ -1050,7 +1053,7 @@ namespace GameRes
                             }
                             catch
                             {
-                                throw new FileNotFoundException($"Unable to find: {desired[Count-1]}");
+                                throw new FileNotFoundException ($"Unable to find: {desired[Count-1]}");
                             }
                         }
                         throw;
@@ -1065,7 +1068,7 @@ namespace GameRes
         /// <summary>
         /// Try to navigate to a path, returning success status
         /// </summary>
-        public static bool TrySetFullPath(IEnumerable<string> path)
+        public static bool TrySetFullPath (IEnumerable<string> path)
         {
             try
             {
@@ -1093,6 +1096,20 @@ namespace GameRes
                 return paths[0];
 
             return m_vfs.Top.CombinePath (paths);
+        }
+
+        public static string GetRelativePath (string fullPath, string basePath)
+        {
+            if (fullPath.StartsWith (basePath, StringComparison.OrdinalIgnoreCase))
+                return fullPath.Substring (basePath.Length).TrimStart('\\', '/');
+            return Path.GetFileName (fullPath);
+        }
+
+        public static string NormalizePath (string path)
+        {
+            if (string.IsNullOrEmpty (path))
+                return path;
+            return path.Replace ("\\", DIR_DELIMITER);
         }
 
         public static string GetDirectoryName (string path)
@@ -1292,12 +1309,12 @@ namespace GameRes
         /// Searches for a file through all filesystem levels, starting from the current (top) level
         /// and working down to the physical filesystem.
         /// </summary>
-        public static Entry FindFileInHierarchy(string filename)
+        public static Entry FindFileInHierarchy (string filename)
         {
             // First try the current filesystem
             try
             {
-                return FindFile(filename);
+                return FindFile (filename);
             }
             catch (FileNotFoundException)
             {
@@ -1309,26 +1326,24 @@ namespace GameRes
             {
                 try
                 {
-                    var entry = fs.FindFile(filename);
+                    var entry = fs.FindFile (filename);
                     if (entry != null)
                         return entry;
                 }
-                catch (FileNotFoundException)
-                {
-                }
+                catch (FileNotFoundException) { }
             }
 
-            throw new FileNotFoundException("Unable to find the specified file in any filesystem level.", filename);
+            throw new FileNotFoundException ("Unable to find the specified file in any filesystem level.", filename);
         }
 
         /// <summary>
         /// Checks if a file exists in any filesystem level.
         /// </summary>
-        public static bool FileExistsInHierarchy(string filename)
+        public static bool FileExistsInHierarchy (string filename)
         {
             try
             {
-                FindFileInHierarchy(filename);
+                FindFileInHierarchy (filename);
                 return true;
             }
             catch (FileNotFoundException)
@@ -1340,57 +1355,53 @@ namespace GameRes
         /// <summary>
         /// Opens a stream for a file that may exist in any filesystem level.
         /// </summary>
-        public static Stream OpenStreamInHierarchy(string filename)
+        public static Stream OpenStreamInHierarchy (string filename)
         {
-            var entry = FindFileInHierarchy(filename);
+            var entry = FindFileInHierarchy (filename);
 
             foreach (var fs in m_vfs.All)
             {
                 try
                 {
-                    if (fs.FileExists(entry.Name))
-                        return fs.OpenStream(entry);
+                    if (fs.FileExists (entry.Name))
+                        return fs.OpenStream (entry);
                 }
-                catch
-                {
-                }
+                catch { }
             }
 
-            throw new FileNotFoundException("Unable to open file from any filesystem level.", filename);
+            throw new FileNotFoundException ("Unable to open file from any filesystem level.", filename);
         }
 
         /// <summary>
         /// Opens a stream for an entry that may exist in any filesystem level.
         /// </summary>
-        public static Stream OpenStreamInHierarchy(Entry entry)
+        public static Stream OpenStreamInHierarchy (Entry entry)
         {
             foreach (var fs in m_vfs.All)
             {
                 try
                 {
-                    return fs.OpenStream(entry);
+                    return fs.OpenStream (entry);
                 }
-                catch
-                {
-                }
+                catch { }
             }
 
-            throw new FileNotFoundException("Unable to open entry from any filesystem level.", entry.Name);
+            throw new FileNotFoundException ("Unable to open entry from any filesystem level.", entry.Name);
         }
 
         /// <summary>
         /// Searches for a file in the directory of the current archive file.
         /// This is useful for finding companion files with separate resources.
         /// </summary>
-        public static Entry FindFileInArchiveDirectory(string filename)
+        public static Entry FindFileInArchiveDirectory (string filename)
         {
             if (CurrentArchive == null)
-                throw new InvalidOperationException("No archive is currently open.");
+                throw new InvalidOperationException ("No archive is currently open.");
 
-            var archiveDir = GetDirectoryName(CurrentArchive.File.Name);
-            var fullPath = CombinePath(archiveDir, filename);
+            var archiveDir = GetDirectoryName (CurrentArchive.File.Name);
+            var fullPath = CombinePath (archiveDir, filename);
 
-            return FindFileInHierarchy(fullPath);
+            return FindFileInHierarchy (fullPath);
         }
 
         const long MAX_STREAM_SIZE_IN_MEMORY = 256 * 1024 * 1024; // 256MB threshold
@@ -1400,13 +1411,13 @@ namespace GameRes
         /// creating MemoryStream or temporeary file if the source is too big.
         /// This is useful for reading separately stored resources.
         /// </summary>
-        public static byte[] ReadFromAnyStream(Stream input, long offset, long size)
+        public static byte[] ReadFromAnyStream (Stream input, long offset, long size)
         {
             if (input.CanSeek)
             {
                 input.Position = offset;
                 var data = new byte[size];
-                input.Read(data, 0, (int)size);
+                input.Read (data, 0, (int)size);
                 return data;
             }
             else
@@ -1428,10 +1439,10 @@ namespace GameRes
                     // Small enough for memory
                     using (var memStream = new MemoryStream())
                     {
-                        input.CopyTo(memStream);
+                        input.CopyTo (memStream);
                         memStream.Position = offset;
                         var data = new byte[size];
-                        memStream.Read(data, 0, (int)size);
+                        memStream.Read (data, 0, (int)size);
                         return data;
                     }
                 }
@@ -1441,22 +1452,22 @@ namespace GameRes
                     string tempFile = Path.GetTempFileName() + "_GARbro_Stream";
                     try
                     {
-                        using (var tempStream = File.Create(tempFile))
+                        using (var tempStream = File.Create (tempFile))
                         {
-                            input.CopyTo(tempStream);
+                            input.CopyTo (tempStream);
                         }
 
-                        using (var fileStream = File.OpenRead(tempFile))
+                        using (var fileStream = File.OpenRead (tempFile))
                         {
                             fileStream.Position = offset;
                             var data = new byte[size];
-                            fileStream.Read(data, 0, (int)size);
+                            fileStream.Read (data, 0, (int)size);
                             return data;
                         }
                     }
                     finally
                     {
-                        try { File.Delete(tempFile); } catch { }
+                        try { File.Delete (tempFile); } catch { }
                     }
                 }
             }
@@ -1484,7 +1495,7 @@ namespace GameRes
 
     public class UnknownFormatException : FileFormatException
     {
-        public UnknownFormatException () : base (Localization._T("MsgUnknownFormat")) { }
-        public UnknownFormatException (Exception inner) : base (Localization._T("MsgUnknownFormat"), inner) { }
+        public UnknownFormatException () : base (Localization._T ("MsgUnknownFormat")) { }
+        public UnknownFormatException (Exception inner) : base (Localization._T ("MsgUnknownFormat"), inner) { }
     }
 }

@@ -683,5 +683,23 @@ public static partial class Localization
 
         return Format (pattern, formattedCount);
     }
+
+    public static string FormatFileSize (long bytes)
+    {
+        string[] sizes = { "B", "KiB", "MiB", "GiB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        string size_order = sizes[order];
+        var localized = TryGetResource ($"Size_{size_order}");
+        if (!string.IsNullOrEmpty (localized))
+            size_order = localized;
+
+        return $"{len:0.##} {size_order}";
+    }
 }
 #pragma warning restore CS0162,CS0168

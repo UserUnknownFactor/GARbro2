@@ -65,6 +65,9 @@ namespace SchemeEditor
                 return;
             }
 
+            if (!string.IsNullOrEmpty(parentFieldName))
+                fieldValues[parentFieldName] = instance;
+
             // For non-collection types, show fields and properties
             var processedNames = new HashSet<string>();
 
@@ -91,12 +94,12 @@ namespace SchemeEditor
                         (name, value) =>
                         {
                             field.SetValue(instance, value);
-                            fieldValues[parentFieldName] = instance;
+                            // Update the parent field in fieldValues
+                            if (!string.IsNullOrEmpty(parentFieldName))
+                                fieldValues[parentFieldName] = instance;
                             // Mark parent container as edited
                             if (parentContainer != null)
-                            {
                                 fieldEditor.MarkFieldAsEdited(parentContainer);
-                            }
                         },
                         indentLevel,
                         originalValues,
@@ -144,15 +147,16 @@ namespace SchemeEditor
                             (name, value) =>
                             {
                                 prop.SetValue(instance, value, null);
-                                fieldValues[parentFieldName] = instance;
+
+                                if (!string.IsNullOrEmpty(parentFieldName))
+                                    fieldValues[parentFieldName] = instance;
                                 // Mark parent container as edited
                                 if (parentContainer != null)
-                                {
                                     fieldEditor.MarkFieldAsEdited(parentContainer);
-                                }
                             },
                             indentLevel,
-                            originalValues
+                            originalValues,
+                            parentContainer
                         );
                         container.Children.Add(propContainer);
                     }

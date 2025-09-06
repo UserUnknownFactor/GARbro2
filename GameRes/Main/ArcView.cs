@@ -174,7 +174,7 @@ namespace GameRes
         /// <param name="name">The path to the file to map.</param>
         public ArcView (string name)
         {
-            using (var fs = new FileStream(name, FileMode.Open, FileAccess.Read, 
+            using (var fs = new FileStream (name, FileMode.Open, FileAccess.Read, 
                                            FileShare.ReadWrite | FileShare.Delete))
             {
                 Name = name;
@@ -245,7 +245,7 @@ namespace GameRes
                 while (total < length)
                 {
                     int toRead = (int)Math.Min (BufferSize, length - total);
-                    int read = input.Read(buffer, 0, toRead);
+                    int read = input.Read (buffer, 0, toRead);
                     if (0 == read)
                         break;
 
@@ -268,6 +268,38 @@ namespace GameRes
         public Frame CreateFrame()
         {
             return new Frame (View);
+        }
+
+        /// <summary>
+        /// Creates a new ArcView from a byte array.
+        /// </summary>
+        /// <param name="data">The byte array containing the data.</param>
+        /// <param name="name">The name to associate with this view.</param>
+        /// <returns>A new ArcView instance.</returns>
+        public static ArcView CreateView (byte[] data, string name = "")
+        {
+            var stream = new MemoryStream (data, false);
+            return new ArcView (stream, name, data.Length);
+        }
+
+        /// <summary>
+        /// Creates a new ArcView from an existing ArcView at a specific offset.
+        /// </summary>
+        /// <param name="offset">The offset within the current view.</param>
+        /// <param name="size">The size of the new view.</param>
+        /// <param name="name">File name of the new view.</param>
+        /// <returns>A new ArcView instance.</returns>
+        public ArcView CreateView (long offset, uint size, string name = null)
+        {
+            if (offset < 0 || offset > MaxOffset)
+                throw new ArgumentOutOfRangeException (nameof(offset));
+
+            if (offset + size > MaxOffset)
+                size = (uint)(MaxOffset - offset);
+
+            var stream = this.CreateStream (offset, size);
+            name = name ?? this.Name;
+            return new ArcView (stream, name, size);
         }
 
         /// <summary>

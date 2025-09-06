@@ -7,11 +7,11 @@ namespace GameRes.Formats.ScrPlayer
     [Export(typeof(ArchiveFormat))]
     public class PakOpener : ArchiveFormat
     {
-        public override string         Tag { get { return "PAK/ScrPlayer"; } }
+        public override string         Tag { get { return "PAK/SCR"; } }
         public override string Description { get { return "ScrPlayer engine resource archive"; } }
-        public override uint     Signature { get { return 0x6B636170; } } // 'pack'
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0x6B636170; } } // 'pack'
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public PakOpener ()
         {
@@ -23,6 +23,7 @@ namespace GameRes.Formats.ScrPlayer
             uint index_size = file.View.ReadUInt32 (4);
             if (index_size < 0x10 || index_size >= file.MaxOffset)
                 return null;
+
             IBinaryStream index;
             bool is_encrypted = file.View.ReadByte (3) == '2';
             if (is_encrypted)

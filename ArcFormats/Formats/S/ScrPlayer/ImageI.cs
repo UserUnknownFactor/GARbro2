@@ -9,9 +9,9 @@ namespace GameRes.Formats.ScrPlayer
     [Export(typeof(ImageFormat))]
     public class Img2Format : ImageFormat
     {
-        public override string         Tag { get { return "IMG2"; } }
+        public override string         Tag { get { return "IMG2/SCR"; } }
         public override string Description { get { return "ScrPlayer image format"; } }
-        public override uint     Signature { get { return 0x32474D49; } } // 'IMG2'
+        public override uint     Signature { get { return  0x32474D49; } } // 'IMG2'
 
         public Img2Format ()
         {
@@ -90,11 +90,11 @@ namespace GameRes.Formats.ScrPlayer
 
         public Img2Reader (Stream input, ImageMetaData info)
         {
-            m_input = new Img2BitStream (input, true);
-            m_width = (int)info.Width;
-            m_height = (int)info.Height;
-            m_stride = m_width * 4;
-            m_output = new byte[m_stride * (m_height + 1)];
+            m_input     = new Img2BitStream (input, true);
+            m_width     = (int)info.Width;
+            m_height    = (int)info.Height;
+            m_stride    = m_width * 4;
+            m_output    = new byte[m_stride * (m_height + 1)];
             m_has_alpha = 32 == info.BPP;
             Format = m_has_alpha ? PixelFormats.Bgra32 : PixelFormats.Bgr32;
         }
@@ -127,7 +127,7 @@ namespace GameRes.Formats.ScrPlayer
                     int y_offset = offset_table[pos + 1];
                     if (pos > 0)
                     {
-                        offset_table[pos]   = offset_table[pos-2];
+                        offset_table[pos  ] = offset_table[pos-2];
                         offset_table[pos+1] = offset_table[pos-1];
                         offset_table[pos-2] = x_offset;
                         offset_table[pos-1] = y_offset;

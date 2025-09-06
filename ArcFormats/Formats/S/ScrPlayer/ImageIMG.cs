@@ -11,9 +11,9 @@ namespace GameRes.Formats.ScrPlayer
     [Export(typeof(ImageFormat))]
     public class ImgFormat : ImageFormat
     {
-        public override string         Tag { get => "IMG"; }
+        public override string         Tag { get => "IMG/SCR"; }
         public override string Description { get => "ScrPlayer image format"; }
-        public override uint     Signature { get => 0x20474D49; } // 'IMG '
+        public override uint     Signature { get =>  0x20474D49; } // 'IMG '
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
@@ -21,11 +21,11 @@ namespace GameRes.Formats.ScrPlayer
             int bpp = header.ToUInt16 (0x10);
             if (bpp != 24 && bpp != 32)
                 return null;
-            return new ImageMetaData {
-                Width  = header.ToUInt16 (0xC),
-                Height = header.ToUInt16 (0xE),
-                BPP = bpp,
-            };
+            uint w = header.ToUInt16 (0xC);
+            uint h = header.ToUInt16 (0xE);
+            if (w > 10000 || h > 10000)
+                return null;
+            return new ImageMetaData { Width  = w, Height = h, BPP = bpp };
         }
 
         public override ImageData Read (IBinaryStream file, ImageMetaData info)

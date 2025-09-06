@@ -6,15 +6,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using GameRes.Utility;
 
-namespace GameRes.Formats.Microsoft
+namespace GameRes.Formats.MSFormats
 {
     [Export(typeof(ImageFormat))]
     public class IcoFormat : ImageFormat
     {
         public override string         Tag { get { return "ICO"; } }
         public override string Description { get { return "Windows icon format"; } }
-        public override uint     Signature { get { return 0x00010000; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0x00010000; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public override ImageMetaData ReadMetaData(IBinaryStream file)
         {

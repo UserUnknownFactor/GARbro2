@@ -25,9 +25,13 @@ namespace GARbro.GUI
 
         void ApplicationStartup (object sender, StartupEventArgs e)
         {
-            string exe_dir = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly().Location);
 #if DEBUG
-            Trace.Listeners.Add (new TextWriterTraceListener (Path.Combine (exe_dir, "trace.log")));
+            string exeDir = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string traceLogPath = Path.Combine (exeDir, "trace.log");
+            try { if (File.Exists(traceLogPath)) File.Delete(traceLogPath); }
+            catch { /* Ignore */ }
+
+            Trace.Listeners.Add (new TextWriterTraceListener (traceLogPath));
             Trace.AutoFlush = true;
 #endif
             //Trace.WriteLine ("ApplicationStartup --------------------------------", "GARbro.GUI.App");

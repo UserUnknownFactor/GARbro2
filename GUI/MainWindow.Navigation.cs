@@ -339,7 +339,10 @@ namespace GARbro.GUI
                     path = Path.GetFullPath (path);
                 var entry = VFS.FindFile (path);
                 if (!(entry is SubDirEntry))
+                {
+                    SetFileStatus(Localization.Format("LoadingFile", Localization._T("Type_archive")));
                     SetBusyState();
+                }
                 VFS.ChDir (entry);
             }
             return new DirectoryViewModel (VFS.FullPath, VFS.GetFiles(), VFS.IsVirtual);

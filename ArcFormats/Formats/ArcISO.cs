@@ -37,28 +37,28 @@ namespace GameRes.Formats.Iso
             Extensions = new string[] { "iso", "bin", "img" };
         }
 
-    protected override ArcFile CreateArchive (ArcView file, DiscInfo discInfo)
-    {
-        var dataTracks = discInfo.Sessions
-            .SelectMany (s => s.Tracks)
-            .Where (t => !t.IsAudio)
-            .ToList();
-
-        if (dataTracks.Count == 0)
+        protected override ArcFile CreateArchive (ArcView file, DiscInfo discInfo)
         {
-            // No data tracks - check for audio
-            if (discInfo.Sessions.Any (s => s.Tracks.Any (t => t.IsAudio)))
-                return base.CreateArchive (file, discInfo); // Let base handle it
-            return null;
+            var dataTracks = discInfo.Sessions
+                .SelectMany (s => s.Tracks)
+                .Where (t => !t.IsAudio)
+                .ToList();
+
+            if (dataTracks.Count == 0)
+            {
+                // No data tracks - check for audio
+                if (discInfo.Sessions.Any (s => s.Tracks.Any (t => t.IsAudio)))
+                    return base.CreateArchive (file, discInfo); // Let base handle it
+                return null;
+            }
+
+            var entries = ParseIsoFileSystem (file, dataTracks);
+
+            if (entries == null || entries.Count == 0)
+                return null;
+
+            return new DiscImageArchive (file, this, entries, discInfo);
         }
-
-        var entries = ParseIsoFileSystem (file, dataTracks);
-
-        if (entries == null || entries.Count == 0)
-            return null;
-
-        return new DiscImageArchive (file, this, entries, discInfo);
-    }
 
         protected override DiscInfo ParseDiscImage (ArcView file)
         {

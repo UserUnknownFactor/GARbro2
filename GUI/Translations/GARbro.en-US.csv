@@ -355,3 +355,10 @@ MsgInvalidFileName→Invalid file name→→→
 MsgInvalidFormat→Invalid file format→→→
 MsgUnknownEncryption→Unknown encryption scheme→→→
 MsgUnknownFormat→file could not be opened as resource archive→→→
+PackingFileN→Packing {0}→→→
+PackingFiles→Packing file...→Packing files...→→
+PackingTagFailed→Failed to pack files into {0} archive→→→
+WritingArchive→Writing archive...→→→
+FinalizingArchive→Finalizing archive...→→→
+PackingComplete→Packing complete→→→
+FileIofN→ - File {0}/{1}→→→

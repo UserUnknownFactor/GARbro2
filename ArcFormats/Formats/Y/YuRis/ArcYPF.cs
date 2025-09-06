@@ -3,9 +3,9 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Runtime.InteropServices;
 using GameRes.Compression;
 using GameRes.Utility;
-using Snappy;
 
 namespace GameRes.Formats.YuRis
 {
@@ -24,7 +24,7 @@ namespace GameRes.Formats.YuRis
         public uint     CheckSum;
     }
 
-    public enum YpfCompression 
+    public enum YpfCompression
     {
         Zlib = 0,
         Snappy = 1,
@@ -86,16 +86,76 @@ namespace GameRes.Formats.YuRis
         public Dictionary<string, YpfScheme>    KnownSchemes;
     }
 
+    internal static class SnappyNative
+    {
+        private const string DllName32 = @"x86\snappy32.dll";
+        private const string DllName64 = @"x64\snappy64.dll";
+
+        private static bool Is64Bit => IntPtr.Size == 8;
+
+        [DllImport(DllName32, EntryPoint = "snappy_uncompress", CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe int snappy_uncompress32 (byte* input, uint input_length, byte* output, ref uint output_length);
+
+        [DllImport(DllName64, EntryPoint = "snappy_uncompress", CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe int snappy_uncompress64 (byte* input, ulong input_length, byte* output, ref ulong output_length);
+
+        [DllImport(DllName32, EntryPoint = "snappy_uncompressed_length", CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe int snappy_uncompressed_length32 (byte* input, uint input_length, out uint output_length);
+
+        [DllImport(DllName64, EntryPoint = "snappy_uncompressed_length", CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe int snappy_uncompressed_length64 (byte* input, ulong input_length, out ulong output_length);
+
+        public static unsafe byte[] Uncompress (byte[] compressed)
+        {
+            fixed (byte* inputPtr = compressed)
+            {
+                uint uncompressedLength;
+                if (Is64Bit)
+                {
+                    ulong length64;
+                    if (snappy_uncompressed_length64 (inputPtr, (ulong)compressed.Length, out length64) != 0)
+                        throw new InvalidDataException ("Failed to get uncompressed length");
+                    uncompressedLength = (uint)length64;
+                }
+                else
+                {
+                    uint length32;
+                    if (snappy_uncompressed_length32 (inputPtr, (uint)compressed.Length, out length32) != 0)
+                        throw new InvalidDataException ("Failed to get uncompressed length");
+                    uncompressedLength = length32;
+                }
+
+                byte[] output = new byte[uncompressedLength];
+                fixed (byte* outputPtr = output)
+                {
+                    if (Is64Bit)
+                    {
+                        ulong outLen = uncompressedLength;
+                        if (snappy_uncompress64 (inputPtr, (ulong)compressed.Length, outputPtr, ref outLen) != 0)
+                            throw new InvalidDataException ("Failed to decompress data");
+                    }
+                    else
+                    {
+                        uint outLen = uncompressedLength;
+                        if (snappy_uncompress32 (inputPtr, (uint)compressed.Length, outputPtr, ref outLen) != 0)
+                            throw new InvalidDataException ("Failed to decompress data");
+                    }
+                }
+                return output;
+            }
+        }
+    }
+
     [Export(typeof(ArchiveFormat))]
     public class YpfOpener : ArchiveFormat
     {
         public override string         Tag { get { return "YPF"; } }
         public override string Description { get { return Localization._T ("YPFDescription"); } }
-        public override uint     Signature { get { return 0x00465059; } }
-        public override bool  IsHierarchic { get { return true; } }
-        public override bool      CanWrite { get { return true; } }
+        public override uint     Signature { get { return  0x00465059; } }
+        public override bool  IsHierarchic { get { return  true; } }
+        public override bool      CanWrite { get { return  true; } }
 
-        public YpfOpener ()
+        public YpfOpener()
         {
             Signatures = new uint[] { 0x00465059, 0x00905A4D, 0 };
         }
@@ -157,10 +217,10 @@ namespace GameRes.Formats.YuRis
                     {
                         case YpfCompression.Snappy: 
                         {
-                            var compress_data = new byte[entry.Size];
-                            input.Read(compress_data, 0, compress_data.Length);
-                            var decomprrss_data = SnappyCodec.Uncompress(compress_data);
-                            input = new BinMemoryStream(decomprrss_data, entry.Name);
+                            var compressed_data = new byte[entry.Size];
+                            input.Read(compressed_data, 0, compressed_data.Length);
+                            var decompressed_data = SnappyNative.Uncompress (compressed_data);
+                            input = new BinMemoryStream (decompressed_data, entry.Name);
                             break;
                         }
                         case YpfCompression.Zlib:
@@ -451,21 +511,21 @@ namespace GameRes.Formats.YuRis
             
             public Parser (ArcView file, uint version, int count, uint dir_size)
             {
-                m_file = file;
-                m_count = count;
+                m_file     = file;
+                m_count    = count;
                 m_dir_size = dir_size;
-                m_version = version;
+                m_version  = version;
             }
             // int32-name_checksum, byte-name_count, *-name, byte-file_type
-	        // byte-pack_flag, int32-size, int32-packed_size, int32-offset, int32-file_checksum
+            // byte-pack_flag, int32-size, int32-packed_size, int32-offset, int32-file_checksum
 
             public List<Entry> ScanDir (YpfScheme scheme, long base_offset = 0)
             {
-                long dir_offset = base_offset + 0x20;
+                long dir_offset    = base_offset + 0x20;
                 uint dir_remaining = m_dir_size;
-                var dir = new List<Entry> (m_count);
+                var dir  = new List<Entry> (m_count);
                 byte key = scheme.Key;
-                bool guess_key = scheme.GuessKey;
+                bool guess_key  = scheme.GuessKey;
                 uint extra_size = 0x12 + scheme.ExtraHeaderSize;
                 for (int num = 0; num < m_count; ++num)
                 {
@@ -501,7 +561,6 @@ namespace GameRes.Formats.YuRis
                     int type_id = m_file.View.ReadByte (dir_offset);
                     var entry = FormatCatalog.Instance.Create<PackedEntry> (name);
                     if (string.IsNullOrEmpty (entry.Type))
-                    {
                         switch (type_id)
                         {
                         case 0:
@@ -520,7 +579,6 @@ namespace GameRes.Formats.YuRis
                             entry.Type = 0xf7 == m_version ? "audio" : "image";
                             break;
                         }
-                    }
                     entry.IsPacked      = 0 != m_file.View.ReadByte (dir_offset+1);
                     entry.UnpackedSize  = m_file.View.ReadUInt32 (dir_offset+2);
                     entry.Size          = m_file.View.ReadUInt32 (dir_offset+6);

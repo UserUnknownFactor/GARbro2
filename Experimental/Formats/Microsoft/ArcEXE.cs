@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Markup;
 
-namespace GameRes.Formats.Microsoft
+namespace GameRes.Formats.MSFormats
 {
     [Export(typeof(ArchiveFormat))]
     [ExportMetadata("Priority", -1)]

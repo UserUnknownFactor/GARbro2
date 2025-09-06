@@ -199,8 +199,8 @@ namespace GARbro.GUI
         private void TryAlternativePlayer (string videoFile, string errorMessage = "")
         {
             var result = MessageBox.Show(
-                Localization._T ("VideoPlaybackErrorText"),
-                Localization.Format ("VideoPlaybackError", errorMessage),
+                Localization.Format ("VideoPlaybackErrorText", errorMessage),
+                Localization._T ("VideoPlaybackError"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 

@@ -4,7 +4,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Text;
 
-namespace GameRes.Formats.Microsoft
+namespace GameRes.Formats.MSFormats
 {
     [Export(typeof(ArchiveFormat))]
     [ExportMetadata("Priority", -2)]

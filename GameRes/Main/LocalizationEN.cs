@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 16805; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17139; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -342,7 +342,14 @@ public static partial class Localization
                 { "MsgInvalidFileName", new LocalizationEntry { Singular = "Invalid file name" } },
                 { "MsgInvalidFormat", new LocalizationEntry { Singular = "Invalid file format" } },
                 { "MsgUnknownEncryption", new LocalizationEntry { Singular = "Unknown encryption scheme" } },
-                { "MsgUnknownFormat", new LocalizationEntry { Singular = "file could not be opened as resource archive" } }
+                { "MsgUnknownFormat", new LocalizationEntry { Singular = "file could not be opened as resource archive" } },
+                { "PackingFileN", new LocalizationEntry { Singular = "Packing {0}" } },
+                { "PackingFiles", new LocalizationEntry { Singular = "Packing file...", Plural1 = "Packing files..." } },
+                { "PackingTagFailed", new LocalizationEntry { Singular = "Failed to pack files into {0} archive" } },
+                { "WritingArchive", new LocalizationEntry { Singular = "Writing archive..." } },
+                { "FinalizingArchive", new LocalizationEntry { Singular = "Finalizing archive..." } },
+                { "PackingComplete", new LocalizationEntry { Singular = "Packing complete" } },
+                { "FileIofN", new LocalizationEntry { Singular = " - File {0}/{1}" } }
             });
     }
 }

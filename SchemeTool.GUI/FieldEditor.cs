@@ -420,20 +420,14 @@ namespace SchemeEditor
                 return CreateNullEditor(fieldName, fieldType, fieldValues, originalValues, indentLevel, container);
 
             if (value is System.Collections.IDictionary && !(value is string))
-            {
                 return CreateDictionaryEditor(fieldName, value.GetType(), value, indentLevel, container);
-            }
             else if (value is System.Collections.IList && !(value is byte[]))
-            {
                 return CreateListEditor(fieldName, value.GetType(), value, indentLevel, container);
-            }
             else if (value.GetType().IsGenericType)
             {
                 var genericDef = value.GetType().GetGenericTypeDefinition();
                 if (genericDef == typeof(HashSet<>))
-                {
                     return CreateHashSetEditor(fieldName, value.GetType(), value, indentLevel, container);
-                }
             }
 
             // Handle interfaces and abstract classes before checking for simple types
@@ -1250,6 +1244,9 @@ namespace SchemeEditor
                     .GetField("originalValues", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?.GetValue(mainWindow) as Dictionary<FrameworkElement, object>;
 
+                if (fieldValues != null && !string.IsNullOrEmpty(fieldName))
+                    fieldValues[fieldName] = value;
+
                 // Pass container through to LoadComplexTypeFields
                 fieldLoader.LoadComplexTypeFields(fieldsPanel, fieldName, value,
                     indentLevel + 1, fieldValues, originalValues, container);
@@ -1563,14 +1560,11 @@ namespace SchemeEditor
             // Show type info
             var typeHeader = new TextBlock
             {
-                Text = type.ToString() + $" class fields:",
+                Text = $"{type.Name} class fields:",
                 FontWeight = FontWeights.SemiBold,
                 Margin = new Thickness(0, 0, 0, 5)
             };
             container.Children.Add(typeHeader);
-
-            // Create a local dictionary to track field values for this instance
-            var localFieldValues = new Dictionary<string, object>();
 
             // Load properties
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -1590,7 +1584,11 @@ namespace SchemeEditor
                         (name, newValue) =>
                         {
                             prop.SetValue(instance, newValue);
+                            // Notify parent that the entire instance has changed
                             parentOnValueChanged(parentFieldName, instance);
+
+                            if (parentContainer != null)
+                                MarkFieldAsEdited(parentContainer);
                         },
                         indentLevel,
                         new Dictionary<FrameworkElement, object>(),
@@ -1618,7 +1616,11 @@ namespace SchemeEditor
                         (name, newValue) =>
                         {
                             field.SetValue(instance, newValue);
+                            // Notify parent that the entire instance has changed
                             parentOnValueChanged(parentFieldName, instance);
+
+                            if (parentContainer != null)
+                                MarkFieldAsEdited(parentContainer);
                         },
                         indentLevel,
                         new Dictionary<FrameworkElement, object>(),
@@ -2026,7 +2028,7 @@ namespace SchemeEditor
                 itemType = list[0]?.GetType() ?? typeof(object);
             }
 
-            // Work directly with the original list if it exists
+            // Create a deep copy of the list
             System.Collections.IList workingList = null;
             bool isArray = false;
             Type arrayElementType = null;
@@ -2035,14 +2037,13 @@ namespace SchemeEditor
             {
                 if (value is Array sourceArray)
                 {
-                    // Arrays need special handling - convert to List for editing
                     isArray = true;
                     arrayElementType = sourceArray.GetType().GetElementType();
                     var listTypeForEditing = typeof(List<>).MakeGenericType(arrayElementType);
                     workingList = Activator.CreateInstance(listTypeForEditing) as System.Collections.IList;
 
                     foreach (var item in sourceArray)
-                        workingList.Add(item);
+                        workingList.Add(DeepCloneValue(item));
                 }
                 else if (value is System.Collections.IList sourceList)
                 {
@@ -2052,14 +2053,31 @@ namespace SchemeEditor
                         workingList = new System.Collections.ArrayList();
 
                     foreach (var item in sourceList)
-                        workingList.Add(item);
+                        workingList.Add(DeepCloneValue(item));
                 }
+            }
+            else
+            {
+                if (listType.IsGenericType)
+                    workingList = Activator.CreateInstance(listType) as System.Collections.IList;
+                else
+                    workingList = new System.Collections.ArrayList();
             }
 
             var fieldValues = mainWindow.GetType()
                 .GetField("currentFieldValues", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.GetValue(mainWindow) as Dictionary<string, object>;
-            fieldValues[fieldName] = workingList;
+
+            // Store the working copy
+            if (isArray && arrayElementType != null)
+            {
+                // Convert back to array for storage
+                var array = Array.CreateInstance(arrayElementType, workingList.Count);
+                workingList.CopyTo(array, 0);
+                fieldValues[fieldName] = array;
+            }
+            else
+                fieldValues[fieldName] = workingList;
 
             // Store reference to the parent container
             expander.Tag = container;
@@ -2068,6 +2086,16 @@ namespace SchemeEditor
             {
                 itemsPanel.Children.Clear();
                 expander.Header = $"List [{workingList.Count} items]";
+
+                // Update fieldValues with current state
+                if (isArray && arrayElementType != null)
+                {
+                    var array = Array.CreateInstance(arrayElementType, workingList.Count);
+                    workingList.CopyTo(array, 0);
+                    fieldValues[fieldName] = array;
+                }
+                else
+                    fieldValues[fieldName] = workingList;
 
                 for (int i = 0; i < workingList.Count; i++)
                 {
@@ -2107,7 +2135,7 @@ namespace SchemeEditor
                     {
                         if (currentIndex < workingList.Count)
                             workingList.RemoveAt(currentIndex);
-                        fieldValues[fieldName] = workingList;
+
                         RefreshList();
 
                         if (container != null)
@@ -2129,7 +2157,7 @@ namespace SchemeEditor
                     try
                     {
                         var firstItem = workingList[0];
-                        var clonedItem = CloneObject(firstItem);
+                        var clonedItem = DeepCloneValue(firstItem);
                         if (!workingList.IsFixedSize)
                         {
                             workingList.Add(clonedItem);
@@ -2140,7 +2168,7 @@ namespace SchemeEditor
                     }
                     catch (Exception ex)
                     {
-                        Trace.WriteLine($"Error adding item: {ex.Message}");
+                        System.Diagnostics.Trace.WriteLine($"Error adding item: {ex.Message}");
                         ShowAddItemDialog();
                     }
                 }
@@ -2156,20 +2184,10 @@ namespace SchemeEditor
                     try
                     {
                         workingList.Add(dialog.Value);
-
-                        if (isArray)
-                        {
-                            var array = Array.CreateInstance(arrayElementType, workingList.Count);
-                            workingList.CopyTo(array, 0);
-                            fieldValues[fieldName] = array;
-                        }
-                        else
-                            fieldValues[fieldName] = workingList;
+                        RefreshList();
 
                         if (container != null)
                             MarkFieldAsEdited(container);
-
-                        RefreshList();
                     }
                     catch (Exception ex)
                     {
@@ -2424,11 +2442,9 @@ namespace SchemeEditor
                 }
             }
 
-            // Don't create a copy, use the original reference if it's not null
             System.Collections.IDictionary workingDict = null;
             if (value != null && value is System.Collections.IDictionary originalDict)
             {
-                // Create a new dictionary instance (COPY)
                 if (dictType.IsGenericType)
                 {
                     var genericArgs = dictType.GetGenericArguments();
@@ -2438,10 +2454,12 @@ namespace SchemeEditor
                         typeof(Dictionary<,>).MakeGenericType(keyTypeI, valueTypeI) : dictType;
                     workingDict = Activator.CreateInstance(concreteDictType) as System.Collections.IDictionary;
 
-                    // Copy all entries
+                    // Deep copy all entries
                     foreach (System.Collections.DictionaryEntry entry in originalDict)
                     {
-                        workingDict.Add(entry.Key, entry.Value);
+                        // Deep clone the value if it's a complex type
+                        object clonedValue = DeepCloneValue(entry.Value);
+                        workingDict.Add(entry.Key, clonedValue);
                     }
                 }
                 else
@@ -2449,8 +2467,23 @@ namespace SchemeEditor
                     workingDict = new System.Collections.Hashtable();
                     foreach (System.Collections.DictionaryEntry entry in originalDict)
                     {
-                        workingDict.Add(entry.Key, entry.Value);
+                        object clonedValue = DeepCloneValue(entry.Value);
+                        workingDict.Add(entry.Key, clonedValue);
                     }
+                }
+            }
+            else
+            {
+                // Create new empty dictionary
+                if (dictType.IsGenericType)
+                {
+                    var concreteDictType = dictType.IsInterface ?
+                        typeof(Dictionary<,>).MakeGenericType(keyType, valueType) : dictType;
+                    workingDict = Activator.CreateInstance(concreteDictType) as System.Collections.IDictionary;
+                }
+                else
+                {
+                    workingDict = new System.Collections.Hashtable();
                 }
             }
 
@@ -2458,6 +2491,7 @@ namespace SchemeEditor
                 .GetField("currentFieldValues", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.GetValue(mainWindow) as Dictionary<string, object>;
 
+            // Store the working copy
             fieldValues[fieldName] = workingDict;
 
             expander.Tag = container;
@@ -2467,6 +2501,7 @@ namespace SchemeEditor
                 itemsPanel.Children.Clear();
                 expander.Header = $"Dictionary [{workingDict.Count} items]";
 
+                // Ensure the working copy is still tracked
                 fieldValues[fieldName] = workingDict;
 
                 var entries = new List<System.Collections.DictionaryEntry>();
@@ -2522,6 +2557,93 @@ namespace SchemeEditor
             expander.Content = stackPanel;
 
             return expander;
+        }
+
+        private object DeepCloneValue(object source)
+        {
+            if (source == null) return null;
+
+            var type = source.GetType();
+
+            // Handle primitive types and strings
+            if (type.IsValueType || type == typeof(string))
+                return source;
+
+            // Handle arrays
+            if (type.IsArray)
+            {
+                var array = source as Array;
+                var cloned = Array.CreateInstance(type.GetElementType(), array.Length);
+                for (int i = 0; i < array.Length; i++)
+                    cloned.SetValue(DeepCloneValue(array.GetValue(i)), i);
+                return cloned;
+            }
+
+            // Handle collections
+            if (source is System.Collections.IDictionary dict)
+            {
+                var dictType = source.GetType();
+                System.Collections.IDictionary clonedDict;
+
+                if (dictType.IsGenericType)
+                    clonedDict = Activator.CreateInstance(dictType) as System.Collections.IDictionary;
+                else
+                    clonedDict = new System.Collections.Hashtable();
+
+                foreach (System.Collections.DictionaryEntry entry in dict)
+                    clonedDict.Add(entry.Key, DeepCloneValue(entry.Value));
+                return clonedDict;
+            }
+
+            if (source is System.Collections.IList list)
+            {
+                var listType = source.GetType();
+                System.Collections.IList clonedList;
+
+                if (listType.IsGenericType)
+                    clonedList = Activator.CreateInstance(listType) as System.Collections.IList;
+                else
+                    clonedList = new System.Collections.ArrayList();
+
+                foreach (var item in list)
+                    clonedList.Add(DeepCloneValue(item));
+                return clonedList;
+            }
+
+            // Handle complex objects
+            try
+            {
+                // Try JSON serialization for deep clone
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(source);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
+            }
+            catch
+            {
+                try
+                {
+                    var cloned = Activator.CreateInstance(type);
+
+                    // Copy fields
+                    foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        if (!field.IsInitOnly && !field.IsLiteral)
+                            field.SetValue(cloned, DeepCloneValue(field.GetValue(source)));
+                    }
+
+                    foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        if (prop.CanRead && prop.CanWrite && prop.GetIndexParameters().Length == 0)
+                            prop.SetValue(cloned, DeepCloneValue(prop.GetValue(source)));
+                    }
+
+                    return cloned;
+                }
+                catch
+                {
+                    // If all else fails, return the original (not ideal but prevents crashes)
+                    return source;
+                }
+            }
         }
 
         private System.Collections.IDictionary CreateWorkingDictionary(Type dictType, object value, 
@@ -2585,6 +2707,7 @@ namespace SchemeEditor
             var entryContent = new StackPanel();
 
             object currentKey = dictEntry.Key;
+            object currentValue = dictEntry.Value;  // Keep track of current value
 
             // Key display
             var keyGrid = new Grid { Margin = new Thickness(10, 2, 0, 2) };
@@ -2610,34 +2733,41 @@ namespace SchemeEditor
                 .GetField("originalValues", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.GetValue(mainWindow) as Dictionary<FrameworkElement, object>;
 
-                var valueEditor = CreateInlineFieldEditor(
-                    "Value",
-                    valueType,
-                dictEntry.Value,
-                    (name, newValue) =>
-                    {
-                        workingDict[currentKey] = newValue;
-                        fieldValues[fieldName] = workingDict;
+            var valueEditor = CreateInlineFieldEditor(
+                "Value",
+                valueType,
+                currentValue,
+                (name, newValue) =>
+                {
+                    // Update the dictionary entry directly
+                    workingDict[currentKey] = newValue;
+                    currentValue = newValue;  // Update tracked value
 
-                        if (parentContainer != null)
-                            MarkFieldAsEdited(parentContainer);
-                    },
-                    1,
-                    originalValues,
-                    parentContainer
-                );
-                entryContent.Children.Add(valueEditor);
+                    // IMPORTANT: Ensure the parent dictionary is marked as changed
+                    fieldValues[fieldName] = workingDict;
+
+                    if (parentContainer != null)
+                        MarkFieldAsEdited(parentContainer);
+                },
+                1,
+                originalValues,
+                parentContainer
+            );
+            entryContent.Children.Add(valueEditor);
+
             var buttonsPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 Margin = new Thickness(10, 5, 0, 5)
             };
+
             var changeKeyButton = new Button
             {
                 Content = "Change Key",
                 Margin = new Thickness(0, 0, 5, 0),
                 Padding = new Thickness(5, 2, 5, 2)
             };
+
             changeKeyButton.Click += (s, e) =>
             {
                 var newKeyText = keyTextBox.Text;
@@ -2649,7 +2779,7 @@ namespace SchemeEditor
                         try
                         {
                             newKey = Convert.ChangeType(newKeyText, keyType);
-            }
+                        }
                         catch
                         {
                             MessageBox.Show($"Invalid key format for type {keyType.Name}", "Invalid Key",
@@ -2660,11 +2790,13 @@ namespace SchemeEditor
 
                     if (!workingDict.Contains(newKey))
                     {
-                        var value = workingDict[currentKey];
                         workingDict.Remove(currentKey);
-                        workingDict.Add(newKey, value);
+                        workingDict.Add(newKey, currentValue);
                         currentKey = newKey;
                         entryExpander.Header = $"[{newKey}]";
+
+                        fieldValues[fieldName] = workingDict;
+
                         if (parentContainer != null)
                             MarkFieldAsEdited(parentContainer);
                     }
@@ -2676,19 +2808,25 @@ namespace SchemeEditor
                     }
                 }
             };
+
             var removeBtn = new Button
             {
                 Content = "Remove Entry",
                 Margin = new Thickness(0, 0, 0, 0),
                 Padding = new Thickness(5, 2, 5, 2)
             };
+
             removeBtn.Click += (s, e) =>
             {
                 workingDict.Remove(currentKey);
+                fieldValues[fieldName] = workingDict;
+
                 if (parentContainer != null)
                     MarkFieldAsEdited(parentContainer);
+
                 refreshCallback();
             };
+
             buttonsPanel.Children.Add(changeKeyButton);
             buttonsPanel.Children.Add(removeBtn);
             entryContent.Children.Add(buttonsPanel);

@@ -51,6 +51,11 @@ namespace GameRes.Formats.Littlewitch
 
         static readonly string ListFileName = "littlewitch.lst";
 
+        public DatOpener ()
+        {
+            Extensions = new string[] { "dat"};
+        }
+
         public override ArcFile TryOpen (ArcView file)
         {
             if (!file.View.AsciiEqual (4, "Pack"))
