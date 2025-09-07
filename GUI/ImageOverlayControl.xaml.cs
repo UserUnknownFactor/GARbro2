@@ -31,8 +31,8 @@ namespace GARbro.GUI
         private bool _isExternalDragInProgress = false;
         private DispatcherTimer _hintVisibilityTimer;
 
-        // Add this event
         public event EventHandler LayersChanged;
+        public event EventHandler AllLayersCleared;
 
         public ImageOverlayControl ()
         {
@@ -52,7 +52,6 @@ namespace GARbro.GUI
             PreviewKeyUp   += OnPreviewKeyUp;
         }
 
-        // Helper method to raise the event
         private void OnLayersChanged()
         {
             LayersChanged?.Invoke(this, EventArgs.Empty);
@@ -62,8 +61,8 @@ namespace GARbro.GUI
         {
             System.Diagnostics.Debug.WriteLine("ShowDropHint called");
             _isExternalDragInProgress = true;
-            
-            // Use a timer to keep forcing visibility
+
+            // a timer to keep forcing visibility
             _hintVisibilityTimer?.Stop();
             _hintVisibilityTimer = new DispatcherTimer();
             _hintVisibilityTimer.Interval = TimeSpan.FromMilliseconds(50);
@@ -77,7 +76,7 @@ namespace GARbro.GUI
                 }
             };
             _hintVisibilityTimer.Start();
-            
+
             Dispatcher.Invoke(() => {
                 DropHint.Visibility = Visibility.Visible;
                 System.Diagnostics.Debug.WriteLine($"Hint visibility set to: {DropHint.Visibility}");
@@ -222,6 +221,17 @@ namespace GARbro.GUI
             }
         }
 
+        public string GetLowestLayerName()
+        {
+            var images = _overlayHandler.GetImages();
+            if (images == null || images.Count == 0)
+                return null;
+
+            // Get the image with the lowest ZIndex (bottom layer)
+            var lowestLayer = images.OrderBy(img => img.ZIndex).FirstOrDefault();
+            return lowestLayer?.Name;
+        }
+
         private void ImageSizeDiagnostics ()
         {
             var images = _overlayHandler.GetImages();
@@ -242,6 +252,10 @@ namespace GARbro.GUI
             {
                 _overlayHandler.AddImage (image, name);
                 RefreshLayersList();
+
+                if (_overlayHandler.IsPreviewImage(name))
+                    ClearPreview();
+
                 OnLayersChanged();
             }
         }
@@ -261,6 +275,8 @@ namespace GARbro.GUI
             _overlayHandler.Clear();
             _layers.Clear();
             OnLayersChanged();
+
+            AllLayersCleared?.Invoke(this, EventArgs.Empty);
         }
 
         public BitmapSource GetCompositeBitmap ()
@@ -298,7 +314,7 @@ namespace GARbro.GUI
                 OverlayScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
                 OverlayViewbox.Stretch = Stretch.Uniform;
-                OverlayViewbox.StretchDirection = StretchDirection.DownOnly;
+                OverlayViewbox.StretchDirection = StretchDirection.Both;
                 OverlayViewbox.HorizontalAlignment = HorizontalAlignment.Center;
                 OverlayViewbox.VerticalAlignment = VerticalAlignment.Center;
             }
@@ -313,11 +329,8 @@ namespace GARbro.GUI
                 OverlayViewbox.VerticalAlignment = VerticalAlignment.Center;
             }
 
-            // Force re-render of the composite
             if (_overlayHandler != null)
-            {
                 _overlayHandler.UpdateComposite();
-            }
         }
 
         private void OverlayScrollViewer_SizeChanged (object sender, SizeChangedEventArgs e)
@@ -531,19 +544,15 @@ namespace GARbro.GUI
             {
                 e.Effects = DragDropEffects.Move;
 
-                // Show drop indicator
                 Point dropPos = e.GetPosition (LayersList);
                 UpdateDropIndicator (dropPos);
             }
             else if (e.Data.GetDataPresent (typeof (EntryViewModel)) ||
                      e.Data.GetDataPresent ("EntryViewModelArray"))
-            {
                 e.Effects = DragDropEffects.Copy;
-            }
             else
-            {
                 e.Effects = DragDropEffects.None;
-            }
+
             e.Handled = true;
         }
 
@@ -616,9 +625,7 @@ namespace GARbro.GUI
             HideDropHint();
 
             if (e.Data.GetDataPresent (typeof (EntryViewModel)))
-            {
                 HandleEntryDrop (e.Data.GetData (typeof (EntryViewModel)) as EntryViewModel);
-            }
             else if (e.Data.GetDataPresent ("EntryViewModelArray"))
             {
                 var entries = e.Data.GetData ("EntryViewModelArray") as EntryViewModel[];
@@ -658,7 +665,6 @@ namespace GARbro.GUI
 
         private void LayerPanel_DragLeave (object sender, DragEventArgs e)
         {
-            // Don't hide hint here either
         }
 
         private async void HandleEntryDrop (EntryViewModel entry)
@@ -671,7 +677,6 @@ namespace GARbro.GUI
 
             try
             {
-                // Create a simple async loader for overlay
                 await Task.Run(() =>
                 {
                     using (var data = VFS.OpenImage (entry.Source))
@@ -679,10 +684,8 @@ namespace GARbro.GUI
                         var bitmap = data.Image.Bitmap;
                         if (!bitmap.IsFrozen)
                             bitmap.Freeze();
-                        
                         Dispatcher.Invoke(() => {
                             AddImage (bitmap, entry.Name);
-                            // OnLayersChanged will be called inside AddImage
                         });
                     }
                 });

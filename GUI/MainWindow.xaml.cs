@@ -427,11 +427,6 @@ namespace GARbro.GUI
             DeleteSelectedItems();
         }
 
-        private void RenameItemExec (object sender, ExecutedRoutedEventArgs e)
-        {
-            RenameElement (lv_GetCurrentContainer());
-        }
-
         private void ExploreItemExec (object sender, ExecutedRoutedEventArgs e)
         {
             var entry = CurrentDirectory.SelectedItem as EntryViewModel;
@@ -604,9 +599,9 @@ namespace GARbro.GUI
             e.CanExecute = !ViewModel.IsArchive && CurrentDirectory.SelectedItems.Count > 0;
         }
 
-        private void CanExecuteInDirectory (object sender, CanExecuteRoutedEventArgs e)
+        private void CanExecuteInDirectory(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = !ViewModel.IsArchive;
+            e.CanExecute = !ViewModel.IsArchive && CurrentDirectory.SelectedItems.Count > 0;
         }
 
         private void CanExecuteExtract (object sender, CanExecuteRoutedEventArgs e)

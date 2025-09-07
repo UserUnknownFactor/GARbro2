@@ -10,8 +10,8 @@ namespace GameRes.Formats.MAGES
     [Export(typeof(ArchiveFormat))]
     public class GTFOpener : ArchiveFormat
     {
-        public override string Tag { get { return "GTF/Rozen Maiden PS3 Image archive"; } }
-        public override string Description { get { return "MAGES Rozen Maiden Wechseln Sie Welt ab PS3 BLJM61120 Image archive"; } }
+        public override string Tag { get { return "GTF/RM"; } }
+        public override string Description { get { return "MAGES Rozen Maiden PS3 BLJM61120 image archive"; } }
         public override uint Signature { get { return 0xFF000202; } } // 'FF000202'
         public override bool IsHierarchic { get { return false; } }
         public override bool CanWrite { get { return false; } }

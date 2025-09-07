@@ -119,7 +119,8 @@ namespace GARbro.GUI
             _textPreviewHandler  = new TextPreviewHandler (this);
             _overlayControl      = new ImageOverlayControl();
 
-            _overlayControl.LayersChanged += (sender, e) => UpdateOverlayStatus();
+            _overlayControl.LayersChanged    += (sender, e) => UpdateOverlayStatus();
+            _overlayControl.AllLayersCleared += (sender, e) => RestorePreviewAfterClear();
 
             PreviewPane.Children.Add (_overlayControl);
             Panel.SetZIndex (_overlayControl, 90);
@@ -157,6 +158,32 @@ namespace GARbro.GUI
             if (m_current_preview.IsEqual (ViewModel.Path, entry) && entry.Type != "video")
                 return;
             UpdatePreviewPane (entry);
+        }
+
+        private void RestorePreviewAfterClear()
+        {
+            if (_overlayControl.Visibility == Visibility.Visible)
+            {
+                var selected = CurrentDirectory.SelectedItems;
+                if (selected.Count == 1)
+                {
+                    var entry = selected[0] as EntryViewModel;
+                    if (entry != null && entry.Type == "image")
+                    {
+                        try
+                        {
+                            using (var data = VFS.OpenImage (entry.Source))
+                            {
+                                _overlayControl.SetPreviewImage (data.Image.Bitmap, entry.Name);
+                            }
+                        }
+                        catch
+                        {
+                            _overlayControl.ClearPreview();
+                        }
+                    }
+                }
+            }
         }
 
         private void RefreshPreviewPane()
@@ -474,29 +501,31 @@ namespace GARbro.GUI
                 if (selected.Count == 1)
                 {
                     var entry = selected[0] as EntryViewModel;
-                    if (entry != null && entry.Type == "image" && !_overlayControl.HasImage (entry.Name))
+                    if (entry != null && entry.Type == "image")
                     {
-                        try
+                        // Only show preview if image is not already in layers
+                        if (!_overlayControl.HasImage (entry.Name))
                         {
-                            using (var data = VFS.OpenImage (entry.Source))
+                            try
                             {
-                                _overlayControl.SetPreviewImage (data.Image.Bitmap, entry.Name);
+                                using (var data = VFS.OpenImage (entry.Source))
+                                {
+                                    _overlayControl.SetPreviewImage (data.Image.Bitmap, entry.Name);
+                                }
+                            }
+                            catch
+                            {
+                                _overlayControl.ClearPreview();
                             }
                         }
-                        catch
-                        {
+                        else
                             _overlayControl.ClearPreview();
-                        }
                     }
                     else
-                    {
                         _overlayControl.ClearPreview();
-                    }
                 }
                 else
-                {
                     _overlayControl.ClearPreview();
-                }
             }
         }
 

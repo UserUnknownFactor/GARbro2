@@ -19,6 +19,11 @@ namespace GARbro.GUI
             _overlayCanvas = canvas;
         }
 
+        public bool IsPreviewImage(string name)
+        {
+            return _previewImage != null && _previewImage.Name == name;
+        }
+
         public void AddImage (BitmapSource image, string name)
         {
             _images.Add (new OverlayImage 
@@ -141,7 +146,7 @@ namespace GARbro.GUI
             _previewImage = new OverlayImage
             {
                 Source = image,
-                Name = name + " (preview)",
+                Name = name,
                 Opacity = 1.0,
                 IsVisible = true,
                 ZIndex = int.MaxValue,

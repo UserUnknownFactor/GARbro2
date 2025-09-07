@@ -9,7 +9,7 @@ namespace GameRes.Formats.MAGES
     [Export(typeof(ArchiveFormat))]
     public class LoveOnceOpener : ArchiveFormat
     {
-        public override string Tag { get { return "BIN/LoveOnce"; } }
+        public override string Tag { get { return "BIN/LOVEONCE"; } }
         public override string Description { get { return "L@ve Once PS3 resource archive"; } }
         public override uint Signature { get { return 0; } } // no header
         public override bool IsHierarchic { get { return false; } }

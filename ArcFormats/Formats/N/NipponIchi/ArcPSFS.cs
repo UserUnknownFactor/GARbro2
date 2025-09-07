@@ -7,8 +7,8 @@ namespace GameRes.Formats.NipponIchi
     [Export(typeof(ArchiveFormat))]
     public class PSFSOpener : ArchiveFormat
     {
-        public override string Tag { get { return "DAT/PS_FS ShinHayarigami2"; } }
-        public override string Description { get { return "Nippon Ichi Shin Hayarigami2 PS3 resource archive"; } }
+        public override string Tag { get { return "DAT/PS_FS"; } }
+        public override string Description { get { return "Nippon Ichi Shin Hayarigami 2 PS3 resource archive"; } }
         public override uint Signature { get { return 0x465F5350; } } // 'PS_F' of 'PS_FS_V1'
         public override bool IsHierarchic { get { return false; } }
         public override bool CanWrite { get { return false; } }

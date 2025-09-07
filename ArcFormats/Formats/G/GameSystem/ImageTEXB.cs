@@ -8,8 +8,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ImageFormat))]
     public class TexbFormat : ImageFormat
     {
-        public override string         Tag { get { return "TEXB"; } }
-        public override string Description { get { return "'Game System' texture image format"; } }
+        public override string         Tag { get { return "GAMESYS/TEXB"; } }
+        public override string Description { get { return "Game System texture image format"; } }
         public override uint     Signature { get { return 0; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)

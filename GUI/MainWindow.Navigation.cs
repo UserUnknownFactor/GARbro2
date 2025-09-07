@@ -88,16 +88,26 @@ namespace GARbro.GUI
 
         private void UpdatePathDisplay (DirectoryViewModel value)
         {
-            bool showPhysical = true;
             if (value.IsArchive && value.Path.Count > 1)
             {
-                var archivePath = value.Path.Skip (1).Where (p => !string.IsNullOrEmpty (p));
-                pathLine.Text = string.Join (VFS.DIR_DELIMITER, archivePath);
-                if (!string.IsNullOrEmpty (pathLine.Text))
-                    showPhysical = false;
+                // Show the archive name and the path within it
+                var archiveName = Path.GetFileName(value.Path[value.Path.Count - 2]);
+                var currentDir = value.Path.Last();
+
+                if (!string.IsNullOrEmpty(currentDir))
+                {
+                    // We're in a subdirectory of the archive
+                    pathLine.Text = archiveName + VFS.DIR_DELIMITER + currentDir;
+                }
+                else
+                {
+                    // We're at the root of the archive
+                    pathLine.Text = archiveName;
+                }
             }
-            if (showPhysical)
+            else
             {
+                // Physical filesystem - show the full path
                 var path_component = value.Path.Last();
                 if (string.IsNullOrEmpty (path_component) && value.Path.Count > 1)
                     path_component = value.Path[value.Path.Count - 2];

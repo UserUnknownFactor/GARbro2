@@ -271,7 +271,7 @@ namespace GameRes.Formats.SevenZip
             var entry = new SevenZipEntry
             {
                 Name        = name.Replace ("\\", VFS.DIR_DELIMITER),
-                Type        = FormatCatalog.Instance.GetTypeFromName (name),
+                Type        = FormatCatalog.Instance.GetTypeFromName (name, fileSize: (long)size),
                 Index       = index,
                 Size        = (uint)size,
                 Offset      = 0,

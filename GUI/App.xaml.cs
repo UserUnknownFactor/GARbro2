@@ -28,8 +28,8 @@ namespace GARbro.GUI
 #if DEBUG
             string exeDir = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly().Location);
             string traceLogPath = Path.Combine (exeDir, "trace.log");
-            try { if (File.Exists(traceLogPath)) File.Delete(traceLogPath); }
-            catch { /* Ignore */ }
+            //try { if (File.Exists(traceLogPath)) File.Delete(traceLogPath); }
+            //catch { /* Ignore */ }
 
             Trace.Listeners.Add (new TextWriterTraceListener (traceLogPath));
             Trace.AutoFlush = true;

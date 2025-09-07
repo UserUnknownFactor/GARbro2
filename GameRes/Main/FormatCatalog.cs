@@ -20,6 +20,7 @@ namespace GameRes
     public sealed class FormatCatalog
     {
         private static readonly FormatCatalog m_instance = new FormatCatalog();
+        private const long ArchivePreferenceThreshold = 30 * 1024 * 1024; // 30 MiB
 
         #pragma warning disable 649
         private IEnumerable<ArchiveFormat>    m_arc_formats;
@@ -359,7 +360,7 @@ namespace GameRes
         /// </summary>
         public IEnumerable<IResource> LookupFileName (string filename)
         {
-            string ext = Path.GetExtension (filename);
+            string ext = VFS.GetExtension (filename);
             if (string.IsNullOrEmpty (ext))
                 return Enumerable.Empty<IResource>();
             return LookupExtension (ext.TrimStart ('.'));
@@ -387,10 +388,11 @@ namespace GameRes
 
         /// <summary>
         /// Enumerate resources matching specified <paramref name="signature"/> and filename extension.
+        /// Prefers archive formats over image formats when file size > treshold.
         /// </summary>
-        public IEnumerable<ResourceType> FindFormats<ResourceType> (string filename, uint signature) where ResourceType : IResource
+        public IEnumerable<ResourceType> FindFormats<ResourceType> (string filename, uint signature, long fileSize) where ResourceType : IResource
         {
-            var ext = new Lazy<string> (() => Path.GetExtension (filename).TrimStart ('.').ToLowerInvariant(), false);
+            var ext = new Lazy<string> (() => VFS.GetExtension (filename).TrimStart ('.').ToLowerInvariant(), false);
             var tried = Enumerable.Empty<ResourceType>();
             IEnumerable<string> preferred = null;
             if (VFS.IsVirtual)
@@ -399,6 +401,18 @@ namespace GameRes
                 if (arc_fs != null)
                     preferred = arc_fs.Source.ContainedFormats;
             }
+
+            if (fileSize == 0)
+            {
+                try
+                {
+                    var entry = VFS.FindFile (filename);
+                    if (entry != null)
+                        fileSize = entry.Size;
+                }
+                catch { }
+            }
+
             for (;;)
             {
                 var range = LookupSignature<ResourceType> (signature);
@@ -407,8 +421,21 @@ namespace GameRes
                 // check formats that match filename extension first
                 if (range.Skip (1).Any()) // if range.Count() > 1
                     range = range.OrderByDescending (f => f.Extensions.Any (e => e == ext.Value));
+
                 if (preferred != null && preferred.Any())
                     range = range.OrderByDescending (f => preferred.Contains (f.Tag));
+
+               if (fileSize > ArchivePreferenceThreshold)
+               {
+                   range = range.OrderByDescending (f => 
+                   {
+                       if (f is ArchiveFormat)     return 3;
+                       else if (f is AudioFormat)  return 2;
+                       else if (f is ImageFormat)  return 0;
+                       else                        return 1;
+                   });
+               }
+
                 foreach (var impl in range)
                 {
                     yield return impl;
@@ -418,6 +445,14 @@ namespace GameRes
                 signature = 0;
                 tried = range;
             }
+        }
+
+        /// <summary>
+        /// Enumerate resources matching specified <paramref name="signature"/> and filename extension.
+        /// </summary>
+        public IEnumerable<ResourceType> FindFormats<ResourceType> (string filename, uint signature) where ResourceType : IResource
+        {
+            return FindFormats<ResourceType> (filename, signature, 0);
         }
 
         /// <summary>
@@ -500,16 +535,27 @@ namespace GameRes
             { ".dylib", "binary" }
         };
 
-        public string GetTypeFromName (string filename, IEnumerable<string> preferred_formats = null, Dictionary<string, string> custom_map = null)
+        public string GetTypeFromName (string filename, IEnumerable<string> preferred_formats = null, Dictionary<string, string> custom_map = null, long fileSize = 0)
         {
             var formats = LookupFileName (filename);
-            string extension = Path.GetExtension (filename);
+            string extension = VFS.GetExtension (filename);
 
             if (custom_map != null && !string.IsNullOrEmpty (extension) && custom_map.TryGetValue (extension, out string customType))
                 return customType;
 
             if (formats.Any()) 
             {
+                if (fileSize > ArchivePreferenceThreshold)
+                {
+                    formats = formats.OrderByDescending (f => 
+                    {
+                        if (f is ArchiveFormat) return 3;
+                        if (f is AudioFormat)   return 2;
+                        if (f is ImageFormat)   return 0;
+                        return 1;
+                    });
+                }
+
                 if (preferred_formats != null && preferred_formats.Any())
                     formats = formats.OrderByDescending (f => preferred_formats.Contains (f.Tag));
 
@@ -526,10 +572,10 @@ namespace GameRes
         }
 
         public static string GetTypeFromSignature (uint signature) {
-            return DetectFileType(signature)?.Type;
+            return DetectFileType (signature)?.Type;
         }
 
-        public static string GetTypeFromSignature(byte[] signature)
+        public static string GetTypeFromSignature (byte[] signature)
         {
             // assume we get LittleEndian signature as always
             if (signature == null) return "";
@@ -537,8 +583,8 @@ namespace GameRes
             if (signature.Length < 4 || signature.Length > 4)
             {
                 fourByteBuffer = new byte[4];
-                int bytesToCopy = Math.Min(signature.Length, 4);
-                Array.Copy(signature, fourByteBuffer, bytesToCopy);
+                int bytesToCopy = Math.Min (signature.Length, 4);
+                Array.Copy (signature, fourByteBuffer, bytesToCopy);
             }
             else
                 fourByteBuffer = signature;
@@ -546,7 +592,7 @@ namespace GameRes
                                           fourByteBuffer[2] << 16 | 
                                           fourByteBuffer[1] << 8 | 
                                           fourByteBuffer[0]);
-            return DetectFileType(signatureAsUint)?.Type;
+            return DetectFileType (signatureAsUint)?.Type;
         }
 
         public static IResource DetectFileType (uint signature)
@@ -555,7 +601,7 @@ namespace GameRes
 
             // resolve some special cases first
             if (0x5367674f == signature)
-                return AudioFormat.FindByTag("OGG");
+                return AudioFormat.FindByTag ("OGG");
             if (0x46464952 == signature)
                 return AudioFormat.Wav;
             if (0x4D42 == (signature & 0xFFFF)) // 'BM'
@@ -569,30 +615,30 @@ namespace GameRes
                 return ImageFormat.Gif;
 
             if (0x002A4949 == signature || 0x2A004D4D == signature) // TIFF
-                return ImageFormat.FindByTag("TIFF");
+                return ImageFormat.FindByTag ("TIFF");
             if (0x20534444 == signature) // 'DDS '
-                return ImageFormat.FindByTag("DDS");
+                return ImageFormat.FindByTag ("DDS");
 
             // Audio formats
             if (0x03334449 == signature) // 'ID3\x03'
-                return AudioFormat.FindByTag("MP3");
+                return AudioFormat.FindByTag ("MP3");
             if ((signature & 0xFFE0) == 0xFFE0) // MP3 frame sync
-                return AudioFormat.FindByTag("MP3");
+                return AudioFormat.FindByTag ("MP3");
             if (0x43614C66 == signature) // 'fLaC'
-                return AudioFormat.FindByTag("FLAC");
+                return AudioFormat.FindByTag ("FLAC");
 
             // Archive formats (if supported)
             if (0x04034B50 == signature || 0x06054B50 == signature) // ZIP
-                return FormatCatalog.Instance.ArcFormats.FirstOrDefault(x => x.Tag == "ZIP");
+                return FormatCatalog.Instance.ArcFormats.FirstOrDefault (x => x.Tag == "ZIP");
 
             if (0x21726152 == signature) // 'Rar!'
-                return FormatCatalog.Instance.ArcFormats.FirstOrDefault(x => x.Tag == "7Z/OTHERS");
+                return FormatCatalog.Instance.ArcFormats.FirstOrDefault (x => x.Tag == "7Z/OTHERS");
             if (0xAFBC7A37 == signature) // '7z\xBC\xAF'
-                return FormatCatalog.Instance.ArcFormats.FirstOrDefault(x => x.Tag == "7Z/OTHERS");
+                return FormatCatalog.Instance.ArcFormats.FirstOrDefault (x => x.Tag == "7Z/OTHERS");
             if (0x685A42 == (signature & 0xFFFFFF)) // 'BZh' - BZip2
-                return FormatCatalog.Instance.ArcFormats.FirstOrDefault(x => x.Tag == "7Z/OTHERS");
+                return FormatCatalog.Instance.ArcFormats.FirstOrDefault (x => x.Tag == "7Z/OTHERS");
             if (0x8B1F == (signature & 0xFFFF)) // GZip - only 2 bytes
-                return FormatCatalog.Instance.ArcFormats.FirstOrDefault(x => x.Tag == "7Z/OTHERS");
+                return FormatCatalog.Instance.ArcFormats.FirstOrDefault (x => x.Tag == "7Z/OTHERS");
 
             // Fall back to catalog lookup
             var res = FormatCatalog.Instance.LookupSignature (signature);
@@ -895,7 +941,7 @@ public class ByteArrayToHexStringConverter : JsonConverter<byte[]>
             return StringToByteArray (hex);
         }
 
-        throw new JsonSerializationException($"Unexpected token type: {reader.TokenType}");
+        throw new JsonSerializationException ($"Unexpected token type: {reader.TokenType}");
     }
 
     private static string ByteArrayToString (byte[] input)

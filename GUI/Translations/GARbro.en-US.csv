@@ -203,6 +203,7 @@ TextConvertAudio→Convert audio to common format→→→
 TextExtractAudio→Extract audio→→→
 TooltipAudioFormats→Either WAV, MP3 or OGG→→→
 TextAboutAudio→Audio→→→
+TextAboutVideo→Video→→→
 TextAboutLicense→License→→→
 MsgUnableInterpretAudio→unable to interpret audio format→→→
 MsgNoMediaFiles→No media files selected.→→→

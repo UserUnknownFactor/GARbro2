@@ -9,8 +9,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ArchiveFormat))]
     public class ChrOpener : ArchiveFormat
     {
-        public override string         Tag { get { return "CHR/GAMESYSTEM"; } }
-        public override string Description { get { return "'Game System' character frames"; } }
+        public override string         Tag { get { return "GAMESYS/ACHR"; } }
+        public override string Description { get { return "Game System character frames"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return false; } }
         public override bool      CanWrite { get { return false; } }

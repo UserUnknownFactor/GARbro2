@@ -136,7 +136,7 @@ namespace GameRes
         }
     }
     
-    public class AnimatedImageData : ImageData
+    public class AnimatedImageData : ImageData, IDisposable
     {
         public List<BitmapSource> Frames { get; set; }
         public List<int>     FrameDelays { get; set; }
@@ -157,6 +157,20 @@ namespace GameRes
             FrameDelays = delays;
             IsAnimated  = frames.Count > 1;
         }
+
+        public void Dispose()
+        {
+            if (Frames != null)
+            {
+                foreach (var frame in Frames)
+                {
+                     if (frame is IDisposable disposable)
+                        disposable.Dispose();
+                }
+                Frames.Clear();
+                Frames = null;
+            }
+        }
     }
 
     public abstract class ImageFormat : IResource
@@ -166,6 +180,7 @@ namespace GameRes
         public abstract ImageMetaData ReadMetaData (IBinaryStream file);
 
         public abstract ImageData Read (IBinaryStream file, ImageMetaData info);
+
         public abstract void Write (Stream file, ImageData bitmap);
 
         public static ImageData Read (IBinaryStream file)

@@ -9,8 +9,8 @@ namespace GameRes.Formats.Kid
     [Export(typeof(ImageFormat))]
     public class BipArkFormat: BipFormat
     {
-        public override string Tag { get { return "BIP/PS2 compressed"; } }
-        public override string Description { get { return "PS2 tiled bitmap format with lzss compress"; } }
+        public override string Tag { get { return "BIP/PS2_COMP"; } }
+        public override string Description { get { return "PlayStation 2 LZSS compressed tiled bitmap format"; } }
         public override uint Signature { get { return 0; } }
         public BipArkFormat()
         {

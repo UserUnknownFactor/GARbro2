@@ -77,8 +77,8 @@ namespace GameRes.Formats.NonColor
     [Export(typeof(ArchiveFormat))]
     public class DatOpener : ArchiveFormat
     {
-        public override string         Tag { get { return "ARC/noncolor"; } }
-        public override string Description { get { return "'non color' resource archive"; } }
+        public override string         Tag { get { return "ARC/NONCOLOR"; } }
+        public override string Description { get { return "Non Color resource archive"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return true; } }
         public override bool      CanWrite { get { return false; } }
@@ -96,6 +96,7 @@ namespace GameRes.Formats.NonColor
         {
             if (!file.Name.HasExtension (".dat"))
                 return null;
+
             int count = file.View.ReadInt32 (0) ^ SignatureKey;
             if (!IsSaneCount (count))
                 return null;

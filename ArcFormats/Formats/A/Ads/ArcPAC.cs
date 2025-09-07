@@ -15,7 +15,7 @@ namespace GameRes.Formats.Ads
     public class PacOpener : ArchiveFormat
     {
         public override string         Tag { get { return "PAC/ADS"; } }
-        public override string Description { get { return "ads engine resource archive"; } }
+        public override string Description { get { return "ADS engine resource archive"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return true; } }
         public override bool      CanWrite { get { return false; } }

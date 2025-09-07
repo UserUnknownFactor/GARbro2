@@ -7,8 +7,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ImageFormat))]
     public class BgdFormat : ImageFormat
     {
-        public override string         Tag { get { return "BGD"; } }
-        public override string Description { get { return "'GameSystem' background image format"; } }
+        public override string         Tag { get { return "GAMESYS/BGD"; } }
+        public override string Description { get { return "Game System background image format"; } }
         public override uint     Signature { get { return 0; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)

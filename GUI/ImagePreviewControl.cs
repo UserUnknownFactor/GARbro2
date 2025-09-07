@@ -13,7 +13,7 @@ namespace GARbro.GUI
     /// <summary>
     /// Custom control for displaying images (with frame sequence animation support)
     /// </summary>
-    public class ImagePreviewControl : Image
+    public class ImagePreviewControl : Image, IDisposable
     {
         private List<BitmapSource> frames = new List<BitmapSource>();
         private List<int>          frameDelays = new List<int>();
@@ -22,7 +22,7 @@ namespace GARbro.GUI
         private bool               isAnimated = false;
 
 
-        public ImagePreviewControl()
+        public ImagePreviewControl ()
         {
             animationTimer       = new DispatcherTimer();
             animationTimer.Tick += OnFrameChange;
@@ -34,10 +34,7 @@ namespace GARbro.GUI
         /// </summary>
         public void LoadImage (BitmapSource image)
         {
-            StopAnimation();
-            frames.Clear();
-            frameDelays.Clear();
-            isAnimated = false;
+            Reset();
             Source = image;
         }
 
@@ -49,7 +46,8 @@ namespace GARbro.GUI
             if (imageFrames == null || imageFrames.Count == 0)
                 return;
 
-            StopAnimation();
+            Reset();
+
             frames = imageFrames;
             frameDelays = delays ?? Enumerable.Repeat (100, frames.Count).ToList();
             isAnimated = frames.Count > 1;
@@ -101,8 +99,16 @@ namespace GARbro.GUI
         public void Reset ()
         {
             StopAnimation();
-            frames.Clear();
-            frameDelays.Clear();
+
+            if (frames != null)
+            {
+                for (int i = 0; i < frames.Count; i++) frames[i] = null;
+                bool collect = frames?.Count > 7;
+                frames.Clear();
+                if (collect) GC.Collect();
+            }
+
+            frameDelays?.Clear();
             isAnimated = false;
             Source = null;
         }
@@ -111,18 +117,25 @@ namespace GARbro.GUI
         /// Get frame count
         /// </summary>
         public int  FrameCount { get { return frames.Count; } }
-        
+
         /// <summary>
         /// Check if animated
         /// </summary>
         public bool IsAnimated { get { return isAnimated; } }
-        
+
         /// <summary>
         /// Check if animation is paused
         /// </summary>
         public bool IsPaused 
         { 
             get { return animationTimer != null && !animationTimer.IsEnabled && isAnimated; }
+        }
+
+        public void Dispose ()
+        {
+            animationTimer?.Stop();
+            animationTimer = null;
+            Reset();
         }
     }
 }

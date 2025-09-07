@@ -9,7 +9,7 @@ namespace GameRes.Formats.Ads
     public class PogOpener : ArchiveFormat
     {
         public override string         Tag { get { return "060/POG"; } }
-        public override string Description { get { return "ads engine audio archive"; } }
+        public override string Description { get { return "ADS engine audio archive"; } }
         public override uint     Signature { get { return 0x474F50; } } // 'POG'
         public override bool  IsHierarchic { get { return true; } }
         public override bool      CanWrite { get { return false; } }

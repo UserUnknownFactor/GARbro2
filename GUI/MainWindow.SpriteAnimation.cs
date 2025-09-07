@@ -581,6 +581,20 @@ namespace GARbro.GUI
             UpdateOverlayStatus();
         }
 
+        private string BuildOverlayFileName (string baseName, int layerCount)
+        {
+            if (string.IsNullOrEmpty (baseName))
+                return layerCount > 2 ? $"overlay_{layerCount}layers" : "overlay";
+
+            string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension (baseName);
+            nameWithoutExt = System.Text.RegularExpressions.Regex.Replace(
+                nameWithoutExt, 
+                @"(_overlay|_\d+layers?|_composite)",  "", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            return (layerCount > 2 ? $"{nameWithoutExt}_overlay_{layerCount}layers" : $"{nameWithoutExt}_overlay");
+        }
+
         private void ExportOverlayButton_Click (object sender, RoutedEventArgs e)
         {
             if (_overlayControl == null) return;
@@ -592,11 +606,15 @@ namespace GARbro.GUI
                 return;
             }
 
+            var layerCount = _overlayControl.GetLayerCount();
+            var lowestLayerName = _overlayControl.GetLowestLayerName();
+            string smartFileName = BuildOverlayFileName (lowestLayerName, layerCount);
+
             var dlg = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = Localization._T ("ImageSaveFilter"),
                 DefaultExt = ".png",
-                FileName = "overlay_composite"
+                FileName = smartFileName
             };
 
             if (dlg.ShowDialog() == true)

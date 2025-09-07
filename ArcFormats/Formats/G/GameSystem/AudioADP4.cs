@@ -8,8 +8,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(AudioFormat))]
     public class Adp4Audio : AudioFormat
     {
-        public override string         Tag { get { return "ADP4"; } }
-        public override string Description { get { return "'GameSystem' compressed audio"; } }
+        public override string         Tag { get { return "GAMESYS/ADP4"; } }
+        public override string Description { get { return "Game System compressed audio"; } }
         public override uint     Signature { get { return 0; } }
         public override bool      CanWrite { get { return false; } }
 

@@ -17,7 +17,7 @@ namespace GameRes.Formats.PkWare
         public ZipEntry (SharpZip.ZipEntry zip_entry)
         {
             NativeEntry = zip_entry;
-            Name = zip_entry.Name;
+            Name = VFS.NormalizePath (zip_entry.Name);
             Type = FormatCatalog.Instance.GetTypeFromName (zip_entry.Name);
             IsPacked = true;
             // design decision of having 32bit entry sizes was made early during GameRes
@@ -38,6 +38,7 @@ namespace GameRes.Formats.PkWare
         public uint UncompressedSize { get; set; }
         public int CompressionMethod { get; set; }
         public int   LocalHeaderSize { get; set; }
+        public string        ZipName { get; set; }
     }
 
     public class ZipPkStream : Stream
@@ -137,12 +138,13 @@ namespace GameRes.Formats.PkWare
 
             return new ZipPkEntry
             {
-                Name = name,
-                Offset = localHeaderOffset,
-                CompressedSize = compressedSize,
-                UncompressedSize = uncompressedSize,
+                Name              = VFS.NormalizePath (name),
+                Offset            = localHeaderOffset,
+                CompressedSize    = compressedSize,
+                UncompressedSize  = uncompressedSize,
                 CompressionMethod = compressionMethod,
-                LocalHeaderSize = localHeaderSize
+                LocalHeaderSize   = localHeaderSize,
+                ZipName           = name
             };
         }
 
@@ -301,9 +303,9 @@ namespace GameRes.Formats.PkWare
 
         public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
-            var zarc = (PkZipArchive)arc;
-            var zent = (ZipEntry)entry;
-            return zarc.Native.GetInputStream (zent.NativeEntry);
+            var zArc = (PkZipArchive)arc;
+            var zEnt = (ZipEntry)entry;
+            return zArc.Native.GetInputStream (zEnt.NativeEntry);
         }
 
         /// <summary>

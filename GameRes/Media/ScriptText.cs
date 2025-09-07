@@ -21,7 +21,7 @@ namespace GameRes
         public string Speaker { get; set; }
         public Dictionary<string, object> Metadata { get; set; }
 
-        public ScriptLine(uint id, string text, string speaker = null)
+        public ScriptLine (uint id, string text, string speaker = null)
         {
             Id = id;
             Text = text ?? string.Empty;
@@ -67,7 +67,7 @@ namespace GameRes
             Metadata = new Dictionary<string, object>();
         }
 
-        public ScriptData(string text, ScriptType type = ScriptType.Unknown)
+        public ScriptData (string text, ScriptType type = ScriptType.Unknown)
         {
             RawText = text ?? string.Empty;
             Type = type;
@@ -75,28 +75,28 @@ namespace GameRes
             m_text = new List<ScriptLine>();
             Metadata = new Dictionary<string, object>();
 
-            DetectNewLineFormat(text);
+            DetectNewLineFormat (text);
 
-            if (!string.IsNullOrEmpty(text) && type == ScriptType.PlainText)
-                ParsePlainText(text);
+            if (!string.IsNullOrEmpty (text) && type == ScriptType.PlainText)
+                ParsePlainText (text);
         }
 
-        public ScriptData(IEnumerable<ScriptLine> lines, ScriptType type = ScriptType.Dialogue)
+        public ScriptData (IEnumerable<ScriptLine> lines, ScriptType type = ScriptType.Dialogue)
         {
             m_text = new List<ScriptLine>(lines);
             Type = type;
             Encoding = Encoding.UTF8;
             NewLineFormat = Environment.NewLine; // Default to system newline
             Metadata = new Dictionary<string, object>();
-            RawText = string.Join(NewLineFormat, m_text.Select(l => l.Text));
+            RawText = string.Join (NewLineFormat, m_text.Select (l => l.Text));
         }
 
         /// <summary>
         /// Detects the newline format used in the text.
         /// </summary>
-        protected virtual void DetectNewLineFormat(string text)
+        protected virtual void DetectNewLineFormat (string text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty (text))
             {
                 NewLineFormat = Environment.NewLine;
                 return;
@@ -134,53 +134,53 @@ namespace GameRes
                 NewLineFormat = Environment.NewLine; // Default if no newlines found
         }
 
-        protected virtual void ParsePlainText(string text)
+        protected virtual void ParsePlainText (string text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty (text))
                 return;
 
             string[] lines;
-            if (!string.IsNullOrEmpty(NewLineFormat) && text.Contains(NewLineFormat))
-                lines = text.Split(new[] { NewLineFormat }, StringSplitOptions.None);
+            if (!string.IsNullOrEmpty (NewLineFormat) && text.Contains (NewLineFormat))
+                lines = text.Split (new[] { NewLineFormat }, StringSplitOptions.None);
             else
-                lines = text.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                lines = text.Split (new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
 
             uint id = 0;
             foreach (var line in lines)
             {
-                m_text.Add(new ScriptLine(id++, line));
+                m_text.Add (new ScriptLine (id++, line));
             }
         }
 
-        public virtual void Serialize(Stream output)
+        public virtual void Serialize (Stream output)
         {
-            using (var writer = new StreamWriter(output, Encoding, 1024, true))
+            using (var writer = new StreamWriter (output, Encoding, 1024, true))
             {
                 if (m_text.Count > 0)
                 {
                     for (int i = 0; i < m_text.Count; i++)
                     {
-                        writer.Write(m_text[i].Text);
+                        writer.Write (m_text[i].Text);
 
                         // Don't add newline after the last line unless original had it
                         if (i < m_text.Count - 1)
-                            writer.Write(NewLineFormat);
-                        else if (RawText.EndsWith(NewLineFormat) || RawText.EndsWith("\n"))
-                            writer.Write(NewLineFormat);
+                            writer.Write (NewLineFormat);
+                        else if (RawText.EndsWith (NewLineFormat) || RawText.EndsWith ("\n"))
+                            writer.Write (NewLineFormat);
                     }
                 }
                 else
-                    writer.Write(RawText);
+                    writer.Write (RawText);
             }
         }
 
-        public virtual void Deserialize(Stream input)
+        public virtual void Deserialize (Stream input)
         {
-            using (var reader = new StreamReader(input, Encoding, true, 1024, true))
+            using (var reader = new StreamReader (input, Encoding, true, 1024, true))
             {
                 RawText = reader.ReadToEnd();
-                DetectNewLineFormat(RawText);
-                ParsePlainText(RawText);
+                DetectNewLineFormat (RawText);
+                ParsePlainText (RawText);
             }
         }
 
@@ -211,49 +211,49 @@ namespace GameRes
         /// <summary>
         /// Determines if the file is a valid script of this format.
         /// </summary>
-        public abstract bool IsScript(IBinaryStream file);
+        public abstract bool IsScript (IBinaryStream file);
 
         /// <summary>
         /// Converts script from game format to readable format.
         /// </summary>
-        public abstract Stream ConvertFrom(IBinaryStream file);
+        public abstract Stream ConvertFrom (IBinaryStream file);
 
         /// <summary>
         /// Converts script from readable format back to game format.
         /// </summary>
-        public abstract Stream ConvertBack(IBinaryStream file);
+        public abstract Stream ConvertBack (IBinaryStream file);
 
         /// <summary>
         /// Reads and parses script data.
         /// </summary>
-        public abstract ScriptData Read(string name, Stream file);
+        public abstract ScriptData Read (string name, Stream file);
 
-        /// <inheritdoc cref="Read(string, Stream)"/>
-        public abstract ScriptData Read(string name, Stream file, Encoding encoding);
+        /// <inheritdoc cref="Read (string, Stream)"/>
+        public abstract ScriptData Read (string name, Stream file, Encoding encoding);
 
         /// <summary>
         /// Writes script data to stream.
         /// </summary>
-        public abstract void Write(Stream file, ScriptData script);
+        public abstract void Write (Stream file, ScriptData script);
 
         /// <summary>
         /// Detects encoding of text data.
         /// </summary>
-        public static Encoding DetectEncoding(Stream data, long length = -1)
+        public static Encoding DetectEncoding (Stream data, long length = -1)
         {
             var pos = data.Position;
             if (length < 0 || length > data.Length)
                 length = data.Length;
             var bytedata = new byte[length];
-            data.Read(bytedata, 0, (int)length);
+            data.Read (bytedata, 0, (int)length);
             data.Position = pos;
-            return DetectEncoding(bytedata, length);
+            return DetectEncoding (bytedata, length);
         }
 
         /// <summary>
         /// Detects encoding of text data.
         /// </summary>
-        public static Encoding DetectEncoding(byte[] data, long length = -1)
+        public static Encoding DetectEncoding (byte[] data, long length = -1)
         {
             if (data == null || data.Length == 0)
                 return Encoding.Default;
@@ -273,149 +273,43 @@ namespace GameRes
             if (length >= 2 && data[0] == 0xFE && data[1] == 0xFF)
                 return Encoding.BigEndianUnicode; // UTF-16 BE
             if (length >= 4 && data[0] == 0 && data[1] == 0 && data[2] == 0xFE && data[3] == 0xFF)
-                return new UTF32Encoding(true, true); // UTF-32 BE
+                return new UTF32Encoding (true, true); // UTF-32 BE
 
             // For files without BOM, we need heuristics
-            // Sample size for analysis (limit to avoid performance issues)
-            int sampleSize = (int)Math.Min(length, 8192);
+            int sampleSize = (int)Math.Min (length, 8192);
 
-            // Check for UTF-16 without BOM by looking for null bytes pattern
-            if (IsUtf16(data, sampleSize))
-                return Encoding.Unicode;
-
-            // Check for Shift-JIS before UTF-8 as some Shift-JIS can be misdetected as UTF-8
-            if (IsShiftJis(data, sampleSize))
-                return Encoding.GetEncoding(932);
-
-            // Check for valid UTF-8
-            if (IsValidUtf8(data, sampleSize))
+            // Try UTF-8 first with strict validation
+            var utf8Result = EncodingValidation.ValidateUtf8 (data, sampleSize);
+            if (utf8Result.IsValid && utf8Result.Confidence > 0.9)
                 return Encoding.UTF8;
 
-            // Default to ANSI (system default code page)
-            return Encoding.Default;
+            // Check for UTF-16 with better heuristics
+            var utf16Result = EncodingValidation.ValidateUtf16 (data, sampleSize);
+            if (utf16Result.IsValid && utf16Result.Confidence > 0.8)
+                return Encoding.Unicode;
+
+            // Check for Shift-JIS with context
+            var sjisResult = EncodingValidation.ValidateShiftJis (data, sampleSize);
+            if (sjisResult.IsValid && sjisResult.Confidence > 0.8)
+                return Encoding.GetEncoding (932);
+
+
+            // Default to UTF-8 encoding, whatever goes
+            return Encoding.UTF8;
         }
 
-        private static bool IsValidUtf8(byte[] data, int length)
-        {
-            int i = 0;
-            while (i < length)
-            {
-                byte b = data[i];
-
-                // ASCII
-                if (b <= 0x7F)
-                {
-                    i++;
-                    continue;
-                }
-
-                // Multi-byte sequence
-                int sequenceLength;
-                if ((b & 0xE0) == 0xC0) sequenceLength = 2;
-                else if ((b & 0xF0) == 0xE0) sequenceLength = 3;
-                else if ((b & 0xF8) == 0xF0) sequenceLength = 4;
-                else 
-                    return false; // Invalid UTF-8 start byte
-
-                if (i + sequenceLength > length)
-                    return false;
-
-                // Validate continuation bytes
-                for (int j = 1; j < sequenceLength; j++)
-                {
-                    if ((data[i + j] & 0xC0) != 0x80)
-                        return false;
-                }
-
-                i += sequenceLength;
-            }
-
-            return true;
-        }
-
-        private static bool IsUtf16(byte[] data, int length)
-        {
-            if (length < 2)
-                return false;
-
-            // Count null bytes in even and odd positions
-            int evenNulls = 0;
-            int oddNulls = 0;
-            int nonAsciiChars = 0;
-
-            for (int i = 0; i < length - 1; i += 2)
-            {
-                if (data[i] == 0) evenNulls++;
-                if (data[i + 1] == 0) oddNulls++;
-
-                // Check for non-ASCII characters
-                if (data[i] > 0x7F || data[i + 1] > 0x7F)
-                    nonAsciiChars++;
-            }
-
-            // If we have many nulls in one position but not the other, likely UTF-16
-            int threshold = length / 8; // At least 25% of bytes should be null
-
-            // Little Endian (more common on Windows)
-            if (oddNulls > threshold && evenNulls < threshold / 4)
-                return true;
-
-            // Big Endian
-            if (evenNulls > threshold && oddNulls < threshold / 4)
-                return true;
-
-            return false;
-        }
-
-        private static bool IsShiftJis(byte[] data, int length)
-        {
-            int validSequences = 0;
-            int invalidSequences = 0;
-
-            for (int i = 0; i < length; i++)
-            {
-                byte b = data[i];
-
-                // Single-byte characters
-                if (b <= 0x7F || (b >= 0xA1 && b <= 0xDF))
-                    continue;
-
-                // Two-byte character lead byte
-                if ((b >= 0x81 && b <= 0x9F) || (b >= 0xE0 && b <= 0xFC))
-                {
-                    if (i + 1 < length)
-                    {
-                        byte b2 = data[i + 1];
-                        if ((b2 >= 0x40 && b2 <= 0x7E) || (b2 >= 0x80 && b2 <= 0xFC))
-                        {
-                            validSequences++;
-                            i++; // Skip the second byte
-                        }
-                        else
-                            invalidSequences++;
-                    }
-                }
-                else if (b >= 0x80)
-                {
-                    // High byte that's not valid in Shift-JIS
-                    invalidSequences++;
-                }
-            }
-
-            return validSequences > 0 && invalidSequences < validSequences / 4;
-        }
 
         /// <summary>
         /// Finds appropriate script format handler for the given file.
         /// </summary>
-        public static ScriptFormat FindFormat(IBinaryStream file)
+        public static ScriptFormat FindFormat (IBinaryStream file)
         {
             foreach (var impl in FormatCatalog.Instance.FindFormats<ScriptFormat>(file.Name, file.Signature))
             {
                 try
                 {
                     file.Position = 0;
-                    if (impl.IsScript(file))
+                    if (impl.IsScript (file))
                         return impl;
                 }
                 catch (System.OperationCanceledException)
@@ -433,68 +327,68 @@ namespace GameRes
     /// </summary>
     public abstract class GenericScriptFormat : ScriptFormat
     {
-        public override bool IsScript(IBinaryStream file)
+        public override bool IsScript (IBinaryStream file)
         {
             // Check extension
-            var ext = Path.GetExtension(file.Name).TrimStart('.').ToLowerInvariant();
-            return Extensions != null && Extensions.Contains(ext);
+            var ext = Path.GetExtension (file.Name).TrimStart('.').ToLowerInvariant();
+            return Extensions != null && Extensions.Contains (ext);
         }
 
-        public override Stream ConvertFrom(IBinaryStream file)
+        public override Stream ConvertFrom (IBinaryStream file)
         {
             return file.AsStream;
         }
 
-        public override Stream ConvertBack(IBinaryStream file)
+        public override Stream ConvertBack (IBinaryStream file)
         {
             return file.AsStream;
         }
 
-        public override ScriptData Read(string name, Stream file)
+        public override ScriptData Read (string name, Stream file)
         {
             byte[] data;
             using (var ms = new MemoryStream())
             {
-                file.CopyTo(ms);
+                file.CopyTo (ms);
                 data = ms.ToArray();
             }
 
-            var encoding = DetectEncoding(data);
-            var text = encoding.GetString(data);
+            var encoding = DetectEncoding (data);
+            var text = encoding.GetString (data);
 
             // Remove BOM if present
             if (text.Length > 0 && text[0] == '\uFEFF')
-                text = text.Substring(1);
+                text = text.Substring (1);
 
-            var scriptData = new ScriptData(text, GetScriptType(name)) { Encoding = encoding };
+            var scriptData = new ScriptData (text, GetScriptType (name)) { Encoding = encoding };
             return scriptData;
         }
 
-        public override ScriptData Read(string name, Stream file, Encoding encoding)
+        public override ScriptData Read (string name, Stream file, Encoding encoding)
         {
             byte[] data;
             using (var ms = new MemoryStream())
             {
-                file.CopyTo(ms);
+                file.CopyTo (ms);
                 data = ms.ToArray();
             }
 
-            var text = encoding.GetString(data);
+            var text = encoding.GetString (data);
 
             // Remove BOM if present
             if (encoding.IsUtf16() && text.Length > 0 && text[0] == '\uFEFF')
-                text = text.Substring(1);
+                text = text.Substring (1);
 
-            var scriptData = new ScriptData(text, GetScriptType(name)) { Encoding = encoding };
+            var scriptData = new ScriptData (text, GetScriptType (name)) { Encoding = encoding };
             return scriptData;
         }
 
-        public override void Write(Stream file, ScriptData script)
+        public override void Write (Stream file, ScriptData script)
         {
-            script.Serialize(file);
+            script.Serialize (file);
         }
 
-        protected virtual ScriptType GetScriptType(string filename)
+        protected virtual ScriptType GetScriptType (string filename)
         {
             return DataType;
         }
@@ -505,8 +399,8 @@ namespace GameRes
     {
         public override string          Tag { get { return "TXT"; } }
         public override string  Description { get { return "Plain text file"; } }
-        public override uint      Signature { get { return 0; } }
-        public override ScriptType DataType { get { return ScriptType.PlainText; } }
+        public override uint      Signature { get { return  0; } }
+        public override ScriptType DataType { get { return  ScriptType.PlainText; } }
 
         public TextScriptFormat()
         {
@@ -520,41 +414,41 @@ namespace GameRes
     {
         public override string          Tag { get { return "JSON"; } }
         public override string  Description { get { return "JSON file"; } }
-        public override uint      Signature { get { return 0; } }
-        public override ScriptType DataType { get { return ScriptType.JsonScript; } }
+        public override uint      Signature { get { return  0; } }
+        public override ScriptType DataType { get { return  ScriptType.JsonScript; } }
 
         public JsonScriptFormat()
         {
             Extensions = new[] { "json", "jsonc" };
         }
 
-        public override ScriptData Read(string name, Stream file)
+        public override ScriptData Read (string name, Stream file)
         {
             byte[] data;
             using (var ms = new MemoryStream())
             {
-                file.CopyTo(ms);
+                file.CopyTo (ms);
                 data = ms.ToArray();
             }
 
-            var encoding = DetectEncoding(data);
-            var text = encoding.GetString(data);
+            var encoding = DetectEncoding (data);
+            var text = encoding.GetString (data);
 
             if (text.Length > 0 && text[0] == '\uFEFF')
-                text = text.Substring(1);
+                text = text.Substring (1);
 
             string formattedText = text;
             object parsedJson = null;
 
             try
             {
-                parsedJson = JsonConvert.DeserializeObject(text);
-                formattedText = JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
+                parsedJson = JsonConvert.DeserializeObject (text);
+                formattedText = JsonConvert.SerializeObject (parsedJson, Newtonsoft.Json.Formatting.Indented);
             }
             catch (JsonException ex)
             {
                 formattedText = text; // Keep original
-                var scriptData = new ScriptData(formattedText, ScriptType.JsonScript)
+                var scriptData = new ScriptData (formattedText, ScriptType.JsonScript)
                 {
                     Encoding = encoding
                 };
@@ -563,7 +457,7 @@ namespace GameRes
                 return scriptData;
             }
 
-            var validScriptData = new ScriptData(formattedText, ScriptType.JsonScript)
+            var validScriptData = new ScriptData (formattedText, ScriptType.JsonScript)
             {
                 Encoding = encoding
             };
@@ -590,34 +484,34 @@ namespace GameRes
     {
         public override string          Tag { get { return "XML"; } }
         public override string  Description { get { return "XML file"; } }
-        public override uint      Signature { get { return 0; } }
-        public override ScriptType DataType { get { return ScriptType.XmlScript; } }
+        public override uint      Signature { get { return  0; } }
+        public override ScriptType DataType { get { return  ScriptType.XmlScript; } }
 
         public XmlScriptFormat()
         {
             Extensions = new[] { "xml", "xaml", "xsl", "xslt", "svg" };
         }
 
-        public override ScriptData Read(string name, Stream file)
+        public override ScriptData Read (string name, Stream file)
         {
             byte[] data;
             using (var ms = new MemoryStream())
             {
-                file.CopyTo(ms);
+                file.CopyTo (ms);
                 data = ms.ToArray();
             }
 
-            var encoding = DetectEncoding(data);
-            var text = encoding.GetString(data);
+            var encoding = DetectEncoding (data);
+            var text = encoding.GetString (data);
 
             if (text.Length > 0 && text[0] == '\uFEFF')
-                text = text.Substring(1);
+                text = text.Substring (1);
 
             string formattedText = text;
 
             try
             {
-                var doc = XDocument.Parse(text);
+                var doc = XDocument.Parse (text);
                 var settings = new XmlWriterSettings
                 {
                     Indent = true,
@@ -630,11 +524,11 @@ namespace GameRes
                 };
 
                 var sb = new StringBuilder();
-                using (var stringWriter = new StringWriter(sb))
+                using (var stringWriter = new StringWriter (sb))
                 {
-                    using (var xmlWriter = XmlWriter.Create(stringWriter, settings))
+                    using (var xmlWriter = XmlWriter.Create (stringWriter, settings))
                     {
-                        doc.Save(xmlWriter);
+                        doc.Save (xmlWriter);
                         xmlWriter.Flush(); // Explicitly flush
                     }
                 }
@@ -646,7 +540,7 @@ namespace GameRes
                 formattedText = text;
             }
 
-            var scriptData = new ScriptData(formattedText, ScriptType.XmlScript)
+            var scriptData = new ScriptData (formattedText, ScriptType.XmlScript)
             {
                 Encoding = encoding
             };
@@ -659,46 +553,247 @@ namespace GameRes
     [Export(typeof(ScriptFormat))]
     public class BinScriptFormat : ScriptFormat
     {
-        public override string         Tag { get { return "SCR"; } }
-        public override string Description { get { return "Binary script format"; } }
-        public override uint     Signature { get { return 0; } }
-        public override ScriptType DataType { get { return ScriptType.BinaryScript; } }
+        public override string          Tag { get { return "SCR"; } }
+        public override string  Description { get { return "Binary script format"; } }
+        public override uint      Signature { get { return  0; } }
+        public override ScriptType DataType { get { return  ScriptType.BinaryScript; } }
 
         public BinScriptFormat()
         {
             Extensions = new[] { "scr", "bin", "dat" };
         }
 
-        public override bool IsScript(IBinaryStream file)
+        public override bool IsScript (IBinaryStream file)
         {
-            var ext = Path.GetExtension(file.Name).TrimStart('.').ToLowerInvariant();
-            return Extensions != null && Extensions.Contains(ext);
+            var ext = Path.GetExtension (file.Name).TrimStart('.').ToLowerInvariant();
+            return Extensions != null && Extensions.Contains (ext);
         }
 
-        public override Stream ConvertFrom(IBinaryStream file)
+        public override Stream ConvertFrom (IBinaryStream file)
         {
-            throw new NotSupportedException("Binary script conversion not implemented");
+            throw new NotSupportedException ("Binary script conversion not implemented");
         }
 
-        public override Stream ConvertBack(IBinaryStream file)
+        public override Stream ConvertBack (IBinaryStream file)
         {
-            throw new NotSupportedException("Binary script conversion not implemented");
+            throw new NotSupportedException ("Binary script conversion not implemented");
         }
 
-        public override ScriptData Read(string name, Stream file)
+        public override ScriptData Read (string name, Stream file)
         {
-            throw new NotSupportedException("Binary script reading not implemented");
+            throw new NotSupportedException ("Binary script reading not implemented");
         }
 
-        public override ScriptData Read(string name, Stream file, Encoding e)
+        public override ScriptData Read (string name, Stream file, Encoding e)
         {
-            throw new NotSupportedException("Binary script reading not implemented");
+            throw new NotSupportedException ("Binary script reading not implemented");
         }
 
-        public override void Write(Stream file, ScriptData script)
+        public override void Write (Stream file, ScriptData script)
         {
-            throw new NotSupportedException("Binary script writing not implemented");
+            throw new NotSupportedException ("Binary script writing not implemented");
         }
     }
     */
+
+    public class EncodingValidation
+    {
+        public bool      IsValid { get; set; }
+        public double Confidence { get; set; }
+
+        public static EncodingValidation ValidateUtf8 (byte[] data, int length)
+        {
+            int validChars = 0;
+            int totalChars = 0;
+            int i = 0;
+
+            while (i < length)
+            {
+                byte b = data[i];
+
+                if (b <= 0x7F)
+                {
+                    // ASCII - very common in UTF-8
+                    validChars++;
+                    totalChars++;
+                    i++;
+                    continue;
+                }
+
+                // Multi-byte sequence
+                int sequenceLength;
+                if ((b & 0xE0) == 0xC0) sequenceLength = 2;
+                else if ((b & 0xF0) == 0xE0) sequenceLength = 3;
+                else if ((b & 0xF8) == 0xF0) sequenceLength = 4;
+                else
+                {
+                    return new EncodingValidation { IsValid = false, Confidence = 0 };
+                }
+
+                if (i + sequenceLength > length)
+                    return new EncodingValidation { IsValid = false, Confidence = 0 };
+
+                // Validate continuation bytes
+                for (int j = 1; j < sequenceLength; j++)
+                {
+                    if ((data[i + j] & 0xC0) != 0x80)
+                        return new EncodingValidation { IsValid = false, Confidence = 0 };
+                }
+
+                // Additional validation for overlong sequences
+                if (sequenceLength == 2 && (b & 0x1E) == 0)
+                    return new EncodingValidation { IsValid = false, Confidence = 0 };
+
+                validChars++;
+                totalChars++;
+                i += sequenceLength;
+            }
+
+            double confidence = totalChars > 0 ? (double)validChars / totalChars : 0;
+            return new EncodingValidation { IsValid = true, Confidence = confidence };
+        }
+
+        public static EncodingValidation ValidateUtf16 (byte[] data, int length)
+        {
+            if (length < 2)
+                return new EncodingValidation { IsValid = false, Confidence = 0 };
+
+            int validChars = 0;
+            int totalChars = 0;
+            int consecutiveNulls = 0;
+            int maxConsecutiveNulls = 0;
+
+            for (int i = 0; i < length - 1; i += 2)
+            {
+                ushort ch = BitConverter.ToUInt16 (data, i);
+
+                // Count valid Unicode characters
+                if (ch >= 0x20 && ch <= 0x7E) // Basic ASCII
+                {
+                    validChars++;
+                    consecutiveNulls = 0;
+                }
+                else if (ch >= 0x80 && ch <= 0xD7FF) // Valid Unicode range
+                {
+                    validChars++;
+                    consecutiveNulls = 0;
+                }
+                else if (ch >= 0xE000 && ch <= 0xFFFD) // Valid Unicode range
+                {
+                    validChars++;
+                    consecutiveNulls = 0;
+                }
+                else if (ch == 0)
+                {
+                    consecutiveNulls++;
+                    maxConsecutiveNulls = Math.Max (maxConsecutiveNulls, consecutiveNulls);
+                }
+                else if (ch >= 0xD800 && ch <= 0xDFFF) // Surrogate pair
+                {
+                    if (i + 3 < length)
+                    {
+                        ushort ch2 = BitConverter.ToUInt16 (data, i + 2);
+                        if (ch2 >= 0xDC00 && ch2 <= 0xDFFF)
+                        {
+                            validChars++;
+                            i += 2; // Skip the low surrogate
+                        }
+                    }
+                }
+
+                totalChars++;
+            }
+
+            // Too many consecutive nulls indicate this isn't text
+            if (maxConsecutiveNulls > 4)
+                return new EncodingValidation { IsValid = false, Confidence = 0 };
+
+            double confidence = totalChars > 0 ? (double)validChars / totalChars : 0;
+            bool isValid = confidence > 0.3 && validChars > 10; // Need reasonable amount of valid chars
+
+            return new EncodingValidation { IsValid = isValid, Confidence = confidence };
+        }
+
+        public static EncodingValidation ValidateShiftJis (byte[] data, int length)
+        {
+            int validChars = 0;
+            int invalidChars = 0;
+            int asciiChars = 0;
+            int kanjiChars = 0;
+            int kanaChars = 0;
+
+            for (int i = 0; i < length; i++)
+            {
+                byte b = data[i];
+
+                if (b <= 0x7F)
+                {
+                    asciiChars++;
+                    validChars++;
+                    continue;
+                }
+
+                if (b >= 0xA1 && b <= 0xDF)
+                {
+                    // Half-width katakana
+                    kanaChars++;
+                    validChars++;
+                    continue;
+                }
+
+                // Two-byte character lead byte
+                if ((b >= 0x81 && b <= 0x9F) || (b >= 0xE0 && b <= 0xFC))
+                {
+                    if (i + 1 < length)
+                    {
+                        byte b2 = data[i + 1];
+                        if ((b2 >= 0x40 && b2 <= 0x7E) || (b2 >= 0x80 && b2 <= 0xFC))
+                        {
+                            // Valid Shift-JIS sequence
+                            kanjiChars++;
+                            validChars++;
+                            i++; // Skip the second byte
+                        }
+                        else
+                        {
+                            invalidChars++;
+                            return new EncodingValidation { IsValid = false, Confidence = 0 };
+                        }
+                    }
+                    else
+                    {
+                        // Incomplete sequence at end
+                        invalidChars++;
+                    }
+                }
+                else
+                {
+                    // Invalid byte for Shift-JIS
+                    invalidChars++;
+                    return new EncodingValidation { IsValid = false, Confidence = 0 };
+                }
+            }
+
+            // Shift-JIS text should have a good mix of character types
+            double confidence = 0;
+            if (validChars > 0)
+            {
+                double asciiRatio = (double)asciiChars / validChars;
+                double kanjiRatio = (double)kanjiChars / validChars;
+                double kanaRatio  = (double)kanaChars  / validChars;
+
+                // Shift-JIS text usually has some Japanese characters
+                if (kanjiChars > 0 || kanaChars > 0)
+                    confidence = 0.9;
+                else if (asciiRatio == 1.0) // Pure ASCII - not really Shift-JIS
+                    confidence = 0.1;
+            }
+
+            return new EncodingValidation 
+            { 
+                IsValid = invalidChars == 0 && validChars > 0, 
+                Confidence = confidence 
+            };
+        }
+    }
 }

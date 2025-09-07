@@ -7,7 +7,7 @@
         xmlns:gre="clr-namespace:GameRes.Extensions;assembly=GameRes"
         xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:sys="clr-namespace:System;assembly=System"
-        Title="{gre:Localize TextAboutTitle}" Height="306" Width="550" ResizeMode="NoResize"
+        Title="{gre:Localize TextAboutTitle}" Height="366" Width="700" ResizeMode="NoResize"
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
     <Window.Resources>
@@ -25,6 +25,11 @@
             </CollectionViewSource.SortDescriptions>
         </CollectionViewSource>
         <CollectionViewSource x:Key="AudioFormatsSource" Source="{Binding Source={x:Static gr:FormatCatalog.Instance}, Path=AudioFormats, Mode=OneWay}">
+            <CollectionViewSource.SortDescriptions>
+                <scm:SortDescription PropertyName="Tag" Direction="Ascending"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+        <CollectionViewSource x:Key="VideoFormatsSource" Source="{Binding Source={x:Static gr:FormatCatalog.Instance}, Path=VideoFormats, Mode=OneWay}">
             <CollectionViewSource.SortDescriptions>
                 <scm:SortDescription PropertyName="Tag" Direction="Ascending"/>
             </CollectionViewSource.SortDescriptions>
@@ -91,36 +96,108 @@
                 </TabItem>
                 <TabItem Header="{gre:Localize TextAboutImages}">
                     <Border BorderThickness="1" BorderBrush="Black" VerticalAlignment="Stretch" Margin="0" SnapsToDevicePixels="True">
-                        <ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0" Background="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}">
-                            <ItemsControl Name="ImageFormats" ItemsSource="{Binding Source={StaticResource ImageFormatsSource}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Tag}" Margin="3,0,5,0" />
-                                            <TextBlock Text="{gre:Localize TextAboutBuiltin}" Margin="0,0,5,0" Visibility="{Binding IsBuiltin, Converter={StaticResource guiBoolToVisibilityConverter}}"/>
-                                            <TextBlock Text="{Binding Description}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
+                        <ListView Name="ImageFormats" ItemsSource="{Binding Source={StaticResource ImageFormatsSource}}"
+                                  ItemContainerStyle="{StaticResource DisableSelectionStyle}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
+                            <ListView.View>
+                                <GridView ColumnHeaderContainerStyle="{StaticResource HiddenHeaderStyle}">
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Tag}" Margin="0">
+                                                <TextBlock Text=" "/>
+                                                <TextBlock Text="{gre:Localize TextAboutBuiltin}" Margin="0,0,5,0" Visibility="{Binding IsBuiltin, Converter={StaticResource guiBoolToVisibilityConverter}}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Path=CanWrite, Converter={StaticResource guiCanCreateConverter}}" Margin="-6,0,-6,0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Description}" Margin="0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border> 
                 </TabItem>
                 <TabItem Header="{gre:Localize TextAboutAudio}">
                     <Border BorderThickness="1" BorderBrush="Black" VerticalAlignment="Stretch" Margin="0" SnapsToDevicePixels="True">
-                        <ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0" Background="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}">
-                            <ItemsControl Name="AudioFormats" ItemsSource="{Binding Source={StaticResource AudioFormatsSource}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Tag}" Margin="3,0,7,0" />
-                                            <TextBlock Text="{Binding Description}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
+                        <ListView Name="AudioFormats" ItemsSource="{Binding Source={StaticResource AudioFormatsSource}}"
+                                  ItemContainerStyle="{StaticResource DisableSelectionStyle}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
+                            <ListView.View>
+                                <GridView ColumnHeaderContainerStyle="{StaticResource HiddenHeaderStyle}">
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Tag}" Margin="0">
+                                                <TextBlock Text=" "/>
+                                                <TextBlock Text="{gre:Localize TextAboutBuiltin}" Margin="0,0,5,0" Visibility="{Binding IsBuiltin, Converter={StaticResource guiBoolToVisibilityConverter}}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Path=CanWrite, Converter={StaticResource guiCanCreateConverter}}" Margin="-6,0,-6,0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Description}" Margin="0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border> 
+                </TabItem>
+                <TabItem Header="{gre:Localize TextAboutVideo}">
+                    <Border BorderThickness="1" BorderBrush="Black" VerticalAlignment="Stretch" Margin="0" SnapsToDevicePixels="True">
+                        <ListView Name="VideoFormats" ItemsSource="{Binding Source={StaticResource VideoFormatsSource}}"
+                                  ItemContainerStyle="{StaticResource DisableSelectionStyle}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
+                            <ListView.View>
+                                <GridView ColumnHeaderContainerStyle="{StaticResource HiddenHeaderStyle}">
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Tag}" Margin="0">
+                                                <TextBlock Text=" "/>
+                                                <TextBlock Text="{gre:Localize TextAboutBuiltin}" Margin="0,0,5,0" Visibility="{Binding IsBuiltin, Converter={StaticResource guiBoolToVisibilityConverter}}"/>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Path=CanWrite, Converter={StaticResource guiCanCreateConverter}}" Margin="-6,0,-6,0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Description}" Margin="0"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Border> 
                 </TabItem>
                 <TabItem Header="{gre:Localize TextAboutLicense}">
                     <ScrollViewer>

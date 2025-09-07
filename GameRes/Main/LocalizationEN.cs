@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17139; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17172; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -198,6 +198,7 @@ public static partial class Localization
                 { "TextExtractAudio", new LocalizationEntry { Singular = "Extract audio" } },
                 { "TooltipAudioFormats", new LocalizationEntry { Singular = "Either WAV, MP3 or OGG" } },
                 { "TextAboutAudio", new LocalizationEntry { Singular = "Audio" } },
+                { "TextAboutVideo", new LocalizationEntry { Singular = "Video" } },
                 { "TextAboutLicense", new LocalizationEntry { Singular = "License" } },
                 { "MsgUnableInterpretAudio", new LocalizationEntry { Singular = "unable to interpret audio format" } },
                 { "MsgNoMediaFiles", new LocalizationEntry { Singular = "No media files selected." } },

@@ -9,7 +9,7 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ArchiveFormat))]
     public class DatOpener : ArchiveFormat
     {
-        public override string         Tag { get { return "DAT/0verflow"; } }
+        public override string         Tag { get { return "DAT/0VERFLOW"; } }
         public override string Description { get { return "0verflow resource archive"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return false; } }

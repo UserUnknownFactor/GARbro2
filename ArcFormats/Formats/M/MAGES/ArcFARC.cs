@@ -7,7 +7,7 @@ namespace GameRes.Formats.MAGES
     [Export(typeof(ArchiveFormat))]
     public class FARCOpener : ArchiveFormat
     {
-        public override string Tag { get { return "DAT/FARC Rozen Maiden PS3 archive"; } }
+        public override string Tag { get { return "DAT/FARC_RM"; } }
         public override string Description { get { return "MAGES Rozen Maiden Wechseln Sie Welt ab PS3 BLJM61120 archive"; } }
         public override uint Signature { get { return 0x43524146; } } // 'FARC'
         public override bool IsHierarchic { get { return false; } }

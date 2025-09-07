@@ -83,12 +83,12 @@ namespace GameRes.Formats.RbPack
                     {
                         if (!zipEntry.Name.EndsWith ("/"))
                         {
-                            var name = zipEntry.Name.Replace('/', '\\');
+                            var name = VFS.NormalizePath (zipEntry.Name);
                             //mainZipEntries.Add (name);
                             var entry = new RbPackedEntry
                             {
                                 Name            = name ?? $"{zipEntry.Offset:X}_{zipEntry.CompressedSize:X}",
-                                Type            = FormatCatalog.Instance.GetTypeFromName (zipEntry.Name),
+                                Type            = FormatCatalog.Instance.GetTypeFromName (name),
                                 Offset          = zipEntry.Offset,
                                 Size            = zipEntry.CompressedSize,
                                 UnpackedSize    = zipEntry.UncompressedSize,
@@ -193,12 +193,32 @@ namespace GameRes.Formats.RbPack
             return new BinMemoryStream (data);
         }
 
+        protected internal int Read7BitEncodedInt(ArcView file, ref long pos)
+        {
+            int value = 0;
+            int bits_offset = 0;
+            byte b;
+            do
+            {
+                if (bits_offset == 35)
+                    throw new FormatException("Too many bytes in a 7 bit encoded Int32.");
+                b = file.View.ReadByte (pos++);
+                value |= (b & 0x7F) << bits_offset;
+                bits_offset += 7;
+            }
+            while ((b & 0x80U) != 0);
+            return value;
+        }
+
         private RbPackedEntry ReadFileEntry (ArcView file, ref long pos)
         {
-            int strLength = file.View.ReadByte (pos++) & 0b1111111;
-            var  nameBytes = file.View.ReadBytes (pos, (uint)strLength);
+            int strLength = Read7BitEncodedInt(file, ref pos);
+            if (!IsSaneCount(strLength, 1024))
+                throw new InvalidFormatException();
+            var nameBytes = file.View.ReadBytes (pos, (uint)strLength);
             DecryptData (nameBytes, Key2, pos);
-            string name = Encoding.UTF8.GetString (nameBytes);
+            string zip_name = Encoding.UTF8.GetString (nameBytes);
+            var name = VFS.NormalizePath(zip_name);
 
             pos += strLength;
 
@@ -216,7 +236,8 @@ namespace GameRes.Formats.RbPack
                 UnpackedSize = (uint)uncompSize,
                 IsPacked = compSize != uncompSize,
                 IsMainZip = false,
-                IsPrimaryType = false
+                IsPrimaryType = false,
+                ZipName = zip_name
             };
         }
 

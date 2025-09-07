@@ -24,6 +24,171 @@ namespace GARbro.GUI
             get { return (_overlayControl != null && _overlayControl.IsVisible); }
         }
 
+        private EntryViewModel _itemBeingRenamed;
+
+        // Command execution
+        private void RenameItemExec(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (CurrentDirectory.SelectedItems.Count != 1)
+                return;
+
+            var item = CurrentDirectory.SelectedItem as EntryViewModel;
+            if (item == null || item.IsDirectory || VFS.IsVirtual)
+                return;
+
+            StartRename(item);
+        }
+
+        private void StartRename(EntryViewModel item)
+        {
+            // Cancel any existing rename
+            if (_itemBeingRenamed != null && _itemBeingRenamed != item)
+                CancelRename();
+
+            _itemBeingRenamed = item;
+            item.IsEditing = true;
+
+            // Ensure the item is visible
+            CurrentDirectory.ScrollIntoView(item);
+        }
+
+        private void CancelRename()
+        {
+            if (_itemBeingRenamed != null)
+            {
+                _itemBeingRenamed.IsEditing = false;
+                _itemBeingRenamed = null;
+                ListViewFocus();
+            }
+        }
+
+        private void CommitRename()
+        {
+            if (_itemBeingRenamed == null)
+                return;
+
+            var item = _itemBeingRenamed;
+            var oldName = item.Name;
+            var newName = item.EditingName?.Trim();
+
+            // Validate new name
+            if (string.IsNullOrEmpty(newName) || newName == oldName)
+            {
+                CancelRename();
+                return;
+            }
+
+            // Check for invalid characters
+            if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                SetFileStatus(Localization._T("MsgInvalidFileName"));
+                CancelRename();
+                return;
+            }
+
+            try
+            {
+                var oldPath = Path.Combine(CurrentPath, oldName);
+                var newPath = Path.Combine(CurrentPath, newName);
+
+                // Check if target exists
+                if (File.Exists(newPath))
+                {
+                    SetFileStatus(string.Format(Localization._T("MsgFileAlreadyExists"), newName));
+                    CancelRename();
+                    return;
+                }
+
+                // Perform rename
+                File.Move(oldPath, newPath);
+
+                // Update the view model
+                item.Name = newName;
+                item.IsEditing = false;
+                _itemBeingRenamed = null;
+
+                SetFileStatus(string.Format(Localization._T("MsgRenamed"), oldName, newName));
+
+                // Refresh view to update the item
+                RefreshView();
+
+                // Re-select the renamed item
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    lv_SelectItem(newName);
+                }), DispatcherPriority.Background);
+            }
+            catch (Exception ex)
+            {
+                SetFileStatus(string.Format(Localization._T("MsgRenameFailed"), ex.Message));
+                CancelRename();
+            }
+        }
+
+        // Event handlers for the rename TextBox
+        private void RenameTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                CommitRename();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                CancelRename();
+                e.Handled = true;
+            }
+        }
+
+        private void RenameTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            // Use dispatcher to allow focus change to complete
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var textBox = sender as TextBox;
+                if (_itemBeingRenamed != null && textBox != null && !textBox.IsFocused)
+                    CommitRename();
+            }), DispatcherPriority.Input);
+        }
+
+        private void RenameTextBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null)
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    textBox.Focus();
+                    Keyboard.Focus(textBox);
+
+                    // Select filename without extension
+                    var name = textBox.Text;
+                    var extIndex = name.LastIndexOf('.');
+                    if (extIndex > 0)
+                        textBox.Select(0, extIndex);
+                    else
+                        textBox.SelectAll();
+                }), DispatcherPriority.Input);
+            }
+        }
+
+        private void lv_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // If we're renaming, check if click is outside the rename textbox
+            if (_itemBeingRenamed != null)
+            {
+                var hitTest = VisualTreeHelper.HitTest(CurrentDirectory, e.GetPosition(CurrentDirectory));
+                if (hitTest != null)
+                {
+                    var textBox = FindVisualParent<TextBox>(hitTest.VisualHit);
+                    if (textBox == null || textBox.Name != "item_EditName")
+                        CommitRename();
+                }
+            }
+
+            _lvDragStartPoint = e.GetPosition(null);
+        }
+
         private void lv_SelectItem (EntryViewModel item)
         {
             if (item != null)
@@ -114,21 +279,20 @@ namespace GARbro.GUI
 
         private void PreviewOverlay (EntryViewModel item)
         {
-            if (CurrentDirectory.SelectedItems.Count == 1 && item.Type == "image")
+            if (CurrentDirectory.SelectedItems.Count == 1 && 
+                item.Type == "image" && 
+                !_overlayControl.HasImage(item.Name))
             {
-                if (!_overlayControl.HasImage (item.Name))
+                try
                 {
-                    try
+                    // refresh image
+                    using (var data = VFS.OpenImage (item.Source))
                     {
-                        // refresh image
-                        using (var data = VFS.OpenImage (item.Source))
-                        {
-                            _overlayControl.SetPreviewImage (data.Image.Bitmap, item.Name);
-                        }
-                        return;
+                        _overlayControl.SetPreviewImage (data.Image.Bitmap, item.Name);
                     }
-                    catch { }
+                    return;
                 }
+                catch { }
             }
             _overlayControl.ClearPreview();
         }
@@ -172,11 +336,6 @@ namespace GARbro.GUI
                     column.HeaderTemplate = Resources["SortArrowNone"] as DataTemplate;
             }
             SortMode = sortBy;
-        }
-
-        private void lv_PreviewMouseLeftButtonDown (object sender, MouseButtonEventArgs e)
-        {
-            _lvDragStartPoint = e.GetPosition (null);
         }
 
         private void lv_PreviewMouseMove (object sender, MouseEventArgs e)
@@ -316,6 +475,11 @@ namespace GARbro.GUI
 
         private void lv_TextInput (object sender, TextCompositionEventArgs e)
         {
+            if (_itemBeingRenamed != null)
+            {
+                e.Handled = false;
+                return;
+            }
             if (!FilterInputBorder.IsVisible && !string.IsNullOrEmpty (e.Text) && e.Text != "\x1B")
             {
                 CurrentDirectory.SelectedItems.Clear();
@@ -377,11 +541,15 @@ namespace GARbro.GUI
             {
                 switch (e.Key)
                 {
+                case Key.Escape:
+                    if (_isFilterActive)
+                        ClearFilter();
+                    _previewStateMachine?.StopCurrentPlayback();
+                    break;
                 case Key.Space:
                     CycleToNextItem (forward: true);
                     e.Handled = true;
                     break;
-
                 case Key.Back:
                     CycleToNextItem (forward: false);
                     e.Handled = true;
@@ -398,27 +566,12 @@ namespace GARbro.GUI
             _isFilterActive = true;
         }
 
-        private void HideFilterInput ()
-        {
-            if (string.IsNullOrEmpty (FilterInput.Text))
-            {
-                FilterInputBorder.Visibility = Visibility.Collapsed;
-                _filterText = string.Empty;
-                _isFilterActive = false;
-                ApplyFilter();
-                ListViewFocus();
-                SetFileStatus ("");
-            }
-        }
-
         private void FilterInput_TextChanged (object sender, TextChangedEventArgs e)
         {
+            if (!_isFilterActive)
+                return;
             _filterText = FilterInput.Text;
-            CurrentDirectory.SelectedItems.Clear();
             ApplyFilter();
-
-            if (string.IsNullOrEmpty (_filterText))
-                SetFileStatus ("");
         }
 
         private void FilterInput_LostFocus (object sender, RoutedEventArgs e)
@@ -426,22 +579,19 @@ namespace GARbro.GUI
             if (ClearFilterButton.IsKeyboardFocusWithin)
                 return;
 
-            CurrentDirectory.IsHitTestVisible = false;
-
-            HideFilterInput();
-
-            Dispatcher.BeginInvoke (new Action (() =>
+            if (string.IsNullOrEmpty(FilterInput.Text))
             {
-                CurrentDirectory.IsHitTestVisible = true;
-            }), DispatcherPriority.Input);
+                Dispatcher.BeginInvoke(new Action(() => {
+                    ClearFilter();
+                }), DispatcherPriority.Background);
+            }
         }
 
-        private void FilterInput_KeyDown (object sender, KeyEventArgs e)
+        private void FilterInput_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
-                FilterInput.Text = string.Empty;
-                HideFilterInput();
+                ClearFilter();
                 e.Handled = true;
             }
             else if (e.Key == Key.Enter)
@@ -451,28 +601,41 @@ namespace GARbro.GUI
             }
             else if (e.Key == Key.Up || e.Key == Key.Down)
             {
-                ListViewFocus();
                 if (CurrentDirectory.Items.Count > 0)
                 {
-                    if (CurrentDirectory.SelectedIndex == -1)
-                        CurrentDirectory.SelectedIndex = 0;
+                    int currentIndex = CurrentDirectory.SelectedIndex;
+                    int newIndex = currentIndex;
 
-                    var container = CurrentDirectory.ItemContainerGenerator.ContainerFromIndex (CurrentDirectory.SelectedIndex) as ListViewItem;
-                    container?.Focus();
+                    if (e.Key == Key.Up)
+                        newIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+                    else if (e.Key == Key.Down)
+                        newIndex = currentIndex < CurrentDirectory.Items.Count - 1 ? currentIndex + 1 : currentIndex;
+
+                    if (newIndex == -1)
+                        newIndex = 0;
+
+                    CurrentDirectory.SelectedIndex = newIndex;
+                    CurrentDirectory.ScrollIntoView(CurrentDirectory.SelectedItem);
                 }
                 e.Handled = true;
             }
         }
 
+        private void ClearFilter()
+        {
+            _isFilterActive = false;
+
+            FilterInput.Text = string.Empty;
+            _filterText      = string.Empty;
+            
+            FilterInputBorder.Visibility = Visibility.Collapsed;
+            ListViewFocus();
+            ApplyFilter();
+        }
+
         private void ClearFilterButton_Click (object sender, RoutedEventArgs e)
         {
-            FilterInput.Text = string.Empty;
-            _filterText = string.Empty;
-            _isFilterActive = false;
-            FilterInputBorder.Visibility = Visibility.Collapsed;
-            ApplyFilter();
-            ListViewFocus();
-            SetFileStatus ("");
+            ClearFilter();
         }
 
         private void ApplyFilter ()
@@ -481,9 +644,7 @@ namespace GARbro.GUI
             if (view != null)
             {
                 if (string.IsNullOrEmpty (_filterText))
-                {
                     view.Filter = null;
-                }
                 else
                 {
                     view.Filter = item =>
@@ -522,32 +683,10 @@ namespace GARbro.GUI
                 }
                 else
                     SetFileStatus ("");
-
-                if (CurrentDirectory.Items.Count > 0 && CurrentDirectory.SelectedIndex == -1)
-                    CurrentDirectory.SelectedIndex = 0;
             }
         }
 
-        private void ClearFilter ()
-        {
-            if (_isFilterActive || !string.IsNullOrEmpty (_filterText))
-            {
-                _isFilterActive = false;
-
-                if (CurrentDirectory.Items.Count > 0 && CurrentDirectory.SelectedIndex == -1)
-                    CurrentDirectory.SelectedIndex = 0;
-                _filterText = string.Empty;
-                FilterInput.Text = string.Empty;
-                FilterInputBorder.Visibility = Visibility.Collapsed;
-
-                var view = CollectionViewSource.GetDefaultView (CurrentDirectory.ItemsSource) as ListCollectionView;
-                if (view != null)
-                    view.Filter = null;
-            }
-            SetFileStatus ("");
-        }
-
-        private void DeleteSelectedItems()
+         private void DeleteSelectedItems()
         {
             var items = CurrentDirectory.SelectedItems.Cast<EntryViewModel>().Where (f => !f.IsDirectory);
             if (!items.Any())

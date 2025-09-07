@@ -5,8 +5,8 @@ namespace GameRes.Formats.VnMaker
     [Export(typeof(AudioFormat))]
     public class AudioMP3 : Mp3Audio
     {
-        public override string         Tag { get { return "MP3/VnMaker Encrypted MP3 Audio"; } }
-        public override string Description { get { return "VnMaker Encrypted MP3 Audio"; } }
+        public override string         Tag { get { return "MP3/VNMAKER"; } }
+        public override string Description { get { return "VnMaker encrypted MP3 audio"; } }
         public override uint     Signature { get { return 0; } }
         public override bool      CanWrite { get { return false; } }
 

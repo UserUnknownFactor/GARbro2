@@ -6,8 +6,8 @@ namespace GameRes.Formats.VnMaker
     [Export(typeof(ImageFormat))]
     public class PngFormat : GameRes.PngFormat
     {
-        public override string         Tag { get { return "PNG/VnMaker Encrypted PNG Image"; } }
-        public override string Description { get { return "VnMaker Encrypted PNG Image"; } }
+        public override string         Tag { get { return "PNG/VNMAKER"; } }
+        public override string Description { get { return "VnMaker encrypted PNG image"; } }
         public override uint     Signature { get { return 0; } }
         public override bool      CanWrite { get { return true; } }
 

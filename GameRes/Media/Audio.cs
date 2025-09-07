@@ -225,6 +225,11 @@ namespace GameRes
         public static AudioFormat Wav => s_WavFormat.Value;
 
         static readonly ResourceInstance<AudioFormat> s_WavFormat = new ResourceInstance<AudioFormat> ("WAV");
+
+        public bool IsBuiltin
+        {
+            get { return this.GetType().Assembly == typeof(AudioFormat).Assembly; }
+        }
     }
 
     ///<summary>Helper stream class for adding WAV headers to raw PCM data</summary>

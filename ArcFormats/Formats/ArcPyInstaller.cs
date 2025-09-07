@@ -33,11 +33,11 @@ namespace GameRes.Formats.PyInstaller
             long cookiePos = ExeFile.FindSignatureInOverlayReversed(file, MAGIC, 1, 0,
                 SignatureValidation.AlwaysValid);
 
-            if (cookiePos == 0 && !file.Name.EndsWith("exe"))
+            /*if (cookiePos == 0 && !file.Name.EndsWith("exe"))
             {
                 var section = new ExeFile.Section { Offset = 0, Size = (uint)file.MaxOffset };
                 cookiePos = ExeFile.FindStringReversed(file, section, MAGIC, 1);
-            }
+            }*/
 
             if (cookiePos <= 0)
                 return null;

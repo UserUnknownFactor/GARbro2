@@ -9,8 +9,8 @@ namespace GameRes.Formats.Kid
     [Export(typeof(ArchiveFormat))]
     public class KlzOpener: ArchiveFormat
     {
-        public override string Tag { get { return "KLZ/KID PS2"; } }
-        public override string Description { get { return "KID PS2 compressed image format with multi TIM2"; } }
+        public override string Tag { get { return "KLZ/KID_PS2"; } }
+        public override string Description { get { return "Multi-TIM2 KID PS2 compressed image format"; } }
         public override uint Signature { get { return 0; } }
         public override bool IsHierarchic { get { return false; } }
         public override bool CanWrite { get { return false; } }

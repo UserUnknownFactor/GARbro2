@@ -7,8 +7,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ImageFormat))]
     public class CgdFormat : ImageFormat
     {
-        public override string         Tag { get { return "CGD"; } }
-        public override string Description { get { return "'GameSystem' CG image format"; } }
+        public override string         Tag { get { return "GAMESYS/CGD"; } }
+        public override string Description { get { return "Game System CG image format"; } }
         public override uint     Signature { get { return 0; } }
 
         public CgdFormat ()

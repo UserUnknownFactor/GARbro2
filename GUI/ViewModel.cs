@@ -58,6 +58,36 @@ namespace GARbro.GUI
             Priority = priority;
         }
 
+        private bool _isEditing;
+        public bool IsEditing
+        {
+            get { return _isEditing; }
+            set
+            {
+                if (_isEditing != value)
+                {
+                    _isEditing = value;
+                    if (_isEditing)
+                        EditingName = Name;
+                    OnPropertyChanged("IsEditing");
+                }
+            }
+        }
+
+        private string _editingName;
+        public string EditingName
+        {
+            get { return _editingName; }
+            set
+            {
+                if (_editingName != value)
+                {
+                    _editingName = value;
+                    OnPropertyChanged("EditingName");
+                }
+            }
+        }
+
         private string GetRelativePath(string fullPath)
         {
             if (string.IsNullOrEmpty(fullPath) || fullPath == VFS.DIR_PARENT)
@@ -120,7 +150,8 @@ namespace GARbro.GUI
 
         public Entry Source { get; private set; }
 
-        public string Name { get; private set; }
+        public string Name { get; set; }
+
         public string Type
         {
             get { return Source.Type; }

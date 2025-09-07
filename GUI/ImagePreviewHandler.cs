@@ -112,6 +112,7 @@ namespace GARbro.GUI.Preview
 
         private void SetAnimatedImage (PreviewFile preview, ImageLoadResult result)
         {
+            _imageCanvas.Source = null;
             _mainWindow.ShowAnimatedImagePreview();
 
             if (result.AnimatedFrames.Count > 0)

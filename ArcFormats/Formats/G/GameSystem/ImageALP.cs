@@ -8,8 +8,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ImageFormat))]
     public class AlpFormat : ImageFormat
     {
-        public override string         Tag { get { return "ALP/GAMESYSTEM"; } }
-        public override string Description { get { return "'Game System' grayscale image format"; } }
+        public override string         Tag { get { return "GAMESYS/ALP"; } }
+        public override string Description { get { return "Game System grayscale image format"; } }
         public override uint     Signature { get { return 0; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)

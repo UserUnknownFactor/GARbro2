@@ -5,8 +5,8 @@ namespace GameRes.Formats.VnMaker
     [Export(typeof(AudioFormat))]
     public class AudioOGG : AudioFormat
     {
-        public override string         Tag { get { return "OGG/VnMaker Encrypted OGG Audio"; } }
-        public override string Description { get { return "VnMaker Encrypted OGG Audio"; } }
+        public override string         Tag { get { return "OGG/VNMAKER"; } }
+        public override string Description { get { return "VnMaker encrypted OGG audio"; } }
         public override uint     Signature { get { return 0; } }
         public override bool      CanWrite { get { return false; } }
 

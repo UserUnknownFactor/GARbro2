@@ -25,6 +25,12 @@ namespace GameRes
             IsEncrypted = false;
         }
 
+        public override string ToString()
+        {
+            var encrypted = IsEncrypted ? " [Encrypted]" : "";
+            return $"{Name ?? "(null)"} [{Type}] @{Offset:X} ({Size:N0} B){encrypted}";
+        }
+
         /// <summary>
         /// Check whether entry lies within specified file bound.
         /// </summary>

@@ -13,8 +13,8 @@ namespace GameRes.Formats.MAGES
     [Export(typeof(ImageFormat))]
     public class BinFormat : ImageFormat
     {
-        public override string Tag { get { return "MAGES PS3/PSV Image Format"; } }
-        public override string Description { get { return "MAGES PS3/PSV Image Format"; } }
+        public override string Tag { get { return "BIN/MAGES"; } }
+        public override string Description { get { return "MAGES PS3/PSV image format"; } }
         public override uint Signature { get { return 0; } }
         public override bool CanWrite { get { return true; } }
 

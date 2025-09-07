@@ -10,8 +10,8 @@ namespace GameRes.Formats.Kid
     [Export(typeof(ImageFormat))]
     public class KlzFormat: DigitalWorks.Tim2Format
     {
-        public override string Tag { get { return "KLZ/KID PS2 compressed TIM2"; } }
-        public override string Description { get { return "KID PS2 compressed TIM2 image format"; } }
+        public override string Tag { get { return "KLZ/KID_COMP"; } }
+        public override string Description { get { return "KID PlayStation 2 LZH compressed TIM2 image format"; } }
         public override uint Signature { get { return 0; } } //KLZ have no header
         public KlzFormat()
         {
@@ -52,19 +52,21 @@ namespace GameRes.Formats.Kid
         /// <param name="input">input stream, include header</param>
         /// <returns></returns>
         public static Stream LzhStreamDecode(IBinaryStream input) {
-            byte[] out_bytes = new byte[0x4000];
-            List<byte> f_out_bytes = new List<byte>();
-            uint output_size = Binary.BigEndian(input.ReadUInt32());
-            ushort fill_count = Binary.BigEndian(input.ReadUInt16());
-            bool at;
-            int v0, s0 = 0, s1, s3;
-            byte v1; //byte a0
-            ushort s2;
-            int OO40_sp = 0, OO42_sp = 0, OO44_sp, OO48_sp, OO50_sp = 0, OO60_sp = 0, OO70_sp = fill_count;
-            int next_read_pos = 0;
-            int count = 0;
-            int num_passes = 0;
-            byte[] decode_table = new byte[] { 
+            byte[] decompressBuffer = new byte[0x4000];
+            List<byte> outputData = new List<byte>();
+            uint totalOutputSize = Binary.BigEndian(input.ReadUInt32());
+            ushort currentBlockSize = Binary.BigEndian(input.ReadUInt16());
+            bool condition;
+            int tempValue, currentOutputPosition = 0, copySourcePosition, copyLength;
+            byte currentByte; //byte a0
+            ushort compressionWord;
+            int bitMaskIndex = 0, bytesProcessedInBlock = 0, 
+                controlBytePosition, dataBytePosition, bufferStartOffset = 0, 
+                streamPosition = 0, remainingBlockSize = currentBlockSize;
+            int nextBlockPosition = 0;
+            int totalBytesWritten = 0;
+            int blocksPassed = 0;
+            byte[] bitMaskTable = new byte[] { 
                 0x01, 0x02, 0x04, 0x08,
                 0x10, 0x20, 0x40, 0x80,
                 // Only first 8 are used
@@ -81,77 +83,77 @@ namespace GameRes.Formats.Kid
             }*/
             //out_bytes = Enumerable.Repeat((byte)0, 0x4000);
             // out.resize(0x4000) end
-            if (fill_count > 0x4000)
+            if (currentBlockSize > 0x4000)
             {
-                next_read_pos = 4;
-                while (OO70_sp > 0x4000)
+                nextBlockPosition = 4;
+                while (remainingBlockSize > 0x4000)
                 {
-                    int cnt = 0;
-                    int copy_off = next_read_pos + 2;
-                    while (cnt < 0x4000)
+                    int bytesToCopy = 0;
+                    int readPosition = nextBlockPosition + 2;
+                    while (bytesToCopy < 0x4000)
                     {
-                        input.Position = copy_off;
-                        f_out_bytes.Add(input.ReadUInt8());
-                        cnt++;
-                        copy_off++;
+                        input.Position = readPosition;
+                        outputData.Add(input.ReadUInt8());
+                        bytesToCopy++;
+                        readPosition++;
                     }
-                    count += 0x4000;
-                    next_read_pos += cnt + 2;
-                    num_passes++;
-                    input.Position = next_read_pos;
-                    OO70_sp = Binary.BigEndian(input.ReadUInt16());
-                    if (count >= output_size || next_read_pos >= input.Length)
+                    totalBytesWritten += 0x4000;
+                    nextBlockPosition += bytesToCopy + 2;
+                    blocksPassed++;
+                    input.Position = nextBlockPosition;
+                    remainingBlockSize = Binary.BigEndian(input.ReadUInt16());
+                    if (totalBytesWritten >= totalOutputSize || nextBlockPosition >= input.Length)
                     {
-                        Stream stream = new MemoryStream(f_out_bytes.ToArray());
+                        Stream stream = new MemoryStream(outputData.ToArray());
                         return stream;
                     }
-                    OO60_sp = next_read_pos + 2;
+                    streamPosition = nextBlockPosition + 2;
                 }
             }
             else
             {
-                OO60_sp = 6;
+                streamPosition = 6;
             }
 
-            OO44_sp = OO60_sp;
+            controlBytePosition = streamPosition;
             /*v0 = OO60_sp + 1;
             OO48_sp = v0;*/
-            OO48_sp = OO60_sp + 1;
+            dataBytePosition = streamPosition + 1;
             while (true){
-                input.Position = OO44_sp;
+                input.Position = controlBytePosition;
                 //input.Seek(OO44_sp, SeekOrigin.Begin);
                 /*v0 = input.ReadUInt8();
                 a0 = v0 & 0xFF;*/
                 //a0 = input.ReadUInt8();
                 /*v0 = OO40_sp;
                 v1 = v0 & 0xFF;*/
-                v0 = decode_table[OO40_sp & 0xFF] & input.ReadUInt8();
+                tempValue = bitMaskTable[bitMaskIndex & 0xFF] & input.ReadUInt8();
                 //v0 &= a0;
                 // #001BA8AC
-                if (v0 == 0)
+                if (tempValue == 0)
                 {
-                    input.Position = OO48_sp;
+                    input.Position = dataBytePosition;
                     //input.Seek(OO48_sp, SeekOrigin.Begin);
-                    v1 = input.ReadUInt8();
-                    v0 = OO50_sp + s0;
+                    currentByte = input.ReadUInt8();
+                    tempValue = bufferStartOffset + currentOutputPosition;
                     /*out_bytes.RemoveAt(v0);
                     out_bytes.Insert(v0, v1);*/
-                    out_bytes[v0] = v1;
-                    OO48_sp++;
-                    OO42_sp++;
-                    s0++;
+                    decompressBuffer[tempValue] = currentByte;
+                    dataBytePosition++;
+                    bytesProcessedInBlock++;
+                    currentOutputPosition++;
                 }
-                else if (v0 != 0) {
+                else if (tempValue != 0) {
                     // # 001BA8F0
-                    OO42_sp += 2;
-                    input.Position = OO48_sp;
+                    bytesProcessedInBlock += 2;
+                    input.Position = dataBytePosition;
                     // input.Seek(OO48_sp, SeekOrigin.Begin);
                     /*v0 = input.ReadUInt8() & 0xFF;
                     v1 = v0 << 8;
                     v0 = input.ReadUInt8() & 0xFF;
                     v0 = v1 | v0;
                     v0 &= 0xFFFF;*/
-                    s2 = Binary.BigEndian(input.ReadUInt16());
+                    compressionWord = Binary.BigEndian(input.ReadUInt16());
                     /*s2 = v0 & 0xFFFF;
                     v0 = s2 & 0xFFFF;*/
                     //v0 = s2;
@@ -160,44 +162,44 @@ namespace GameRes.Formats.Kid
                     //v0 &= 0xFFFF;
                     /*s3 = v0 & 0xFFFF;
                     v0 = s2 & 0xFFFF;*/
-                    s3 = (s2 & 0x1F) + 2;
+                    copyLength = (compressionWord & 0x1F) + 2;
                     //v0 = s2;
                     //v0 >>= 5;
                     /*v0 &= 0xFFFF;
                     s1 = v0 & 0xFFFF;
                     v0 = s1 & 0xFFFF;*/
-                    v0 = s0 - (s2 >> 5) - 1;
+                    tempValue = currentOutputPosition - (compressionWord >> 5) - 1;
                     //v0 -= 1;
                     //v0 &= 0xFFFF;
-                    s1 = v0 & 0xFFFF;
-                    OO48_sp += 1;
-                    v0 = 1;
-                    while (v0 != 0)
+                    copySourcePosition = tempValue & 0xFFFF;
+                    dataBytePosition += 1;
+                    tempValue = 1;
+                    while (tempValue != 0)
                     {
-                        at = s0 < 0x0800;
+                        condition = currentOutputPosition < 0x0800;
                         // # 001BA96C
-                        if (at)
+                        if (condition)
                         {
-                            v0 = s1 & 0xFFFF;
-                            at = s0 < v0;
-                            if (at)
+                            tempValue = copySourcePosition & 0xFFFF;
+                            condition = currentOutputPosition < tempValue;
+                            if (condition)
                             {
-                                v1 = out_bytes[OO50_sp];
-                                v0 = OO50_sp + s0;
+                                currentByte = decompressBuffer[bufferStartOffset];
+                                tempValue = bufferStartOffset + currentOutputPosition;
                                 /*out_bytes.RemoveAt(v0);
                                 out_bytes.Insert(v0, v1);*/
-                                out_bytes[v0] = v1;
-                                s0 += 1;
+                                decompressBuffer[tempValue] = currentByte;
+                                currentOutputPosition += 1;
                                 /*v0 = s1 + 1;
                                 s1 = v0 & 0xFFFF;*/
-                                s1 = (s1 + 1) & 0xFFFF;
+                                copySourcePosition = (copySourcePosition + 1) & 0xFFFF;
                                 // # 001BA9D8
                                 /*v1 = s3;
                                 v0 = v1 - 1;
                                 s3 = v0 & 0xFFFF;
                                 v0 = v1 & 0xFFFF;*/
-                                v0 = s3 & 0xFFFF;
-                                s3 = (s3 - 1) & 0xFFFF;
+                                tempValue = copyLength & 0xFFFF;
+                                copyLength = (copyLength - 1) & 0xFFFF;
                                 continue;
                             }
                         }
@@ -207,103 +209,103 @@ namespace GameRes.Formats.Kid
                         v0 += v1;*/
                         //v0 = OO50_sp + s1 & 0xFFFF;
                         //v1 = out_bytes[v0];
-                        v1 = out_bytes[OO50_sp + s1 & 0xFFFF];
-                        v0 = OO50_sp;
-                        v0 += s0;
+                        currentByte = decompressBuffer[bufferStartOffset + copySourcePosition & 0xFFFF];
+                        tempValue = bufferStartOffset;
+                        tempValue += currentOutputPosition;
                         /*out_bytes.RemoveAt(v0);
                         out_bytes.Insert(v0, v1);*/
-                        out_bytes[v0] = v1;
-                        s0 += 1;
+                        decompressBuffer[tempValue] = currentByte;
+                        currentOutputPosition += 1;
                         //v0 = s1 + 1;
-                        s1 = (s1 + 1) & 0xFFFF;
+                        copySourcePosition = (copySourcePosition + 1) & 0xFFFF;
                         // # 001BA9D8
                         /*v1 = s3;
                         v0 = v1 - 1;
                         s3 = v0 & 0xFFFF;
                         v0 = v1 & 0xFFFF;*/
-                        v0 = s3 & 0xFFFF;
-                        s3 = s3 - 1 & 0xFFFF;
+                        tempValue = copyLength & 0xFFFF;
+                        copyLength = copyLength - 1 & 0xFFFF;
                     }
-                    OO48_sp += 1;
+                    dataBytePosition += 1;
                 }
                 // # 001BAA00
-                OO40_sp += 1;
+                bitMaskIndex += 1;
                 //v1 = Convert.ToByte(OO40_sp & 0xFF);
                 //v0 = 8;
-                if ((OO40_sp & 0xFF) == 8)
+                if ((bitMaskIndex & 0xFF) == 8)
                 {
-                    OO40_sp = 0;
-                    OO44_sp = OO48_sp;
-                    OO48_sp += 1;
-                    OO42_sp += 1;
+                    bitMaskIndex = 0;
+                    controlBytePosition = dataBytePosition;
+                    dataBytePosition += 1;
+                    bytesProcessedInBlock += 1;
                 }
                 /*v0 = OO42_sp;
                 v1 = v0 & 0xFFFF;
                 v0 = OO70_sp;
                 v0 -= 1;*/
                 //v0 = v1 < v0 ? 1 : 0;
-                v0 = OO42_sp < OO70_sp - 1 ? 1 : 0;
-                if (v0 == 0)
+                tempValue = bytesProcessedInBlock < remainingBlockSize - 1 ? 1 : 0;
+                if (tempValue == 0)
                 {
-                    count += s0;
-                    if (count >= output_size || next_read_pos >= input.Length)
+                    totalBytesWritten += currentOutputPosition;
+                    if (totalBytesWritten >= totalOutputSize || nextBlockPosition >= input.Length)
                     {
-                        f_out_bytes.AddRange(out_bytes);
-                        Stream stream = new MemoryStream(f_out_bytes.ToArray());
+                        outputData.AddRange(decompressBuffer);
+                        Stream stream = new MemoryStream(outputData.ToArray());
                         return stream;
                     }
-                    num_passes += 1;
-                    if (num_passes == 1)
+                    blocksPassed += 1;
+                    if (blocksPassed == 1)
                     {
-                        next_read_pos += OO70_sp + 6;
+                        nextBlockPosition += remainingBlockSize + 6;
                     }
                     else
                     {
-                        next_read_pos += OO70_sp + 2;
+                        nextBlockPosition += remainingBlockSize + 2;
                     }
 
-                    f_out_bytes.AddRange(out_bytes);
+                    outputData.AddRange(decompressBuffer);
                     // # out.fill(0);
-                    input.Position = next_read_pos;
-                    OO70_sp = Binary.BigEndian(input.ReadUInt16());
-                    if (OO70_sp > 0x4000)
+                    input.Position = nextBlockPosition;
+                    remainingBlockSize = Binary.BigEndian(input.ReadUInt16());
+                    if (remainingBlockSize > 0x4000)
                     {
-                        while (OO70_sp > 0x4000)
+                        while (remainingBlockSize > 0x4000)
                         {
-                            int cnt = 0;
-                            int copy_off = next_read_pos + 2;
-                            while (cnt < 0x4000)
+                            int bytesToCopy = 0;
+                            int readPosition = nextBlockPosition + 2;
+                            while (bytesToCopy < 0x4000)
                             {
-                                input.Position = copy_off;
-                                f_out_bytes.Add(input.ReadUInt8());
-                                cnt += 1;
-                                copy_off += 1;
+                                input.Position = readPosition;
+                                outputData.Add(input.ReadUInt8());
+                                bytesToCopy += 1;
+                                readPosition += 1;
                             }
-                            count += 0x4000;
-                            next_read_pos += cnt + 2;
-                            input.Position = next_read_pos;
-                            OO70_sp = Binary.BigEndian(input.ReadUInt16());
-                            if (count >= output_size || next_read_pos >= input.Length)
+                            totalBytesWritten += 0x4000;
+                            nextBlockPosition += bytesToCopy + 2;
+                            input.Position = nextBlockPosition;
+                            remainingBlockSize = Binary.BigEndian(input.ReadUInt16());
+                            if (totalBytesWritten >= totalOutputSize || nextBlockPosition >= input.Length)
                             {
-                                Stream stream = new MemoryStream(f_out_bytes.ToArray());
+                                Stream stream = new MemoryStream(outputData.ToArray());
                                 return stream;
                             }
                         }
                     }
-                    s0 = 0;
+                    currentOutputPosition = 0;
                     //s1 = 0;
-                    OO50_sp = 0;
-                    OO42_sp = 0;
-                    OO48_sp = next_read_pos + 2;
-                    if (OO48_sp > input.Length) {
-                        Stream stream = new MemoryStream(f_out_bytes.ToArray());
+                    bufferStartOffset = 0;
+                    bytesProcessedInBlock = 0;
+                    dataBytePosition = nextBlockPosition + 2;
+                    if (dataBytePosition > input.Length) {
+                        Stream stream = new MemoryStream(outputData.ToArray());
                         return stream;
                     }
-                    OO40_sp = 0;
-                    OO60_sp = OO48_sp;
-                    OO44_sp = OO60_sp;
-                    v0 = OO60_sp + 1;
-                    OO48_sp = v0;
+                    bitMaskIndex = 0;
+                    streamPosition = dataBytePosition;
+                    controlBytePosition = streamPosition;
+                    tempValue = streamPosition + 1;
+                    dataBytePosition = tempValue;
                 }
             }
             //Stream stream_out = new MemoryStream(f_out_bytes.ToArray());

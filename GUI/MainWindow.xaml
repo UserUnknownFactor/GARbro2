@@ -97,11 +97,9 @@
             <MenuItem Header="{gre:Localize CtxMenuDelete}" InputGestureText="Del"
                       Visibility="{Binding Path=IsEnabled, RelativeSource={RelativeSource Self}, Mode=OneWay, Converter={StaticResource booleanToCollapsedVisibilityConverter}}"
                       Command="{x:Static local:Commands.DeleteItem}"/>
-            <Separator/>
-            <!--
             <MenuItem Header="{gre:Localize CtxMenuRename}" InputGestureText="F2"
                       Command="{x:Static local:Commands.RenameItem}"/>
-            -->
+            <Separator/>
             <MenuItem Header="{gre:Localize CtxMenuRefresh}" InputGestureText="F5"
                       Command="{x:Static local:Commands.Refresh}"/>
             <MenuItem Header="{gre:Localize CtxMenuConvert}" InputGestureText="F6"
@@ -583,7 +581,19 @@
                                 <GridViewColumnHeader Tag="Name" Content="{gre:Localize HeaderName}"/>
                             </GridViewColumn.Header>
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate><TextBlock x:Name="item_Name" Text="{Binding Path=Name}"/></DataTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock x:Name="item_Name" 
+                                            Text="{Binding Path=Name}" 
+                                            Visibility="{Binding Path=IsEditing, Converter={StaticResource booleanToCollapsedVisibilityConverter}, ConverterParameter=Inverse}"/>
+                                        <TextBox x:Name="item_EditName" 
+                                                Text="{Binding Path=EditingName, UpdateSourceTrigger=PropertyChanged}"
+                                                Visibility="{Binding Path=IsEditing, Converter={StaticResource booleanToCollapsedVisibilityConverter}}"
+                                                LostFocus="RenameTextBox_LostFocus"
+                                                KeyDown="RenameTextBox_KeyDown"
+                                                Loaded="RenameTextBox_Loaded"/>
+                                    </Grid>
+                                </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn HeaderContainerStyle="{StaticResource HeaderLeftAlign}" Width="{Binding Source={x:Static p:Settings.Default}, Path=lvTypeColumnWidth, Mode=TwoWay}" HeaderTemplate="{StaticResource SortArrowNone}" DisplayMemberBinding="{Binding Path=Type, Mode=OneWay, Converter={StaticResource entryTypeConverter}}">
@@ -629,7 +639,7 @@
                                  VerticalContentAlignment="Center"
                                  TextChanged="FilterInput_TextChanged"
                                  LostFocus="FilterInput_LostFocus"
-                                 KeyDown="FilterInput_KeyDown"/>
+                                 PreviewKeyDown="FilterInput_PreviewKeyDown"/>
                         <Button x:Name="ClearFilterButton" Grid.Column="1" 
                                 Content="✕" Width="30" 
                                 Background="Transparent" BorderThickness="0"

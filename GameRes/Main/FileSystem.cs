@@ -318,8 +318,11 @@ namespace GameRes
 
         private Entry EntryFromFileInfo (FileInfo file)
         {
-            var entry = FormatCatalog.Instance.Create<Entry> (file.FullName);
-            entry.Size = (uint)Math.Min (file.Length, uint.MaxValue);
+            var entry = new Entry {
+                Name = file.FullName,
+                Size = (uint)Math.Min (file.Length, uint.MaxValue)
+            };
+            entry.Type = FormatCatalog.Instance.GetTypeFromName (file.FullName, null, null, file.Length);
             return entry;
         }
 
@@ -772,21 +775,15 @@ namespace GameRes
             var cur_dir = new List<string>();
 
             if (-1 != Array.IndexOf (m_path_delimiters, path[0]))
-            {
                 path = path.TrimStart (m_path_delimiters);
-            }
             else if (VFS.DIR_PARENT == path && !string.IsNullOrEmpty (m_cwd))
-            {
                 cur_dir.AddRange (m_cwd.Split (m_path_delimiters));
-            }
 
             var path_list = path.Split (m_path_delimiters);
             foreach (var dir in path_list)
             {
                 if (VFS.DIR_CURRENT == dir)
-                {
                     continue;
-                }
                 else if (VFS.DIR_PARENT == dir)
                 {
                     if (0 == cur_dir.Count)
@@ -794,9 +791,17 @@ namespace GameRes
                     cur_dir.RemoveAt (cur_dir.Count - 1);
                 }
                 else
-                {
                     cur_dir.Add (dir);
-                }
+            }
+
+            // detect delimiters since we can have both mixed (TODO: fix the plugin if this happens)
+            var firstEntry = m_arc.Dir.FirstOrDefault(e => e.Name.Contains('/') || e.Name.Contains('\\'));
+            if (firstEntry != null)
+            {
+                if (firstEntry.Name.Contains('/'))
+                    PathDelimiter = "/";
+                else if (firstEntry.Name.Contains('\\'))
+                    PathDelimiter = "\\";
             }
 
             string new_path = string.Join (PathDelimiter, cur_dir);
@@ -1126,6 +1131,22 @@ namespace GameRes
             if (sep >= 0)
                 return path.Substring (sep + 1);
             return path;
+        }
+
+        /// <summary>
+        /// Gets just the filename portion of a path.
+        /// </summary>
+        public static string GetExtension (string path)
+        {
+            if (string.IsNullOrEmpty (path))
+                return string.Empty;
+
+            string fileName = GetFileName (path);
+            int lastDot = path.LastIndexOf('.');
+            if (lastDot < 1 || lastDot == fileName.Length - 1)
+                return string.Empty;
+
+            return path.Substring(lastDot);
         }
 
         /// <summary>

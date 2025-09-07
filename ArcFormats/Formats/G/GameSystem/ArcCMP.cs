@@ -10,8 +10,8 @@ namespace GameRes.Formats.GameSystem
     [Export(typeof(ArchiveFormat))]
     public class CmpOpener : ArchiveFormat
     {
-        public override string         Tag { get { return "CMP"; } }
-        public override string Description { get { return "'GameSystem' engine resource archive"; } }
+        public override string         Tag { get { return "GAMESYS/CMP"; } }
+        public override string Description { get { return "Game System engine resource archive"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return true; } }
         public override bool      CanWrite { get { return false; } }

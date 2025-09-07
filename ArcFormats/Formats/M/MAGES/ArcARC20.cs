@@ -8,7 +8,7 @@ namespace GameRes.Formats.MAGES
     [Export(typeof(ArchiveFormat))]
     public class ARC20Opener : ArchiveFormat
     {
-        public override string Tag { get { return "ARC/Princess Soft ARC20"; } }
+        public override string Tag { get { return "ARC20/PSOFT"; } }
         public override string Description { get { return "Princess Soft PS2 resource archive"; } }
         public override uint Signature { get { return 0x20435241; } } // 'ARC\x20'
         public override bool IsHierarchic { get { return true; } }

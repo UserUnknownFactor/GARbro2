@@ -86,7 +86,20 @@ namespace GameRes
         {
             return new EntryType {
                 Name = filename,
-                Type = FormatCatalog.Instance.GetTypeFromName (filename, ContainedFormats),
+                Type = FormatCatalog.Instance.GetTypeFromName (filename, ContainedFormats, null, 0),
+            };
+        }
+
+        /// <summary>
+        /// Create <see cref="Entry"/> corresponding to <paramref name="filename"/>'s extension and size.
+        /// </summary>
+        /// <exception cref="System.ArgumentException">May be thrown if filename contains invalid
+        /// characters.</exception>
+        public EntryType Create<EntryType> (string filename, long size) where EntryType : Entry, new()
+        {
+            return new EntryType {
+                Name = filename,
+                Type = FormatCatalog.Instance.GetTypeFromName (filename, ContainedFormats, null, size),
             };
         }
 
