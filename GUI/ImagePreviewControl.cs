@@ -27,6 +27,7 @@ namespace GARbro.GUI
             animationTimer       = new DispatcherTimer();
             animationTimer.Tick += OnFrameChange;
             Unloaded            += (s, e) => StopAnimation();
+            this.OpacityMask = null;
         }
 
         /// <summary>
@@ -68,8 +69,11 @@ namespace GARbro.GUI
             currentFrameIndex = (currentFrameIndex + 1) % frames.Count;
             Source = frames[currentFrameIndex];
 
-            // Set the timer for the next frame
-            animationTimer.Interval = TimeSpan.FromMilliseconds (frameDelays[currentFrameIndex]);
+            int delay = currentFrameIndex < frameDelays.Count ? 
+                frameDelays[currentFrameIndex] : 100;
+            if (delay <= 0) delay = 10;
+
+            animationTimer.Interval = TimeSpan.FromMilliseconds (delay);
         }
 
         /// <summary>
@@ -79,7 +83,12 @@ namespace GARbro.GUI
         {
             if (isAnimated && frames.Count > 1)
             {
-                animationTimer.Interval = TimeSpan.FromMilliseconds (frameDelays[currentFrameIndex]);
+                int initialDelay = currentFrameIndex < frameDelays.Count ? 
+                    frameDelays[currentFrameIndex] : 100;
+
+                if (initialDelay <= 0) initialDelay = 10;
+
+                animationTimer.Interval = TimeSpan.FromMilliseconds (initialDelay);
                 animationTimer.Start();
             }
         }
@@ -89,7 +98,7 @@ namespace GARbro.GUI
         /// </summary>
         public void StopAnimation ()
         {
-            if (animationTimer != null && isAnimated && animationTimer.IsEnabled)
+            if (animationTimer != null && animationTimer.IsEnabled)
                 animationTimer.Stop();
         }
 
@@ -105,7 +114,13 @@ namespace GARbro.GUI
                 for (int i = 0; i < frames.Count; i++) frames[i] = null;
                 bool collect = frames?.Count > 7;
                 frames.Clear();
-                if (collect) GC.Collect();
+
+                if (collect)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
             }
 
             frameDelays?.Clear();
@@ -126,8 +141,7 @@ namespace GARbro.GUI
         /// <summary>
         /// Check if animation is paused
         /// </summary>
-        public bool IsPaused 
-        { 
+        public bool IsPaused {
             get { return animationTimer != null && !animationTimer.IsEnabled && isAnimated; }
         }
 

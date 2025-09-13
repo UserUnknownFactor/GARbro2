@@ -13,8 +13,8 @@ namespace GameRes.Formats.Crowd
     {
         public override string         Tag { get { return "CWP"; } }
         public override string Description { get { return "Crowd engine image format"; } }
-        public override uint     Signature { get { return 0x50445743; } } // 'CWDP'
-        public override bool      CanWrite { get { return true; } }
+        public override uint     Signature { get { return  0x50445743; } } // 'CWDP'
+        public override bool      CanWrite { get { return  true; } }
 
         public CwpFormat ()
         {
@@ -29,9 +29,11 @@ namespace GameRes.Formats.Crowd
             uint height = BigEndian.ToUInt32 (header, 8);
             if (0 == width || 0 == height)
                 return null;
+
             int bpp = header[0xC];
             if (bpp != 1 && bpp != 2 && bpp != 4 && bpp != 8 && bpp != 16)
                 return null;
+
             int color_type = header[0xD];
             switch (color_type)
             {
@@ -42,8 +44,8 @@ namespace GameRes.Formats.Crowd
             case 0: break;
             default: return null;
             }
-            return new ImageMetaData
-            {
+
+            return new ImageMetaData {
                 Width = width,
                 Height = height,
                 BPP = 32, // always converted to 32bpp
@@ -55,10 +57,10 @@ namespace GameRes.Formats.Crowd
             var header = new byte[0x29];
             Buffer.BlockCopy (PngFormat.PNG_HEADER, 0, header, 0, PngFormat.PNG_HEADER.Length);
             header[0xB] = 0xD;
-            Encoding.ASCII.GetBytes ("IHDR", 0, 4, header, 0xC);
+            Encoding.ASCII.GetBytes (PngFormat.CHUNK_IHDR, 0, 4, header, 0xC);
             input.Position = 4;
             input.Read (header, 0x10, 0x15);
-            Encoding.ASCII.GetBytes ("IDAT", 0, 4, header, 0x25);
+            Encoding.ASCII.GetBytes (PngFormat.CHUNK_IDAT, 0, 4, header, 0x25);
             var footer = new byte[] {
                 0, 0, 0, (byte)'I', (byte)'E', (byte)'N', (byte)'D', 0xAE, 0x42, 0x60, 0x82
             };

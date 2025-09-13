@@ -21,9 +21,7 @@ namespace GameRes.Formats.DxLib
         string      m_password;
         byte[]      m_key;
 
-        public DxKey () : this (string.Empty)
-        {
-        }
+        public DxKey () : this (string.Empty) { }
 
         public DxKey (string password)
         {
@@ -67,35 +65,35 @@ namespace GameRes.Formats.DxLib
                 if (length < 12)
                     Binary.CopyOverlapped (key, 0, length, 12-length);
             }
-            key[0] ^= 0xFF;
-            key[1]  = Binary.RotByteR (key[1], 4);
-            key[2] ^= 0x8A;
-            key[3]  = (byte)~Binary.RotByteR (key[3], 4);
-            key[4] ^= 0xFF;
-            key[5] ^= 0xAC;
-            key[6] ^= 0xFF;
-            key[7]  = (byte)~Binary.RotByteR (key[7], 3);
-            key[8]  = Binary.RotByteL (key[8], 3);
-            key[9] ^= 0x7F;
-            key[10] = (byte)(Binary.RotByteR (key[10], 4) ^ 0xD6);
+            key[0]  ^= 0xFF;
+            key[1]   = Binary.RotByteR (key[1], 4);
+            key[2]  ^= 0x8A;
+            key[3]   = (byte)~Binary.RotByteR (key[3], 4);
+            key[4]  ^= 0xFF;
+            key[5]  ^= 0xAC;
+            key[6]  ^= 0xFF;
+            key[7]   = (byte)~Binary.RotByteR (key[7], 3);
+            key[8]   = Binary.RotByteL (key[8], 3);
+            key[9]  ^= 0x7F;
+            key[10]  = (byte)(Binary.RotByteR (key[10], 4) ^ 0xD6);
             key[11] ^= 0xCC;
             return key;
         }
 
         protected virtual string RestoreKey (byte[] key)
         {
-            var bin = key.Clone() as byte[];
-            bin[0] ^= 0xFF;
-            bin[1]  = Binary.RotByteL (bin[1], 4);
-            bin[2] ^= 0x8A;
-            bin[3]  = Binary.RotByteL ((byte)~bin[3], 4);
-            bin[4] ^= 0xFF;
-            bin[5] ^= 0xAC;
-            bin[6] ^= 0xFF;
-            bin[7]  = Binary.RotByteL ((byte)~bin[7], 3);
-            bin[8]  = Binary.RotByteR (bin[8], 3);
-            bin[9] ^= 0x7F;
-            bin[10] = Binary.RotByteL ((byte)(bin[10] ^ 0xD6), 4);
+            var bin  = key.Clone() as byte[];
+            bin[0]  ^= 0xFF;
+            bin[1]   = Binary.RotByteL (bin[1], 4);
+            bin[2]  ^= 0x8A;
+            bin[3]   = Binary.RotByteL ((byte)~bin[3], 4);
+            bin[4]  ^= 0xFF;
+            bin[5]  ^= 0xAC;
+            bin[6]  ^= 0xFF;
+            bin[7]   = Binary.RotByteL ((byte)~bin[7], 3);
+            bin[8]   = Binary.RotByteR (bin[8], 3);
+            bin[9]  ^= 0x7F;
+            bin[10]  = Binary.RotByteL ((byte)(bin[10] ^ 0xD6), 4);
             bin[11] ^= 0xCC;
             return Encodings.cp932.GetString (bin);
         }
@@ -150,25 +148,20 @@ namespace GameRes.Formats.DxLib
 
         protected override byte[] CreateKey(string keyword)
         {
-            //from DxArchive.cpp
-            //first check if the keyword is too short
+            //from DxArchive.cpp: first check if the keyword is too short
             if (keyword.Length < 4)
-            {
                 keyword += "DXARC";
-            }
+
             //first split string to bytes. Use original encoding as basis. Otherwise we would fail to decrypt that.
             Encoding tgtEncoding = Encoding.GetEncoding(codepage);
             byte[] tgtBytes = tgtEncoding.GetBytes(keyword);
             byte[] oddBuffer = new byte[(tgtBytes.Length/2)+(tgtBytes.Length%2)]; int oddCounter = 0;
             byte[] evenBuffer = new byte[(tgtBytes.Length/2)]; int evenCounter = 0;
             for (int i=0; i<tgtBytes.Length;i+=2,oddCounter++)
-            {
                 oddBuffer[oddCounter] = tgtBytes[i];
-            }
             for (int i = 1; i < tgtBytes.Length; i += 2, evenCounter++)
-            {
                 evenBuffer[evenCounter] = tgtBytes[i];
-            }
+
             UInt32 crc_0, crc_1;
             crc_0 = Crc32.Compute(oddBuffer, 0, oddCounter);
             crc_1 = Crc32.Compute(evenBuffer, 0, evenCounter);

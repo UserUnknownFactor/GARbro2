@@ -363,3 +363,4 @@ WritingArchive→Writing archive...→→→
 FinalizingArchive→Finalizing archive...→→→
 PackingComplete→Packing complete→→→
 FileIofN→ - File {0}/{1}→→→
+NoImageDecoder→Image decoder not found→→→

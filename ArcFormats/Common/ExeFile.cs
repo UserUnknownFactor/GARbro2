@@ -55,6 +55,8 @@ namespace GameRes.Formats
         List<ImageSection>          m_section_list;
         bool?                       m_is_NE;
 
+        public const uint MAGIC_MZ = 0x5A4D;
+
         public ExeFile (ArcView file)
         {
             if (!file.View.AsciiEqual (0, "MZ"))
@@ -437,7 +439,7 @@ namespace GameRes.Formats
         public static long FindSignature (ArcView file, byte[] signature, string section = ".rsrc", 
             int step = 4, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             validator = validator ?? SignatureValidation.HasNonZeroAfter;
@@ -515,7 +517,7 @@ namespace GameRes.Formats
         public static long FindSignatureInSection (ArcView file, byte[] signature, string sectionName, 
             int step = 4, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             var exe = new ExeFile (file);
@@ -528,7 +530,7 @@ namespace GameRes.Formats
         public static long FindSignatureInOverlay (ArcView file, byte[] signature, 
             int step = 4, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             var exe = new ExeFile (file);
@@ -542,7 +544,7 @@ namespace GameRes.Formats
         public static long AutoFindSignature (ArcView file, byte[] signature, 
             int step = 1, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             validator = validator ?? SignatureValidation.HasNonZeroAfter;
@@ -640,7 +642,7 @@ namespace GameRes.Formats
         public static long FindSignatureInOverlayReversed (ArcView file, byte[] signature, 
             int step = 4, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             var exe = new ExeFile (file);
@@ -654,7 +656,7 @@ namespace GameRes.Formats
         public static long FindSignatureReversed (ArcView file, byte[] signature, 
             int step = 1, long limit = 0, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             validator = validator ?? SignatureValidation.HasNonZeroAfter;
@@ -675,7 +677,7 @@ namespace GameRes.Formats
         public static long AutoFindSignatureReversed (ArcView file, byte[] signature, 
             int step = 1, long limit = 0x10000, ValidatorFunction validator = null)
         {
-            if (0x5a4d != file.View.ReadUInt16 (0)) // 'MZ'
+            if (MAGIC_MZ != file.View.ReadUInt16 (0)) // 'MZ'
                 return 0;
 
             validator = validator ?? SignatureValidation.HasNonZeroAfter;
@@ -757,6 +759,19 @@ namespace GameRes.Formats
             }
 
             return -1;
+        }
+
+        private string GetHeaderHash()
+        {
+            uint peOffset = View.ReadUInt32(0x3C);
+            if (peOffset >= m_file.MaxOffset - 0x100)
+                return "";
+
+            uint timeStamp = View.ReadUInt32(peOffset + 8);  // TimeDateStamp
+            uint sizeOfCode = View.ReadUInt32(peOffset + 0x1C); // SizeOfCode
+            uint entryPoint = View.ReadUInt32(peOffset + 0x28); // AddressOfEntryPoint
+
+            return $"{timeStamp:X8}_{sizeOfCode:X8}_{entryPoint:X8}";
         }
 
         /// <summary>
@@ -876,16 +891,16 @@ namespace GameRes.Formats
 
         void InitNe ()
         {
-            uint ne_offset    = m_file.View.ReadUInt32 (0x3C);
-            int segment_count = m_file.View.ReadUInt16 (ne_offset + 0x1C);
-            uint seg_table    = m_file.View.ReadUInt16 (ne_offset + 0x22) + ne_offset;
-            int shift         = m_file.View.ReadUInt16 (ne_offset + 0x32);
+            uint ne_offset    = View.ReadUInt32 (0x3C);
+            int segment_count = View.ReadUInt16 (ne_offset + 0x1C);
+            uint seg_table    = View.ReadUInt16 (ne_offset + 0x22) + ne_offset;
+            int shift         = View.ReadUInt16 (ne_offset + 0x32);
 
             uint last_seg_end = 0;
             for (int i = 0; i < segment_count; ++i)
             {
-                uint offset = (uint)m_file.View.ReadUInt16 (seg_table) << shift;
-                uint size   = m_file.View.ReadUInt16 (seg_table + 2);
+                uint offset = (uint)View.ReadUInt16 (seg_table) << shift;
+                uint size   = View.ReadUInt16 (seg_table + 2);
                 if (offset + size > last_seg_end)
                     last_seg_end = offset + size;
             }

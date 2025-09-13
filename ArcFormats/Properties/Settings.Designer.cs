@@ -981,5 +981,32 @@ namespace GameRes.Formats.Properties {
                 this["TLGVersion"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("RGBMasked")]
+        public string CCNOutputFormat
+        {
+            get
+            {
+                return ((string)(this["CCNOutputFormat"]));
+            }
+            set
+            {
+                this["CCNOutputFormat"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool CCNCompressionEnabled {
+            get {
+                return ((bool)(this["CCNCompressionEnabled"]));
+            }
+            set {
+                this["CCNCompressionEnabled"] = value;
+            }
+        }
     }
 }

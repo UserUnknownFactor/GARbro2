@@ -56,6 +56,9 @@ namespace GARbro.GUI.Preview
                 {
                     _mainWindow.SetFileStatus (result.Error);
                     Reset();
+                    var entry = _mainWindow.ViewModel.Find(preview.Entry.Name);
+                    if (entry != null)
+                        entry.Type = "";
                     return;
                 }
 

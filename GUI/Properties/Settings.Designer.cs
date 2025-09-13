@@ -464,5 +464,18 @@ namespace GARbro.GUI.Properties {
                 this["MediaVolume"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool winAutoCropTransparent {
+            get {
+                return ((bool)(this["winAutoCropTransparent"]));
+            }
+            set {
+                this["winAutoCropTransparent"] = value;
+            }
+        }
+
     }
 }

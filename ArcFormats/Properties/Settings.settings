@@ -230,5 +230,11 @@
     <Setting Name="TLGVersion" Type="System.String" Scope="User">
       <Value Profile="(Default)">TLG6 (Golomb)</Value
     </Setting>
+    <Setting Name="CCNOutputFormat" Type="System.String" Scope="User">
+      <Value>RGBMasked</value>
+    </Setting>
+    <Setting Name="CCNCompressionEnabled" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">true</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

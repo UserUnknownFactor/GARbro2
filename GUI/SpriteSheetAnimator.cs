@@ -56,26 +56,38 @@ namespace GARbro.GUI
         public void ExtractGridFrames(int columns, int rows)
         {
             Frames.Clear();
-
             if (_sourceImage == null || columns <= 0 || rows <= 0)
                 return;
 
-            int frameWidth = _sourceImage.PixelWidth / columns;
-            int frameHeight = _sourceImage.PixelHeight / rows;
+            BitmapSource processedSource = _sourceImage;
+            if (_sourceImage.Format != PixelFormats.Pbgra32 && 
+                    _sourceImage.Format != PixelFormats.Bgra32 &&
+                    _sourceImage.Format != PixelFormats.Bgr32)
+            {
+                processedSource = new FormatConvertedBitmap(_sourceImage, PixelFormats.Pbgra32, null, 0);
+            }
+
+            double frameWidth = processedSource.PixelWidth / columns;
+            double frameHeight = processedSource.PixelHeight / rows;
 
             for (int row = 0; row < rows; row++)
+            for (int col = 0; col < columns; col++)
             {
-                for (int col = 0; col < columns; col++)
-                {
-                    var rect = new System.Windows.Int32Rect(
-                        col * frameWidth,
-                        row * frameHeight,
-                        frameWidth,
-                        frameHeight);
+                var rect = new System.Windows.Int32Rect(
+                    (int)(col * frameWidth),
+                    (int)(row * frameHeight),
+                    (int)frameWidth,
+                    (int)frameHeight);
 
-                    var croppedBitmap = new CroppedBitmap(_sourceImage, rect);
-                    Frames.Add(croppedBitmap);
+                var croppedBitmap = new CroppedBitmap(processedSource, rect);
+                if (croppedBitmap.Format != PixelFormats.Pbgra32 && 
+                    croppedBitmap.Format != PixelFormats.Bgra32)
+                {
+                    var convertedFrame = new FormatConvertedBitmap(croppedBitmap, PixelFormats.Pbgra32, null, 0);
+                    Frames.Add(convertedFrame);
                 }
+                else
+                    Frames.Add(croppedBitmap);
             }
         }
 

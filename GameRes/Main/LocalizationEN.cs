@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17172; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17464; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -103,6 +103,8 @@ public static partial class Localization
                 { "DefaultEncoding", new LocalizationEntry { Singular = "Default file names encoding" } },
                 { "ODNAudioSampleRate", new LocalizationEntry { Singular = "Default audio sampling rate" } },
                 { "Tim2AlphaFormat", new LocalizationEntry { Singular = "Choose Tim2 image alpha format.\nIt can't be read correctly from the file." } },
+                { "Output Format", new LocalizationEntry { Singular = "Output Format" } },
+                { "Image format to use", new LocalizationEntry { Singular = "Image format to use" } },
                 { "ButtonCancel", new LocalizationEntry { Singular = "Cancel" } },
                 { "ButtonExtract", new LocalizationEntry { Singular = "Extract" } },
                 { "ButtonOK", new LocalizationEntry { Singular = "OK" } },
@@ -182,6 +184,7 @@ public static partial class Localization
                 { "TextDeleteFiles", new LocalizationEntry { Singular = "Delete files" } },
                 { "MsgDeletedItems", new LocalizationEntry { Singular = "Deleted {0} file", Plural1 = "Deleted {0} files" } },
                 { "MenuFitWindow", new LocalizationEntry { Singular = "Fit preview _window to image" } },
+                { "MenuCropTransparent", new LocalizationEntry { Singular = "Crop _transparent image areas" } },
                 { "MenuToggleMenuBar", new LocalizationEntry { Singular = "Show/hide main _menu bar" } },
                 { "MenuToggleStatusBar", new LocalizationEntry { Singular = "Show/hide _status bar" } },
                 { "MenuToggleToolBar", new LocalizationEntry { Singular = "Show/hide _toolbar" } },
@@ -249,6 +252,7 @@ public static partial class Localization
                 { "TextPreferences", new LocalizationEntry { Singular = "Preferences" } },
                 { "TextViewer", new LocalizationEntry { Singular = "Image viewer" } },
                 { "winDownScaleImage", new LocalizationEntry { Singular = "Scale large images to fit window" } },
+                { "winAutoCropTransparent", new LocalizationEntry { Singular = "Crop big transparent image areas surrounding image pixels" } },
                 { "MsgPlaying", new LocalizationEntry { Singular = "{0} | {1} | {2}Hz {3}Kbps | {4}/{5}" } },
                 { "TooltipStop", new LocalizationEntry { Singular = "Stop" } },
                 { "TooltipPause", new LocalizationEntry { Singular = "Pause" } },
@@ -350,7 +354,8 @@ public static partial class Localization
                 { "WritingArchive", new LocalizationEntry { Singular = "Writing archive..." } },
                 { "FinalizingArchive", new LocalizationEntry { Singular = "Finalizing archive..." } },
                 { "PackingComplete", new LocalizationEntry { Singular = "Packing complete" } },
-                { "FileIofN", new LocalizationEntry { Singular = " - File {0}/{1}" } }
+                { "FileIofN", new LocalizationEntry { Singular = " - File {0}/{1}" } },
+                { "NoImageDecoder", new LocalizationEntry { Singular = "Image decoder not found" } }
             });
     }
 }

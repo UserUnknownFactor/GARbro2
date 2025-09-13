@@ -51,7 +51,7 @@ namespace GameRes
             m_file = file;
             var format = ImageFormat.FindFormat (file);
             if (null == format)
-                throw new InvalidFormatException("Image decoder not found");
+                throw new InvalidFormatException (Localization._T ("NoImageDecoder"));
             SourceFormat = format.Item1;
             Info = format.Item2;
         }

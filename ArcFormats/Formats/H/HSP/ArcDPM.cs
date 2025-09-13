@@ -2,163 +2,408 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace GameRes.Formats.HSP
 {
-    [Export(typeof(ArchiveFormat))]
+    [Export (typeof (ArchiveFormat))]
     public class DpmOpener : ArchiveFormat
     {
         public override string         Tag { get { return "DPM"; } }
         public override string Description { get { return "Hot Soup Processor resource archive"; } }
-        public override uint     Signature { get { return 0x584D5044; } } // 'DPMX'
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0; } } // 'DPMX'
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  true; } }
 
-        public DpmOpener ()
+
+        private const uint    MAGIC_DPMX = 0x584D5044;
+        private const int     ENTRY_SIZE = 32;
+        private const int    HEADER_SIZE = 0x10;
+        private const int  FILENAME_SIZE = 0x10;
+        private const int  HSP_INIT_SIZE = 32;
+
+        public DpmOpener()
         {
-            Extensions = new string[] { "dpm", "bin", "dat" };
-            Signatures = new uint[] { 0x584D5044, 0 };
+            Extensions = new string[] { "dpm", "bin", "dat", "exe" };
+            Signatures   = new uint[] {  MAGIC_DPMX, 0 };
         }
-
-        static readonly uint DefaultKey = 0xAC52AE58; // 0x24B70413
 
         public override ArcFile TryOpen (ArcView file)
         {
-            uint signature = file.View.ReadUInt32 (0);
-            bool is_inside_exe = false;
-            long base_offset = 0;
-            uint arc_key = 0;
-            if (0x5A4D == (signature & 0xFFFF)) // 'MZ'
-            {
-                var exe = new ExeFile (file);
-                if (exe.Overlay.Size <= 4 || !file.View.AsciiEqual (exe.Overlay.Offset, "DPMX"))
-                    return null;
-                base_offset = exe.Overlay.Offset;
-                arc_key = FindExeKey (exe, base_offset);
-                is_inside_exe = true;
-            }
-            else if (0x584D5044 != signature)
+            var archiveInfo = DetectArchiveFormat (file);
+            if (archiveInfo == null)
                 return null;
-            int count = file.View.ReadInt32 (base_offset+8);
+
+            var (baseOffset, arcKey, isInsideExe, count, indexOffset) = archiveInfo.Value;
+
             if (!IsSaneCount (count))
                 return null;
-            long index_offset = base_offset + 0x10 + file.View.ReadUInt32 (base_offset+0xC);
-            uint data_size = (uint)(file.MaxOffset - (index_offset + 32 * count));
-            base_offset += file.View.ReadUInt32 (base_offset+4);
-            var dir = new List<Entry> (count);
+
+            uint dataSize = 0;
+            if (isInsideExe)
+            {
+                var exe = new ExeFile (file);
+                dataSize = (uint)(exe.Overlay.Size - (indexOffset - exe.Overlay.Offset + ENTRY_SIZE * count));
+            }
+            else
+            {
+                dataSize = (uint)(file.MaxOffset - (indexOffset + ENTRY_SIZE * count));
+            }
+
+            var dir = ReadDirectory (file, count, baseOffset, indexOffset);
+            if (dir == null)
+                return null;
+
+            return isInsideExe || arcKey != 0
+                ? new DpmArchive (file, this, dir, arcKey, dataSize)
+                : new DpmArchive (file, this, dir);
+        }
+
+        private (long baseOffset, uint arcKey, bool isInsideExe, int count, long indexOffset)? 
+            DetectArchiveFormat (ArcView file)
+        {
+            uint signature = file.View.ReadUInt32 (0);
+
+            if ((signature & 0xFFFF) == ExeFile.MAGIC_MZ) // Executable with archive
+                return HandleExecutableArchive (file);
+
+            if (signature == MAGIC_DPMX) // Standalone archive
+                return HandleStandaloneArchive (file);
+
+            return null;
+        }
+
+        private (long baseOffset, uint arcKey, bool isInsideExe, int count, long indexOffset)? 
+            HandleExecutableArchive (ArcView file)
+        {
+            var exe = new ExeFile (file);
+
+            // Use the Overlay property which automatically finds appended data
+            if (exe.Overlay.Size <= 4 || !file.View.AsciiEqual (exe.Overlay.Offset, "DPMX"))
+                return null;
+
+            long dpmOffset = exe.Overlay.Offset;
+
+            // Search for the HSP key in the executable
+            uint arcKey = SearchForHspKey (exe) ?? SearchForOffsetKey (exe, dpmOffset) ?? 0;
+            if (arcKey == 0)
+                return null;
+
+            // Read DPM header from the overlay
+            int count = file.View.ReadInt32 (dpmOffset + 8);
+            long indexOffset = dpmOffset + HEADER_SIZE + file.View.ReadUInt32 (dpmOffset + 0xC);
+            long baseOffset = dpmOffset + file.View.ReadUInt32 (dpmOffset + 4);
+
+            return (baseOffset, arcKey, true, count, indexOffset);
+        }
+
+        private (long baseOffset, uint arcKey, bool isInsideExe, int count, long indexOffset)? 
+            HandleStandaloneArchive (ArcView file)
+        {
+            int count = file.View.ReadInt32 (8);
+            long indexOffset = HEADER_SIZE + file.View.ReadUInt32 (0xC);
+            long baseOffset = file.View.ReadUInt32 (4);
+
+            return (baseOffset, 0, false, count, indexOffset);
+        }
+
+        private List<Entry> ReadDirectory (ArcView file, int count, long baseOffset, long indexOffset)
+        {
+            var dir = new List<Entry>(count);
+
             for (int i = 0; i < count; ++i)
             {
-                var name = file.View.ReadString (index_offset, 0x10);
-                index_offset += 0x14;
-                var entry = Create<DpmEntry> (name);
-                entry.Key = file.View.ReadUInt32 (index_offset);
-                entry.Offset = file.View.ReadUInt32 (index_offset+4) + base_offset;
-                entry.Size   = file.View.ReadUInt32 (index_offset+8);
-                if (!entry.CheckPlacement (file.MaxOffset))
+                var entry = ReadEntry (file, indexOffset, baseOffset);
+                if (entry == null || !entry.CheckPlacement (file.MaxOffset))
                     return null;
+
                 dir.Add (entry);
-                index_offset += 0xC;
+                indexOffset += ENTRY_SIZE;
             }
-            if (is_inside_exe)
-                return new DpmArchive (file, this, dir, arc_key, data_size);
-            else
-                return new DpmArchive (file, this, dir);
+
+            return dir;
+        }
+
+        private DpmEntry ReadEntry (ArcView file, long indexOffset, long baseOffset)
+        {
+            var name = file.View.ReadString (indexOffset, FILENAME_SIZE);
+            if (string.IsNullOrWhiteSpace (name))
+                return null;
+
+            return new DpmEntry
+            {
+                Name   = name.Trim(),
+                Type   = FormatCatalog.Instance.GetTypeFromName (name),
+                Key    = file.View.ReadUInt32 (indexOffset + 0x14),
+                Offset = file.View.ReadUInt32 (indexOffset + 0x18) + baseOffset,
+                Size   = file.View.ReadUInt32 (indexOffset + 0x1C)
+            };
         }
 
         public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
-            var dent = entry as DpmEntry;
-            var darc = arc as DpmArchive;
-            if (null == dent || null == darc || 0 == dent.Key)
+            if (!(entry is DpmEntry dEnt) || !(arc is DpmArchive dArc) || dEnt.Key == 0)
                 return base.OpenEntry (arc, entry);
+
             var data = arc.File.View.ReadBytes (entry.Offset, entry.Size);
-            darc.DecryptEntry2 (data, dent.Key);
+            dArc.DecryptEntry (data, dEnt.Key);
             return new BinMemoryStream (data, entry.Name);
         }
 
-        static uint FindExeKey (ExeFile exe, long dpm_offset)
+        public override void Create (Stream output, IEnumerable<Entry> list, ResourceOptions options, 
+            EntryCallback callback)
         {
-            uint base_offset = (uint)(dpm_offset - 0x10000);
-            var offset_str = base_offset.ToString() + '\0';
-            var offset_bytes = Encoding.ASCII.GetBytes (offset_str);
-            long key_pos = -1;
-            if (exe.ContainsSection (".rdata"))
-                key_pos = exe.FindString (exe.Sections[".rdata"], offset_bytes);
-            if (-1 == key_pos && exe.ContainsSection (".data"))
-                key_pos = exe.FindString (exe.Sections[".data"], offset_bytes);
-            if (-1 == key_pos)
-                return DefaultKey;
-            return exe.View.ReadUInt32 (key_pos+0x17);
+            var entries = list.ToList();
+            //if (!entries.Any())
+                //throw new InvalidOperationException ("Empty archive");
+            var dpmOptions = GetOptions<DpmOptions>(options);
+            uint key = dpmOptions?.Key ?? 0;
+
+            WriteArchive (output, entries, key, callback);
         }
 
-        DpmxScheme DefaultScheme = new DpmxScheme { KnownKeys = new Dictionary<string, uint>() };
+        private void WriteArchive (Stream output, List<Entry> entries, uint key, EntryCallback callback)
+        {
+            using (var writer = new BinaryWriter (output, Encoding.ASCII, true))
+            {
+                // Write header
+                writer.Write (MAGIC_DPMX);
+                long dataOffsetPos = output.Position;
+                writer.Write (0u); // Placeholder for data offset
+                writer.Write (entries.Count);
+                writer.Write (0u); // Magic2
 
-        public IDictionary<string, uint> KnownKeys { get { return DefaultScheme.KnownKeys; } }
+                // Calculate offsets
+                long indexStart = output.Position;
+                long dataStart = indexStart + entries.Count * ENTRY_SIZE;
+                uint currentOffset = 0;
+
+                // Write index
+                foreach (var entry in entries)
+                {
+                    WriteIndexEntry (writer, entry, currentOffset, key);
+                    currentOffset += (uint)entry.Size;
+                }
+
+                // Update data offset
+                output.Position = dataOffsetPos;
+                writer.Write ((uint)(dataStart - HEADER_SIZE));
+                output.Position = dataStart;
+
+                // Write file data
+                foreach (var entry in entries)
+                    WriteEntryData (writer, entry, key, callback);
+            }
+        }
+
+        private void WriteIndexEntry (BinaryWriter writer, Entry entry, uint offset, uint key)
+        {
+            var nameBytes = new byte[FILENAME_SIZE];
+            Encoding.ASCII.GetBytes (entry.Name, 0, 
+                Math.Min (entry.Name.Length, FILENAME_SIZE), nameBytes, 0);
+
+            writer.Write (nameBytes);
+            writer.Write (0xFFFFFFFF); // Magic
+            writer.Write (key);
+            writer.Write (offset);
+            writer.Write ((uint)entry.Size);
+        }
+
+        private void WriteEntryData (BinaryWriter writer, Entry entry, uint key, EntryCallback callback)
+        {
+            callback?.Invoke ((int)entry.Size, entry, $"Packing {entry.Name}");
+
+            using (var input = File.OpenRead (entry.Name))
+            {
+                var data = new byte[entry.Size];
+                input.Read (data, 0, data.Length);
+
+                if (key != 0)
+                {
+                    var archive = new DpmArchive (null, this, null, key, 0);
+                    archive.EncryptEntry (data, key);
+                }
+
+                writer.Write (data);
+            }
+        }
+
+        private static uint? SearchForHspKey (ExeFile exe)
+        {
+            // Search for HSP initialization data pattern: 'x??y??d??s??k'
+            var searchPattern = new byte[] { 
+                (byte)'x', 0, 0, (byte)'y', 0, 0, 
+                (byte)'d', 0, 0, (byte)'s', 0, 0, (byte)'k' 
+            };
+
+            foreach (var sectionName in new[] { ".rdata", ".data", ".text" })
+            {
+                if (!exe.ContainsSection (sectionName))
+                    continue;
+
+                var section = exe.Sections[sectionName];
+                long position = exe.FindString (section, searchPattern, step: 1);
+                if (position >= 0)
+                {
+                    long structureStart = position - 19;
+                    uint key = exe.View.ReadUInt32 (structureStart + 32);
+                    ushort width = exe.View.ReadUInt16 (structureStart + 20);
+                    ushort height = exe.View.ReadUInt16 (structureStart + 23);
+
+                    if (width > 0 && width <= 4096 && height > 0 && height <= 4096)
+                    {
+                        var offsetBytes = new byte[9];
+                        exe.View.Read (structureStart + 9, offsetBytes, 0, 9);
+                        string hspOffset = Encoding.ASCII.GetString (offsetBytes).TrimEnd('\0');
+                        System.Diagnostics.Debug.WriteLine ($"HSP Key found: 0x{key:X8}");
+                        System.Diagnostics.Debug.WriteLine ($"  HSPInitDataOffset: {hspOffset}");
+                        System.Diagnostics.Debug.WriteLine ($"  Resolution: {width}x{height}");
+
+                        return key;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static uint? SearchForOffsetKey (ExeFile exe, long dpmOffset)
+        {
+            uint baseOffset = (uint)(dpmOffset - 0x10000);
+            var offsetStr = baseOffset.ToString() + '\0';
+            var offsetBytes = Encoding.ASCII.GetBytes (offsetStr);
+
+            foreach (var sectionName in new[] { ".rdata", ".data" })
+            {
+                if (!exe.ContainsSection (sectionName))
+                    continue;
+
+                long keyPos = exe.FindString (exe.Sections[sectionName], offsetBytes);
+                if (keyPos >= 0)
+                    return exe.View.ReadUInt32 (keyPos + 0x17);
+            }
+
+            return null;
+        }
+
+        private DpmxScheme _defaultScheme = new DpmxScheme();
+
+        public IDictionary<string, uint> KnownKeys => _defaultScheme.KnownKeys;
 
         public override ResourceScheme Scheme
         {
-            get { return DefaultScheme; }
-            set { DefaultScheme = (DpmxScheme)value; }
+            get => _defaultScheme;
+            set => _defaultScheme = (DpmxScheme)value;
         }
     }
 
     internal class DpmEntry : Entry
     {
-        public uint Key;
+        public uint Key { get; set; }
     }
 
     internal class DpmArchive : ArcFile
     {
-        readonly byte Seed1;
-        readonly byte Seed2;
+        private byte _seed1;
+        private byte _seed2;
+
+        private const byte DRIFT1 = 0x55;
+        private const byte DRIFT2 = 0xAA;
 
         public DpmArchive (ArcView arc, ArchiveFormat impl, ICollection<Entry> dir)
             : base (arc, impl, dir)
         {
-            Seed1 = 0xAA;
-            Seed2 = 0x55;
+            _seed1 = DRIFT2;
+            _seed2 = DRIFT1;
         }
 
-        public DpmArchive (ArcView arc, ArchiveFormat impl, ICollection<Entry> dir, uint arc_key, uint dpm_size)
+        public DpmArchive (ArcView arc, ArchiveFormat impl, ICollection<Entry> dir, 
+            uint arcKey, uint dpmSize)
             : base (arc, impl, dir)
         {
-            Seed1 = (byte)((((arc_key >> 16) & 0xFF) * (arc_key & 0xFF) / 3) ^ dpm_size);
-            Seed2 = (byte)((((arc_key >> 8)  & 0xFF) * ((arc_key >> 24) & 0xFF) / 5) ^ dpm_size ^ 0xAA);
+            CalculateSeeds (arcKey, dpmSize);
         }
 
-        internal void DecryptEntry (byte[] data, uint entry_key)
+        private static (byte b0, byte b1, byte b2, byte b3) ExtractBytes (uint value)
         {
-            byte s1 = 0xA5; // FIXME these constants seem to vary across games
-            byte s2 = 0x5A; // but this engine is rare, can't confirm for sure.
-            s1 = (byte)(Seed1 + ((entry_key >> 16) ^  (entry_key       + s1)));
-            s2 = (byte)(Seed2 + ((entry_key >> 24) ^ ((entry_key >> 8) + s2)));
-            byte val = 0;
+            byte b0 = (byte)( value        & 0xFF);
+            byte b1 = (byte)((value >>  8) & 0xFF);
+            byte b2 = (byte)((value >> 16) & 0xFF);
+            byte b3 = (byte)((value >> 24) & 0xFF);
+            return (b0, b1, b2, b3);
+        }
+
+        private void CalculateSeeds (uint arcKey, uint dpmSize)
+        {
+            var (b0, b1, b2, b3) = ExtractBytes (arcKey);
+
+            /*
+            // Compiler generated:
+            long product1 = (long)b0 * b2 * 0x55555556L; // 0x55555556 is ~1/3 in fixed-point arithmetic
+            uint x1 = (uint)(product1 >> 32);  // Divide by 2^32 to get the integer part
+            _seed1 = (byte)((x1 ^ dpmSize) & 0xFF);
+
+            long product2 = (long)b1 * b3 * 0x66666667L; // 0x66666667 is ~1/5 in fixed-point arithmetic
+            uint x2 = (uint)(product2 >> 33);  // Divide by 2^33 to get the integer part
+            _seed2 = (byte)((x2 ^ dpmSize ^ 0xAA) & 0xFF);
+            */
+
+            // But we can do the integer division directly:
+            _seed1 = (byte)(((b0 * b2 / 3) ^ dpmSize) & 0xFF);
+            _seed2 = (byte)(((b1 * b3 / 5) ^ dpmSize ^ DRIFT2) & 0xFF);
+
+        }
+
+        internal void DecryptEntry (byte[] data, uint entryKey)
+        {
+            var (key1, key2) = GetPersonalFileKey (entryKey);
+            byte res = 0;
+
             for (int i = 0; i < data.Length; ++i)
             {
-                val += (byte)(s1 ^ (data[i] - s2));
-                data[i] = val;
+                res = (byte)(res + ((data[i] - key2) ^ key1));
+                data[i] = res;
             }
         }
 
-        internal void DecryptEntry2 (byte[] data, uint entry_key)
+        internal void EncryptEntry (byte[] data, uint entryKey)
         {
-            byte s1 = 0x5A;
-            byte s2 = 0xA5;
-            s1 = (byte)(Seed1 + ((entry_key >> 16) ^  (entry_key       + s1)));
-            s2 = (byte)(Seed2 + ((entry_key >> 24) ^ ((entry_key >> 8) + s2)));
+            var (key1, key2) = GetPersonalFileKey (entryKey);
+
             byte val = 0;
             for (int i = 0; i < data.Length; ++i)
             {
-                val += (byte)((s1 ^ data[i]) - s2);
-                data[i] = val;
+                byte original = data[i];
+                data[i] = (byte)((val ^ key1) + key2);
+                val = original;
             }
+        }
+
+        private (byte key1, byte key2) GetPersonalFileKey (uint fileKey)
+        {
+            var (b0, b1, b2, b3) = ExtractBytes (fileKey);
+
+            byte key1 = (byte)(((b0 + DRIFT1) ^ b2) + _seed1);
+            byte key2 = (byte)(((b1 + DRIFT2) ^ b3) + _seed2);
+
+            return (key1, key2);
         }
     }
 
     [Serializable]
     public class DpmxScheme : ResourceScheme
     {
-        public IDictionary<string, uint>    KnownKeys;
+        public IDictionary<string, uint> KnownKeys { get; set; } = new Dictionary<string, uint>() 
+        { 
+            { "Game1", 0xAC52AE58 }, 
+            { "Game2", 0x233A66DF } 
+        };
+    }
+
+    public class DpmOptions : ResourceOptions
+    {
+        public uint Key { get; set; }
     }
 }

@@ -224,6 +224,7 @@ namespace GARbro.GUI
                 delays.Add (delay);
 
             ShowAnimatedImagePreview();
+
             m_animated_image_viewer.LoadAnimatedImage (_spriteAnimator.Frames, delays);
             ApplyScalingToAnimatedViewer();
 
@@ -322,12 +323,10 @@ namespace GARbro.GUI
 
                 double sourceWidth = ImageCanvas.Source.Width / columns;
                 double sourceHeight = ImageCanvas.Source.Height / rows;
-                SetPreviewStatus (Localization.Format ("AutoDetectedGrid", columns, rows, sourceWidth, sourceHeight));
+                SetPreviewStatus (Localization.Format ("AutoDetectedGrid", columns, rows, (uint)sourceWidth, (uint)sourceHeight));
             }
             else
-            {
                 SetPreviewStatus (Localization._T ("CouldNotDetectSprite"));
-            }
         }
 
         private void DrawGridOverlay (int columns, int rows)
@@ -362,9 +361,7 @@ namespace GARbro.GUI
                 double scale = Math.Min (scaleX, scaleY);
 
                 if (scale < 1.0)
-                {
                     gridThickness /= scale;
-                }
             }
 
             gridThickness = Math.Max (1.0, gridThickness);
@@ -403,7 +400,6 @@ namespace GARbro.GUI
 
             _gridCanvas.Width = sourceWidth;
             _gridCanvas.Height = sourceHeight;
-
             _gridCanvas.LayoutTransform = ImageCanvas.LayoutTransform;
 
             if (ImageCanvas.Stretch == Stretch.None)
