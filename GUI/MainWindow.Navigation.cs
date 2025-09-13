@@ -178,13 +178,10 @@ namespace GARbro.GUI
             if (isGoingUp && VFS.CurrentArchive != null)
             {
                 if (string.IsNullOrEmpty (vm?.Path.Last()) && vm.Path.Count > 1)
-                {
                     old_dir = vm.Path[vm.Path.Count - 2];
-                }
             }
 
             var currentPos = GetCurrentPosition();
-
             Trace.WriteLine (new_dir, "OpenDirectoryEntry");
             int old_fs_count = VFS.Count;
 

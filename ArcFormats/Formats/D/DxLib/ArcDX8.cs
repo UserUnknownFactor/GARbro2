@@ -66,8 +66,7 @@ namespace GameRes.Formats.DxLib
 
         public override ResourceOptions GetDefaultOptions ()
         {
-            return new DXAOpts
-            {
+            return new DXAOpts {
                 Keyword = Properties.Settings.Default.DXA_Password
             };
         }
@@ -76,8 +75,7 @@ namespace GameRes.Formats.DxLib
         {
             if (widget is WidgetPassword)
             {
-                return new DXAOpts
-                {
+                return new DXAOpts {
                     Keyword = ((WidgetPassword)widget).Password
                 };
             }

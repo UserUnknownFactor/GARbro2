@@ -44,7 +44,7 @@ namespace GameRes.Formats.Emote
 
         public override ArcFile TryOpen (ArcView file)
         {
-            using (var input = file.CreateStream())
+            using (var input  = file.CreateStream())
             using (var reader = new PsbReader (input))
             {
                 foreach (var key in KnownKeys)

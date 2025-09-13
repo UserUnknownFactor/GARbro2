@@ -50,6 +50,9 @@ namespace GARbro.GUI.Preview
                 {
                     _mainWindow.SetFileStatus (result.Error);
                     Reset();
+                    var entry = _mainWindow.ViewModel.Find(preview.Entry.Name);
+                    if (entry != null)
+                        entry.Type = "";
                     return;
                 }
 
@@ -76,7 +79,6 @@ namespace GARbro.GUI.Preview
 
         private bool ShouldShowLoadingIndicator (Entry entry)
         {
-            // Show loading for GIF/WebP files larger than 3MB
             return (entry.Name.EndsWith (".gif", StringComparison.OrdinalIgnoreCase) || 
                     entry.Name.EndsWith (".webp", StringComparison.OrdinalIgnoreCase)) && 
                    entry.Size > 3_000_000;
@@ -85,11 +87,13 @@ namespace GARbro.GUI.Preview
         private void SetStaticImage (PreviewFile preview, ImageLoadResult result)
         {
             _mainWindow.ShowImagePreview();
-            _imageCanvas.Source = result.StaticImage;
+
+            var processedImage = ProcessImageForDisplay (result.StaticImage);
+            _imageCanvas.Source = processedImage;
 
             // Apply DPI scaling transform
-            double dpiScaleX = result.StaticImage.DpiX / Desktop.DpiX;
-            double dpiScaleY = result.StaticImage.DpiY / Desktop.DpiY;
+            double dpiScaleX = processedImage.DpiX / Desktop.DpiX;
+            double dpiScaleY = processedImage.DpiY / Desktop.DpiY;
 
             if (Math.Abs (dpiScaleX - 1.0) > 0.001 || Math.Abs (dpiScaleY - 1.0) > 0.001)
                 _imageCanvas.LayoutTransform = new ScaleTransform (dpiScaleX, dpiScaleY);
@@ -105,9 +109,89 @@ namespace GARbro.GUI.Preview
             if (_mainWindow.SpriteSheetPanel.Visibility != Visibility.Visible)
                 _mainWindow.ShowSpriteSheetControls();
 
-            // Use Tag property if available, otherwise use class name
             string formatTag = result.SourceFormat?.Tag ?? result.SourceFormat?.GetType().Name ?? "?";
             _mainWindow.SetPreviewStatus (formatTag + (result.Info?.GetComment() ?? ""));
+        }
+
+        private BitmapSource ProcessImageForDisplay (BitmapSource image)
+        {
+            if (!MainWindow.DownScaleImage.Get<bool>() ||
+                image.Format.BitsPerPixel != 32 || 
+                image.PixelWidth * image.PixelHeight > 4096 * 4096)
+                return image;
+
+            var bounds = GetContentBounds (image);
+            if (bounds.HasValue)
+                return ApplyContentBounds (image, bounds.Value);
+
+            return image;
+        }
+
+        private Int32Rect? GetContentBounds (BitmapSource image)
+        {
+            if (image.Format != PixelFormats.Bgra32 && image.Format != PixelFormats.Pbgra32)
+                return null;
+
+            int width = image.PixelWidth;
+            int height = image.PixelHeight;
+            int stride = width * 4;
+            byte[] pixels = new byte[height * stride];
+
+            image.CopyPixels (pixels, stride, 0);
+
+            int minX = width, minY = height, maxX = 0, maxY = 0;
+            bool hasContent = false;
+
+            // Scan for non-transparent pixels
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * stride;
+                for (int x = 0; x < width; x++)
+                {
+                    int pixelOffset = rowOffset + x * 4;
+                    byte alpha = pixels[pixelOffset + 3];
+
+                    if (alpha > 0) // Non-transparent pixel
+                    {
+                        hasContent = true;
+                        minX = Math.Min (minX, x);
+                        minY = Math.Min (minY, y);
+                        maxX = Math.Max (maxX, x);
+                        maxY = Math.Max (maxY, y);
+                    }
+                }
+            }
+
+            if (!hasContent)
+                return null;
+
+            int contentWidth = maxX - minX + 1;
+            int contentHeight = maxY - minY + 1;
+
+            // Only crop if there's significant transparent area (>25% reduction)
+            if (contentWidth * contentHeight < width * height * 0.75)
+                return new Int32Rect (minX, minY, contentWidth, contentHeight);
+
+            return null;
+        }
+
+        private BitmapSource ApplyContentBounds (BitmapSource source, Int32Rect bounds)
+        {
+            try
+            {
+                var cropped = new CroppedBitmap (source, bounds);
+
+                // Create a new bitmap to ensure it's not dependent on the original
+                var newBitmap = new WriteableBitmap (cropped);
+                newBitmap.Freeze();
+
+                return newBitmap;
+            }
+            catch
+            {
+                // If cropping fails, return original
+                return source;
+            }
         }
 
         private void SetAnimatedImage (PreviewFile preview, ImageLoadResult result)
@@ -130,7 +214,6 @@ namespace GARbro.GUI.Preview
             _animatedImageViewer.LoadAnimatedImage (result.AnimatedFrames, result.FrameDelays);
             _mainWindow.ApplyScalingToAnimatedViewer();
 
-            // Use Tag property if available, otherwise use class name
             string formatTag = result.SourceFormat?.Tag ?? result.SourceFormat?.GetType().Name ?? "?";
             _mainWindow.SetPreviewStatus (formatTag + (result.Info?.GetComment() ?? ""));
         }

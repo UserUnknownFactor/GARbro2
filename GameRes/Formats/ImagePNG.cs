@@ -12,9 +12,11 @@ namespace GameRes
 {
     public class PngMetaData : ImageMetaData
     {
-        public int FrameCount { get; set; } = 1;
-        public int PlayCount { get; set; } = 0; // 0 = infinite
+        public int  FrameCount { get; set; } = 1;
+        public int   PlayCount { get; set; } = 0; // 0 = infinite
         public bool IsAnimated { get { return FrameCount > 1; } }
+
+        public Dictionary<string, byte[]> CustomChunks { get; set; } = new Dictionary<string, byte[]>();
 
         public override string GetComment()
         {
@@ -23,8 +25,15 @@ namespace GameRes
         }
     }
 
-    [Export(typeof(ImageFormat))]
-    [ExportMetadata("Priority", 100)] // makes PNG first format in list
+    public class PngImageData : ImageData
+    {
+        public Dictionary<string, byte[]> CustomChunks { get; set; } = new Dictionary<string, byte[]>();
+
+        public PngImageData (BitmapSource bitmap, ImageMetaData info) : base (bitmap, info) { }
+    }
+
+    [Export (typeof (ImageFormat))]
+    [ExportMetadata ("Priority", 100)] // makes PNG first format in list
     public class PngFormat : ImageFormat
     {
         public override string         Tag { get { return "PNG"; } }
@@ -45,6 +54,7 @@ namespace GameRes
         public const string CHUNK_FCTL = "fcTL";
         public const string CHUNK_FDAT = "fdAT";
         public const string CHUNK_OFFS = "oFFs";
+        public const string CHUNK_PHYS = "pHYs";
 
         // APNG disposal operation constants
         public const byte APNG_DISPOSE_OP_NONE       = 0;
@@ -70,7 +80,8 @@ namespace GameRes
             var pngInfo = info as PngMetaData;
             try
             {
-                file.Position = 0;
+                if (file.CanSeek)
+                    file.Position = 0;
                 if (pngInfo == null || !pngInfo.IsAnimated)
                     return ReadPNG (file, info);
                 else
@@ -89,7 +100,74 @@ namespace GameRes
                 BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
             BitmapSource frame = decoder.Frames[0];
             frame.Freeze();
+
+            if (info is PngMetaData pngMeta && pngMeta.CustomChunks.Count > 0)
+            {
+                var pngData = new PngImageData (frame, info);
+                pngData.CustomChunks = pngMeta.CustomChunks;
+                return pngData;
+            }
+
             return new ImageData (frame, info);
+        }
+
+        public Dictionary<string, byte[]> ReadCustomChunks (IBinaryStream file, params string[] chunkTypes)
+        {
+            var result = new Dictionary<string, byte[]>();
+
+            if (!file.CanSeek)
+                return result;
+
+            var savedPosition = file.Position;
+            try
+            {
+                file.Position = 8; // Skip PNG header
+
+                while (file.Position < file.Length)
+                {
+                    uint chunkLength = file.ReadUInt32BE();
+                    byte[] typeBytes = file.ReadBytes (4);
+                    string chunkType = Encoding.ASCII.GetString (typeBytes);
+
+                    if (chunkTypes.Length == 0 || chunkTypes.Contains (chunkType))
+                    {
+                        // Check if it's a custom chunk (lowercase letters indicate ancillary chunks)
+                        if (!IsStandardChunk (chunkType))
+                        {
+                            byte[] data = file.ReadBytes((int)chunkLength);
+                            result[chunkType] = data;
+                            file.ReadUInt32(); // Skip CRC
+                        }
+                        else
+                            file.Seek (chunkLength + 4, SeekOrigin.Current); // Skip data + CRC
+                    }
+                    else
+                        file.Seek (chunkLength + 4, SeekOrigin.Current); // Skip data + CRC
+
+                    if (chunkType == CHUNK_IEND)
+                        break;
+                }
+            }
+            catch { }
+            finally
+            {
+                file.Position = savedPosition;
+            }
+
+            return result;
+        }
+
+        private bool IsStandardChunk (string chunkType)
+        {
+            // List of known chunks
+            return chunkType == CHUNK_IHDR || chunkType == CHUNK_IDAT || chunkType == CHUNK_IEND ||
+                   chunkType == CHUNK_ACTL || chunkType == CHUNK_FCTL || chunkType == CHUNK_FDAT ||
+                   chunkType == CHUNK_OFFS || chunkType == "PLTE" || chunkType == "tRNS" ||
+                   chunkType == "gAMA" || chunkType == "cHRM" || chunkType == "sRGB" ||
+                   chunkType == "iCCP" || chunkType == "tEXt" || chunkType == "zTXt" ||
+                   chunkType == "iTXt" || chunkType == "bKGD" || chunkType == CHUNK_PHYS ||
+                   chunkType == "sBIT" || chunkType == "sPLT" || chunkType == "hIST" ||
+                   chunkType == "tIME";
         }
 
         private ImageData ReadAPNG (IBinaryStream file, ImageMetaData info)
@@ -114,33 +192,87 @@ namespace GameRes
             var canvas         = new byte[canvasWidth * canvasHeight * 4]; // BGRA32
             var previousCanvas = new byte[canvas.Length];
 
-            foreach (var frame in apngData.Frames)
+            // Clear canvas to fully transparent black
+            Array.Clear (canvas, 0, canvas.Length);
+
+            for (int i = 0; i < apngData.Frames.Count; i++)
             {
-                // Handle disposal of previous frame
-                if (frames.Count > 0)
+                var frame = apngData.Frames[i];
+
+                // Handle first frame special case
+                if (i == 0)
                 {
-                    var prevFrame = apngData.Frames[frames.Count - 1];
-                    ApplyDisposal (canvas, previousCanvas, prevFrame, canvasWidth, canvasHeight);
+                    if (frame.DisposeOp == APNG_DISPOSE_OP_PREVIOUS)
+                        frame.DisposeOp = APNG_DISPOSE_OP_BACKGROUND;
+
+                    // Clear canvas for first frame
+                    Array.Clear (canvas, 0, canvas.Length);
+                }
+                else
+                {
+                    // Apply disposal of previous frame
+                    var prevFrame = apngData.Frames[i - 1];
+
+                    switch (prevFrame.DisposeOp)
+                    {
+                        case APNG_DISPOSE_OP_NONE:
+                            // No disposal - canvas stays as is
+                            break;
+
+                        case APNG_DISPOSE_OP_BACKGROUND:
+                            // Clear the previous frame's region to transparent
+                            for (int y = prevFrame.Y; y < Math.Min (prevFrame.Y + prevFrame.Height, canvasHeight); y++)
+                            {
+                                for (int x = prevFrame.X; x < Math.Min (prevFrame.X + prevFrame.Width, canvasWidth); x++)
+                                {
+                                    int idx = (y * canvasWidth + x) * 4;
+                                    canvas[idx] = 0;     // B
+                                    canvas[idx + 1] = 0; // G
+                                    canvas[idx + 2] = 0; // R
+                                    canvas[idx + 3] = 0; // A
+                                }
+                            }
+                            break;
+
+                        case APNG_DISPOSE_OP_PREVIOUS:
+                            // Restore canvas to what it was before the previous frame
+                            Array.Copy (previousCanvas, canvas, canvas.Length);
+                            break;
+                    }
                 }
 
+                // Save canvas state before compositing if the current frame requires it
                 if (frame.DisposeOp == APNG_DISPOSE_OP_PREVIOUS)
                     Array.Copy (canvas, previousCanvas, canvas.Length);
 
+                // Composite current frame onto canvas
                 CompositeApngFrame (canvas, frame, canvasWidth, canvasHeight);
 
-                var frameData = new byte[canvas.Length];
-                Array.Copy (canvas, frameData, canvas.Length);
+                // Create bitmap from current canvas state - ALWAYS USE CANVAS SIZE
 
-                var bitmap = BitmapSource.Create (canvasWidth, canvasHeight, 96, 96,
-                                PixelFormats.Bgra32, null, frameData, canvasWidth * 4);
+                var bitmap = BitmapSource.Create(
+                    canvasWidth,
+                    canvasHeight,
+                    apngData.DpiX, apngData.DpiY,
+                    PixelFormats.Bgra32, 
+                    null, 
+                    canvas,
+                    canvasWidth * 4);
+
                 bitmap.Freeze();
                 frames.Add (bitmap);
 
-                // Convert delay from fractions to milliseconds
-                int delayMs = frame.DelayDen > 0
-                    ? (frame.DelayNum * 1000) / frame.DelayDen
-                    : 100;
-                delays.Add (Math.Max (delayMs, 10)); // Minimum 10ms
+                // Convert delay - handle zero delay specially
+                int delayMs;
+                if (frame.DelayNum == 0)
+                    delayMs = 10;
+                else
+                {
+                    delayMs = frame.DelayDen > 0
+                        ? (frame.DelayNum * 1000) / frame.DelayDen
+                        : 100;
+                }
+                delays.Add (delayMs);
             }
 
             if (frames.Count > 1)
@@ -169,124 +301,153 @@ namespace GameRes
             public List<ApngFrame> Frames { get; set; } = new List<ApngFrame>();
             public          int NumFrames { get; set; }
             public           int NumPlays { get; set; }
+            public            double DpiX { get; set; } = 96.0;
+            public            double DpiY { get; set; } = 96.0;
         }
 
         private ApngData ParseApng (IBinaryStream file)
         {
-            var apng        = new ApngData();
-            var chunks      = new List<byte[]>();
-            var frameChunks = new Dictionary<int, List<byte[]>>();
+            var apng = new ApngData();
+            var currentFrameChunks = new List<byte[]>();
             ApngFrame currentFrame = null;
-            int sequence    = 0;
-            bool hasActl    = false;
+            bool hasActl = false;
+            bool isFirstFrame = true;
 
-            file.Position   = 8; // Skip PNG header
+            // Store the main image dimensions from IHDR
+            uint mainWidth = 0;
+            uint mainHeight = 0;
 
-            while (file.Position < file.Length)
+            // Skip PNG header
+            file.ReadBytes (8);
+
+            try
             {
-                long chunkStart  = file.Position;
-                uint chunkLength = file.ReadUInt32BE();
-                var chunkType    = file.ReadBytes (4);
-
-                if (chunkLength > int.MaxValue || file.Position + chunkLength + 4 > file.Length)
-                    break;
-
-                var chunkData = file.ReadBytes((int)chunkLength);
-                file.ReadUInt32(); // CRC
-
-                string chunkName = Encoding.ASCII.GetString (chunkType);
-
-                switch (chunkName)
+                while (file.Position < file.Length)
                 {
-                case CHUNK_ACTL: // Animation control
-                    if (chunkLength >= 8)
+                    uint chunkLength = file.ReadUInt32BE();
+                    var chunkType = file.ReadBytes (4);
+                    string chunkName = Encoding.ASCII.GetString (chunkType);
+
+                    if (chunkLength > int.MaxValue)
+                        break;
+
+                    var chunkData = file.ReadBytes((int)chunkLength);
+                    file.ReadUInt32(); // CRC
+
+                    switch (chunkName)
                     {
-                        apng.NumFrames = Binary.BigEndian (BitConverter.ToInt32 (chunkData, 0));
-                        apng.NumPlays  = Binary.BigEndian (BitConverter.ToInt32 (chunkData, 4));
-                        hasActl = true;
-                    }
-                    break;
+                        case CHUNK_IHDR:
+                            // Capture the main image dimensions
+                            mainWidth = Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 0));
+                            mainHeight = Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 4));
+                            break;
 
-                case CHUNK_FCTL: // Frame control
-                    if (chunkLength >= 26)
-                    {
-                        var frameSeq  =      Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 0));
-
-                        currentFrame  = new ApngFrame {
-                            Width     = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 4)),
-                            Height    = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 8)),
-                            X         = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 12)),
-                            Y         = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 16)),
-                            DelayNum  =      Binary.BigEndian (BitConverter.ToUInt16 (chunkData, 20)),
-                            DelayDen  =      Binary.BigEndian (BitConverter.ToUInt16 (chunkData, 22)),
-                            DisposeOp = chunkData[24],
-                            BlendOp   = chunkData[25]
-                        };
-
-                        if (!frameChunks.ContainsKey (sequence))
-                            frameChunks[sequence] = new List<byte[]>();
-                    }
-                    break;
-
-                case CHUNK_IDAT: // Default image data
-                    if (!hasActl || currentFrame == null)
-                        return apng; // Regular PNG
-
-                    if (!frameChunks.ContainsKey (sequence))
-                        frameChunks[sequence] = new List<byte[]>();
-                    frameChunks[sequence].Add (chunkData);
-                    break;
-
-                case CHUNK_FDAT: // Frame data
-                    if (chunkLength >= 4 && currentFrame != null)
-                    {
-                        // Skip sequence number (first 4 bytes)
-                        var imageData = new byte[chunkLength - 4];
-                        Array.Copy (chunkData, 4, imageData, 0, imageData.Length);
-
-                        if (!frameChunks.ContainsKey (sequence))
-                            frameChunks[sequence] = new List<byte[]>();
-                        frameChunks[sequence].Add (imageData);
-                    }
-                    break;
-
-                case CHUNK_IEND:
-                    goto LAST_FRAME;
-                }
-
-                // If we finished collecting data for current frame
-                if (currentFrame != null && chunkName == "IDAT" || chunkName == "fdAT")
-                {
-                    var nextChunkPos = file.Position;
-                    if (nextChunkPos + 8 <= file.Length)
-                    {
-                        file.ReadUInt32(); // Next chunk length
-                        var nextType = file.ReadBytes (4);
-                        file.Position = nextChunkPos; // Restore position
-
-                        string nextChunkName = Encoding.ASCII.GetString (nextType);
-                        if (nextChunkName == "fcTL" || nextChunkName == "IEND")
-                        {
-                            if (frameChunks.ContainsKey (sequence))
+                        case CHUNK_PHYS: // Physical pixel dimensions
+                            if (chunkLength >= 9)
                             {
-                                var frameData = CombineChunks (frameChunks[sequence]);
-                                currentFrame.ImageData = DecodePngFrame (frameData,
-                                    currentFrame.Width, currentFrame.Height);
-                                apng.Frames.Add (currentFrame);
-                                sequence++;
+                                uint pixelsPerUnitX = Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 0));
+                                uint pixelsPerUnitY = Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 4));
+                                byte unit = chunkData[8];
+
+                                if (unit == 1) // meter
+                                {
+                                    // Convert pixels per meter to DPI
+                                    // 1 meter = 39.3701 inches
+                                    apng.DpiX = pixelsPerUnitX / 39.3701;
+                                    apng.DpiY = pixelsPerUnitY / 39.3701;
+                                }
                             }
-                        }
+                            break;
+
+                        case CHUNK_ACTL:
+                            if (chunkLength >= 8)
+                            {
+                                apng.NumFrames = Binary.BigEndian (BitConverter.ToInt32 (chunkData, 0));
+                                apng.NumPlays = Binary.BigEndian (BitConverter.ToInt32 (chunkData, 4));
+                                hasActl = true;
+                            }
+                            break;
+
+                        case CHUNK_FCTL:
+                            // Process any pending frame
+                            if (currentFrame != null && currentFrameChunks.Count > 0)
+                            {
+                                var frameData = CombineChunks (currentFrameChunks);
+
+                                int decodeWidth  = currentFrame.Width;
+                                int decodeHeight = currentFrame.Height;
+
+                                if (isFirstFrame && apng.Frames.Count == 0)
+                                {
+                                    decodeWidth  = (int)mainWidth;
+                                    decodeHeight = (int)mainHeight;
+                                }
+
+                                currentFrame.ImageData = DecodePngFrame (frameData, decodeWidth, decodeHeight);
+                                apng.Frames.Add (currentFrame);
+                                currentFrameChunks.Clear();
+                            }
+
+                            if (chunkLength >= 26)
+                            {
+                                currentFrame = new ApngFrame
+                                {
+                                    Width = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 4)),
+                                    Height = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 8)),
+                                    X = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 12)),
+                                    Y = (int)Binary.BigEndian (BitConverter.ToUInt32 (chunkData, 16)),
+                                    DelayNum = Binary.BigEndian (BitConverter.ToUInt16 (chunkData, 20)),
+                                    DelayDen = Binary.BigEndian (BitConverter.ToUInt16 (chunkData, 22)),
+                                    DisposeOp = chunkData[24],
+                                    BlendOp = chunkData[25]
+                                };
+                            }
+                            break;
+
+                        case CHUNK_IDAT: // Default image data
+                            if (!hasActl)
+                                return apng; // Regular PNG
+
+                            if (currentFrame != null)
+                            {
+                                currentFrameChunks.Add (chunkData);
+                                isFirstFrame = true;
+                            }
+                            break;
+
+                        case CHUNK_FDAT: // Frame data
+                            if (chunkLength >= 4 && currentFrame != null)
+                            {
+                                // Skip sequence number (first 4 bytes)
+                                var imageData = new byte[chunkLength - 4];
+                                Array.Copy (chunkData, 4, imageData, 0, imageData.Length);
+                                currentFrameChunks.Add (imageData);
+                                isFirstFrame = false;
+                            }
+                            break;
+
+                        case CHUNK_IEND:
+                            // Process final frame
+                            if (currentFrame != null && currentFrameChunks.Count > 0)
+                            {
+                                var frameData = CombineChunks (currentFrameChunks);
+                                int decodeWidth = currentFrame.Width;
+                                int decodeHeight = currentFrame.Height;
+
+                                if (isFirstFrame && apng.Frames.Count == 0)
+                                {
+                                    decodeWidth = (int)mainWidth;
+                                    decodeHeight = (int)mainHeight;
+                                }
+
+                                currentFrame.ImageData = DecodePngFrame (frameData, decodeWidth, decodeHeight);
+                                apng.Frames.Add (currentFrame);
+                            }
+                            return apng;
                     }
                 }
             }
-        LAST_FRAME:
-            if (currentFrame != null && frameChunks.ContainsKey (sequence))
-            {
-                var frameData = CombineChunks (frameChunks[sequence]);
-                currentFrame.ImageData = DecodePngFrame (frameData,
-                    currentFrame.Width, currentFrame.Height);
-                apng.Frames.Add (currentFrame);
-            }
+            catch (EndOfStreamException) { }
 
             return apng;
         }
@@ -416,56 +577,68 @@ namespace GameRes
         {
             if (frame.ImageData == null) return;
 
-            for (int y = 0; y < frame.Height; y++)
+            // The frame data is decoded at frame.Width x frame.Height
+            // We need to composite it at position (frame.X, frame.Y) on the canvas
+
+            for (int frameY = 0; frameY < frame.Height; frameY++)
             {
-                for (int x = 0; x < frame.Width; x++)
+                for (int frameX = 0; frameX < frame.Width; frameX++)
                 {
-                    int canvasX = frame.X + x;
-                    int canvasY = frame.Y + y;
+                    // Position on the canvas
+                    int canvasX = frame.X + frameX;
+                    int canvasY = frame.Y + frameY;
 
-                    if (canvasX >= 0 && canvasX < canvasWidth &&
-                        canvasY >= 0 && canvasY < canvasHeight)
+                    // Check bounds
+                    if (canvasX < 0 || canvasX >= canvasWidth ||
+                        canvasY < 0 || canvasY >= canvasHeight)
+                        continue;
+
+                    // Source index in frame data (frame is Width x Height)
+                    int srcIdx = (frameY * frame.Width + frameX) * 4;
+
+                    // Destination index in canvas (canvas is canvasWidth x canvasHeight)
+                    int dstIdx = (canvasY * canvasWidth + canvasX) * 4;
+
+                    if (srcIdx + 3 >= frame.ImageData.Length || dstIdx + 3 >= canvas.Length)
                     {
-                        int srcIdx = (y * frame.Width + x) * 4;
-                        int dstIdx = (canvasY * canvasWidth + canvasX) * 4;
+                        System.Diagnostics.Trace.WriteLine ($"Index out of bounds: srcIdx={srcIdx}, dstIdx={dstIdx}");
+                        continue;
+                    }
 
-                        if (srcIdx + 3 < frame.ImageData.Length && dstIdx + 3 < canvas.Length)
+                    byte srcB = frame.ImageData[srcIdx];
+                    byte srcG = frame.ImageData[srcIdx + 1];
+                    byte srcR = frame.ImageData[srcIdx + 2];
+                    byte srcA = frame.ImageData[srcIdx + 3];
+
+                    if (frame.BlendOp == APNG_BLEND_OP_SOURCE || canvas[dstIdx + 3] == 0)
+                    {
+                        // Replace
+                        canvas[dstIdx] = srcB;
+                        canvas[dstIdx + 1] = srcG;
+                        canvas[dstIdx + 2] = srcR;
+                        canvas[dstIdx + 3] = srcA;
+                    }
+                    else // APNG_BLEND_OP_OVER
+                    {
+                        // Alpha blend
+                        if (srcA == 255)
                         {
-                            if (frame.BlendOp == APNG_BLEND_OP_SOURCE)
-                            {
-                                // Replace
-                                canvas[dstIdx] = frame.ImageData[srcIdx];         // B
-                                canvas[dstIdx + 1] = frame.ImageData[srcIdx + 1]; // G
-                                canvas[dstIdx + 2] = frame.ImageData[srcIdx + 2]; // R
-                                canvas[dstIdx + 3] = frame.ImageData[srcIdx + 3]; // A
-                            }
-                            else // APNG_BLEND_OP_OVER
-                            {
-                                // Alpha blend
-                                byte srcA = frame.ImageData[srcIdx + 3];
-                                if (srcA == 255)
-                                {
-                                    canvas[dstIdx] = frame.ImageData[srcIdx];
-                                    canvas[dstIdx + 1] = frame.ImageData[srcIdx + 1];
-                                    canvas[dstIdx + 2] = frame.ImageData[srcIdx + 2];
-                                    canvas[dstIdx + 3] = 255;
-                                }
-                                else if (srcA > 0)
-                                {
-                                    byte dstA = canvas[dstIdx + 3];
-                                    int outA = srcA + (dstA * (255 - srcA)) / 255;
+                            canvas[ dstIdx ] = srcB;
+                            canvas[dstIdx+1] = srcG;
+                            canvas[dstIdx+2] = srcR;
+                            canvas[dstIdx+3] = 255;
+                        }
+                        else if (srcA > 0)
+                        {
+                            byte dstA = canvas[dstIdx + 3];
+                            int outA = srcA + (dstA * (255 - srcA)) / 255;
 
-                                    if (outA > 0)
-                                    {
-                                        canvas[dstIdx] = (byte)((frame.ImageData[srcIdx] * srcA +
-                                            canvas[dstIdx] * dstA * (255 - srcA) / 255) / outA);
-                                        canvas[dstIdx + 1] = (byte)((frame.ImageData[srcIdx + 1] * srcA +
-                                            canvas[dstIdx + 1] * dstA * (255 - srcA) / 255) / outA);
-                                        canvas[dstIdx + 2] = (byte)((frame.ImageData[srcIdx + 2] * srcA +
-                                            canvas[dstIdx + 2] * dstA * (255 - srcA) / 255) / outA);
-                                        canvas[dstIdx + 3] = (byte)outA;
-                                    }
-                                }
+                            if (outA > 0)
+                            {
+                                canvas[ dstIdx ] = (byte)((srcB * srcA + canvas[ dstIdx ] * dstA * (255 - srcA) / 255) / outA);
+                                canvas[dstIdx+1] = (byte)((srcG * srcA + canvas[dstIdx+1] * dstA * (255 - srcA) / 255) / outA);
+                                canvas[dstIdx+2] = (byte)((srcR * srcA + canvas[dstIdx+2] * dstA * (255 - srcA) / 255) / outA);
+                                canvas[dstIdx+3] = (byte)outA;
                             }
                         }
                     }
@@ -483,82 +656,365 @@ namespace GameRes
             bool foundIhdr = false;
             bool foundActl = false;
 
-            while (file.Position < file.Length)
+            try
             {
-                uint chunk_size    = file.ReadUInt32BE();
-                byte[] chunk_type  = file.ReadBytes (4);
-
-                if (Binary.AsciiEqual (chunk_type, CHUNK_IHDR))
+                while (true)
                 {
-                    meta.Width     = file.ReadUInt32BE();
-                    meta.Height    = file.ReadUInt32BE();
-                    int bpp        = file.ReadByte();
-                    int color_type = file.ReadByte();
+                    uint chunk_size   = file.ReadUInt32BE();
+                    byte[] chunk_type = file.ReadBytes (4);
+                    string chunk_name = Encoding.ASCII.GetString (chunk_type);
 
-                    switch (color_type)
+                    if (Binary.AsciiEqual (chunk_type, CHUNK_IHDR))
                     {
-                    case PNG_COLOR_TYPE_RGB:             meta.BPP = bpp * 3; break;
-                    case PNG_COLOR_TYPE_PALETTE:         meta.BPP = 24;      break;
-                    case PNG_COLOR_TYPE_GRAYSCALE_ALPHA: meta.BPP = bpp * 2; break;
-                    case PNG_COLOR_TYPE_RGBA:            meta.BPP = bpp * 4; break;
-                    case PNG_COLOR_TYPE_GRAYSCALE:       meta.BPP = bpp;     break;
-                    default: return null;
-                    }
+                        meta.Width     = file.ReadUInt32BE();
+                        meta.Height    = file.ReadUInt32BE();
+                        int bpp        = file.ReadByte();
+                        int color_type = file.ReadByte();
 
-                    SkipBytes (file, chunk_size - 10 + 4); // Rest of IHDR + CRC
-                    foundIhdr = true;
-                }
-                else if (Binary.AsciiEqual (chunk_type, CHUNK_ACTL))
-                {
-                    // Animation control chunk
-                    meta.FrameCount = (int)file.ReadUInt32BE();
-                    meta.PlayCount  = (int)file.ReadUInt32BE();
-                    SkipBytes (file, chunk_size - 8 + 4); // Rest of acTL + CRC
-                    foundActl = true;
-                }
-                else if (Binary.AsciiEqual (chunk_type, CHUNK_OFFS))
-                {
-                    int x = file.ReadInt32BE();
-                    int y = file.ReadInt32BE();
-                    if (file.ReadByte() == PNG_UNIT_PIXELS)
+                        switch (color_type)
+                        {
+                            case PNG_COLOR_TYPE_RGB:             meta.BPP = bpp * 3; break;
+                            case PNG_COLOR_TYPE_PALETTE:         meta.BPP = 24;      break;
+                            case PNG_COLOR_TYPE_GRAYSCALE_ALPHA: meta.BPP = bpp * 2; break;
+                            case PNG_COLOR_TYPE_RGBA:            meta.BPP = bpp * 4; break;
+                            case PNG_COLOR_TYPE_GRAYSCALE:       meta.BPP = bpp;     break;
+                            default: return null;
+                        }
+
+                        SkipBytes (file, chunk_size - 10 + 4); // Rest of IHDR + CRC
+                        foundIhdr = true;
+                    }
+                    else if (Binary.AsciiEqual (chunk_type, CHUNK_ACTL))
                     {
-                        meta.OffsetX = x;
-                        meta.OffsetY = y;
+                        // Animation control chunk
+                        meta.FrameCount = (int)file.ReadUInt32BE();
+                        meta.PlayCount  = (int)file.ReadUInt32BE();
+                        SkipBytes (file, chunk_size - 8 + 4); // Rest of acTL + CRC
+                        foundActl = true;
                     }
-                    SkipBytes (file, chunk_size - 9 + 4); // Rest of oFFs + CRC
-                }
-                else if (Binary.AsciiEqual (chunk_type, CHUNK_IDAT) || Binary.AsciiEqual (chunk_type, CHUNK_IEND))
-                    break;
-                else
-                    SkipBytes (file, chunk_size + 4); // Skip chunk data + CRC
+                    else if (Binary.AsciiEqual (chunk_type, CHUNK_OFFS))
+                    {
+                        int x = file.ReadInt32BE();
+                        int y = file.ReadInt32BE();
+                        if (file.ReadByte() == PNG_UNIT_PIXELS)
+                        {
+                            meta.OffsetX = x;
+                            meta.OffsetY = y;
+                        }
+                        SkipBytes (file, chunk_size - 9 + 4); // Rest of oFFs + CRC
+                    }
+                    else if (Binary.AsciiEqual (chunk_type, CHUNK_IDAT) || Binary.AsciiEqual (chunk_type, CHUNK_IEND))
+                    {
+                        break;
+                    }
+                    else if (!IsStandardChunk (chunk_name))
+                    {
+                        // Read custom chunk
+                        var chunkData = file.ReadBytes((int)chunk_size);
+                        meta.CustomChunks[chunk_name] = chunkData;
+                        file.ReadUInt32(); // Skip CRC
+                    }
+                    else
+                        SkipBytes (file, chunk_size + 4); // Skip chunk data + CRC
 
-                if (foundIhdr && (foundActl || file.Position > file.Length / 2))
-                    break;
+                    if (foundIhdr && foundActl)
+                        break;
+                }
             }
+            catch (EndOfStreamException) { }
 
             return foundIhdr ? meta : null;
         }
 
         public override void Write (Stream file, ImageData image)
         {
+            if (image is AnimatedImageData animatedImage)
+            {
+                if (animatedImage.Frames.Count == 0)
+                    throw new InvalidOperationException ("No frames to write");
+
+                if (animatedImage.Frames.Count == 1)
+                {
+                    WritePNG (file, image);
+                    return;
+                }
+                WriteAPNG (file, animatedImage);
+            }
+            else
+                WritePNG (file, image);
+        }
+
+        public void Write (Stream file, ImageData image, Dictionary<string, byte[]> customChunks)
+        {
+            if (image is AnimatedImageData animatedImage)
+                throw new NotSupportedException ("Custom chunks not supported for animated PNG");
+            else
+                WritePNGWithCustomChunks (file, image, customChunks);
+        }
+
+        private void WritePNG (Stream file, ImageData image)
+        {
+            if (image is PngImageData pngImage && pngImage.CustomChunks.Count > 0)
+            {
+                WritePNGWithCustomChunks (file, image, pngImage.CustomChunks);
+                return;
+            }
+
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add (BitmapFrame.Create (image.Bitmap, null, null, null));
-            if (0 == image.OffsetX && 0 == image.OffsetY)
+
+            if (0 == image.OffsetX && 0 == image.OffsetY && file.CanSeek)
             {
                 encoder.Save (file);
                 return;
             }
+
             using (var mem_stream = new MemoryStream())
             {
                 encoder.Save (mem_stream);
+
+                if (0 == image.OffsetX && 0 == image.OffsetY)
+                {
+                    // No offset but stream doesn't support seeking
+                    mem_stream.Position = 0;
+                    mem_stream.CopyTo (file);
+                    return;
+                }
+
+                // PNG with offset chunk
                 byte[] buf = mem_stream.GetBuffer();
                 long header_pos = 8;
                 mem_stream.Position = header_pos;
                 uint header_length = ReadChunkLength (mem_stream);
-                file.Write (buf, 0, (int)(header_pos+header_length+12));
+
+                // Write PNG header and IHDR chunk
+                file.Write (buf, 0, (int)(header_pos + header_length + 12));
+
+                // Insert oFFs chunk
                 WriteOffsChunk (file, image);
-                mem_stream.Position = header_pos+header_length+12;
+
+                // Write the rest of the PNG
+                mem_stream.Position = header_pos + header_length + 12;
                 mem_stream.CopyTo (file);
+            }
+        }
+
+        private void WritePNGWithCustomChunks (Stream file, ImageData image, Dictionary<string, byte[]> customChunks)
+        {
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add (BitmapFrame.Create (image.Bitmap, null, null, null));
+
+            using (var mem_stream = new MemoryStream())
+            {
+                encoder.Save (mem_stream);
+                mem_stream.Position = 0;
+
+                // Copy PNG header
+                byte[] header = new byte[8];
+                mem_stream.Read (header, 0, 8);
+                file.Write (header, 0, 8);
+
+                // Copy IHDR chunk
+                CopyNextChunk (mem_stream, file);
+
+                // Insert custom chunks after IHDR
+                foreach (var chunk in customChunks)
+                    WriteChunk (file, chunk.Key, writer => writer.Write (chunk.Value));
+
+                // Insert offset chunk if needed
+                if (image.OffsetX != 0 || image.OffsetY != 0)
+                    WriteOffsChunk (file, image);
+
+                // Copy remaining chunks
+                while (mem_stream.Position < mem_stream.Length)
+                {
+                    if (!CopyNextChunk (mem_stream, file))
+                        break;
+                }
+            }
+        }
+
+        private bool CopyNextChunk (Stream source, Stream dest)
+        {
+            var lengthBytes = new byte[4];
+            if (source.Read (lengthBytes, 0, 4) != 4)
+                return false;
+
+            uint chunkLength = Binary.BigEndian (BitConverter.ToUInt32 (lengthBytes, 0));
+
+            var typeBytes = new byte[4];
+            if (source.Read (typeBytes, 0, 4) != 4)
+                return false;
+
+            // Write length
+            dest.Write (lengthBytes, 0, 4);
+
+            // Write type
+            dest.Write (typeBytes, 0, 4);
+
+            // Copy data
+            byte[] data = new byte[chunkLength];
+            source.Read (data, 0, (int)chunkLength);
+            dest.Write (data, 0, (int)chunkLength);
+
+            // Copy CRC
+            byte[] crc = new byte[4];
+            source.Read (crc, 0, 4);
+            dest.Write (crc, 0, 4);
+
+            return true;
+        }
+
+        private void WriteAPNG (Stream file, AnimatedImageData animatedImage)
+        {
+            var frames = animatedImage.Frames;
+            var delays = animatedImage.FrameDelays;
+
+            file.Write (PNG_HEADER, 0, PNG_HEADER.Length);
+
+            var firstFrame = frames[0];
+            int width   = firstFrame.PixelWidth;
+            int height  = firstFrame.PixelHeight;
+            double dpiX = firstFrame.DpiX;
+            double dpiY = firstFrame.DpiY;
+
+            WriteChunk (file, CHUNK_IHDR, writer =>
+            {
+                writer.Write (Binary.BigEndian((uint)width));
+                writer.Write (Binary.BigEndian((uint)height));
+                writer.Write((byte)8); // bit depth
+                writer.Write((byte)PNG_COLOR_TYPE_RGBA); // color type
+                writer.Write((byte)0); // compression
+                writer.Write((byte)0); // filter
+                writer.Write((byte)0); // interlace
+            });
+
+            // Write pHYs chunk if DPI is not 96
+            if (Math.Abs (dpiX - 96.0) > 0.001 || Math.Abs (dpiY - 96.0) > 0.001)
+            {
+                WriteChunk (file, "pHYs", writer =>
+                {
+                    uint pixelsPerMeterX = (uint)(dpiX * 39.3701);
+                    uint pixelsPerMeterY = (uint)(dpiY * 39.3701);
+
+                    writer.Write (Binary.BigEndian (pixelsPerMeterX));
+                    writer.Write (Binary.BigEndian (pixelsPerMeterY));
+                    writer.Write((byte)1); // unit = meter
+                });
+            }
+
+            // Write acTL (animation control)
+            WriteChunk (file, CHUNK_ACTL, writer =>
+            {
+                writer.Write (Binary.BigEndian((uint)frames.Count)); // num_frames
+                writer.Write (Binary.BigEndian((uint)0)); // num_plays (0 = infinite)
+            });
+
+            uint sequenceNumber = 0;
+
+            // Write frames
+            for (int i = 0; i < frames.Count; i++)
+            {
+                var frame = frames[i];
+                var delay = i < delays.Count ? delays[i] : 100;
+
+                // Convert frame to BGRA32 if needed
+                var convertedFrame = frame;
+                if (frame.Format != PixelFormats.Bgra32)
+                {
+                    convertedFrame = new FormatConvertedBitmap (frame, PixelFormats.Bgra32, null, 0);
+                }
+
+                int stride = convertedFrame.PixelWidth * 4;
+                var pixels = new byte[stride * convertedFrame.PixelHeight];
+                convertedFrame.CopyPixels (pixels, stride, 0);
+
+                // Write fcTL (frame control)
+                WriteChunk (file, CHUNK_FCTL, writer =>
+                {
+                    writer.Write (Binary.BigEndian (sequenceNumber++)); // sequence_number
+                    writer.Write (Binary.BigEndian ((uint)convertedFrame.PixelWidth)); // width
+                    writer.Write (Binary.BigEndian ((uint)convertedFrame.PixelHeight)); // height
+                    writer.Write (Binary.BigEndian ((uint)0)); // x_offset
+                    writer.Write (Binary.BigEndian ((uint)0)); // y_offset
+                    writer.Write (Binary.BigEndian ((ushort)delay)); // delay_num (in milliseconds)
+                    writer.Write (Binary.BigEndian ((ushort)1000)); // delay_den (1000 for milliseconds)
+                    writer.Write ((byte)APNG_DISPOSE_OP_NONE); // dispose_op
+                    writer.Write ((byte)APNG_BLEND_OP_SOURCE); // blend_op
+                });
+
+                var encodedData = EncodePngFrame (
+                    pixels, convertedFrame.PixelWidth, convertedFrame.PixelHeight,
+                    convertedFrame.DpiX, convertedFrame.DpiY
+                );
+
+                if (i == 0)
+                {
+                    // First frame uses IDAT
+                    WriteChunk (file, CHUNK_IDAT, writer =>
+                    {
+                        writer.Write (encodedData);
+                    });
+                }
+                else
+                {
+                    // Subsequent frames use fdAT
+                    WriteChunk (file, CHUNK_FDAT, writer =>
+                    {
+                        writer.Write (Binary.BigEndian (sequenceNumber++)); // sequence_number
+                        writer.Write (encodedData);
+                    });
+                }
+            }
+
+            WriteChunk (file, CHUNK_IEND, writer => { });
+        }
+
+        private byte[] EncodePngFrame (
+            byte[] pixels, int width, int height, double dpiX, double dpiY)
+        {
+            using (var ms = new MemoryStream())
+            {
+                var bitmap = BitmapSource.Create (width, height, dpiX, dpiY,
+                    PixelFormats.Bgra32, null, pixels, width * 4);
+
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add (BitmapFrame.Create (bitmap));
+                encoder.Save (ms);
+
+                // Extract IDAT data from the encoded PNG
+                ms.Position = 8; // Skip PNG header
+                var idatData = new List<byte>();
+
+                while (ms.Position < ms.Length)
+                {
+                    var lengthBytes = new byte[4];
+                    if (ms.Read (lengthBytes, 0, 4) != 4)
+                        break;
+
+                    uint chunkLength = Binary.BigEndian (BitConverter.ToUInt32 (lengthBytes, 0));
+
+                    var typeBytes = new byte[4];
+                    if (ms.Read (typeBytes, 0, 4) != 4)
+                        break;
+
+                    string chunkType = Encoding.ASCII.GetString (typeBytes);
+
+                    if (chunkType == CHUNK_IDAT)
+                    {
+                        var chunkData = new byte[chunkLength];
+                        ms.Read (chunkData, 0, (int)chunkLength);
+                        idatData.AddRange (chunkData);
+                        ms.Seek (4, SeekOrigin.Current); // Skip CRC
+                    }
+                    else
+                        ms.Seek (chunkLength + 4, SeekOrigin.Current); // Skip data + CRC
+
+                    if (chunkType == CHUNK_IEND)
+                        break;
+                }
+
+                return idatData.ToArray();
             }
         }
 

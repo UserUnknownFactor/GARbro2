@@ -32,7 +32,8 @@ namespace GameRes.Formats.DxLib
         public string Password { get; set; }
     }
 
-    [Export (typeof (ArchiveFormat))]
+    [Export(typeof(ArchiveFormat))]
+    [ExportMetadata("Priority", -1)]
     public class DxOpener : ArchiveFormat
     {
         public override string         Tag { get { return "DXA"; } }
@@ -56,8 +57,7 @@ namespace GameRes.Formats.DxLib
 
         public override object GetAccessWidget()
         {
-            return new WidgetPassword 
-            { 
+            return new WidgetPassword { 
                 FormatTag = this.Tag,
                 Scheme = this.Scheme
             };
@@ -68,8 +68,7 @@ namespace GameRes.Formats.DxLib
             var passwordWidget = widget as WidgetPassword;
             if (passwordWidget != null)
             {
-                return new DxOptions
-                {
+                return new DxOptions {
                     Password = passwordWidget.Password
                 };
             }

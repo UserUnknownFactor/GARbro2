@@ -275,8 +275,7 @@ namespace GARbro.GUI
                     HideAllPreviewControls();
                     SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-                    await _previewLoader.LoadAsync (async ct =>
-                    {
+                    await _previewLoader.LoadAsync (async ct => {
                         await _modelPreviewHandler.LoadContentAsync (m_current_preview, ct);
                         SetFileStatus ("");
                     });
@@ -286,8 +285,7 @@ namespace GARbro.GUI
                     ShowVideoPreview();
                     SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-                    await _previewLoader.LoadAsync (async ct =>
-                    {
+                    await _previewLoader.LoadAsync (async ct => {
                         await _videoPreviewHandler.LoadContentAsync (m_current_preview, ct);
                     });
                 }
@@ -295,8 +293,7 @@ namespace GARbro.GUI
                 {
                     SetFileStatus (Localization.Format ("LoadingFile", Localization._T ($"Type_{eType}")));
 
-                    await _previewLoader.LoadAsync (async ct =>
-                    {
+                    await _previewLoader.LoadAsync (async ct => {
                         await _audioPreviewHandler.LoadContentAsync (m_current_preview, ct);
                         SetFileStatus ("");
                     });
@@ -305,8 +302,7 @@ namespace GARbro.GUI
                 {
                     ShowImagePreview();
 
-                    await _previewLoader.LoadAsync (async ct =>
-                    {
+                    await _previewLoader.LoadAsync (async ct => {
                         await _imagePreviewHandler.LoadContentAsync (m_current_preview, ct);
                     });
                 }
@@ -315,8 +311,7 @@ namespace GARbro.GUI
                     //_imagePreviewHandler.Reset();
                     ShowTextPreview();
 
-                    await _previewLoader.LoadAsync (async ct =>
-                    {
+                    await _previewLoader.LoadAsync (async ct => {
                         await _textPreviewHandler.LoadContentAsync (m_current_preview, ct);
                     });
                 }

@@ -20,13 +20,19 @@ namespace GARbro.GUI
         private int                currentFrameIndex = 0;
         private DispatcherTimer    animationTimer;
         private bool               isAnimated = false;
-
+        private WriteableBitmap    displayBuffer;
+        private readonly object    bufferLock = new object();
 
         public ImagePreviewControl ()
         {
-            animationTimer       = new DispatcherTimer();
+            animationTimer = new DispatcherTimer();
             animationTimer.Tick += OnFrameChange;
-            Unloaded            += (s, e) => StopAnimation();
+            Unloaded += (s, e) => StopAnimation();
+
+            RenderOptions.SetBitmapScalingMode (this, BitmapScalingMode.NearestNeighbor);
+            RenderOptions.SetEdgeMode (this, EdgeMode.Aliased);
+            SnapsToDevicePixels = true;
+            UseLayoutRounding = true;
         }
 
         /// <summary>
@@ -53,11 +59,62 @@ namespace GARbro.GUI
             isAnimated = frames.Count > 1;
             currentFrameIndex = 0;
 
-            // Show first frame
-            Source = frames[0];
-
             if (isAnimated)
+            {
+                var firstFrame = frames[0];
+
+                // NOTE: Must ensure all frames are the same size in a decoder
+                displayBuffer = new WriteableBitmap(
+                    firstFrame.PixelWidth,
+                    firstFrame.PixelHeight,
+                    firstFrame.DpiX,
+                    firstFrame.DpiY,
+                    PixelFormats.Pbgra32,
+                    null);
+
+                CopyFrameToBuffer (frames[0]);
+                Source = displayBuffer;
+
                 StartAnimation();
+            }
+            else
+            {
+                // Single frame - just display it directly
+                Source = frames[0];
+            }
+        }
+
+        private void CopyFrameToBuffer (BitmapSource frame)
+        {
+            if (displayBuffer == null || frame == null)
+                return;
+
+            lock (bufferLock)
+            {
+                displayBuffer.Lock();
+                try
+                {
+                    BitmapSource sourceFrame = frame;
+                    if (frame.Format != PixelFormats.Pbgra32 && frame.Format != PixelFormats.Bgra32)
+                    {
+                        sourceFrame = new FormatConvertedBitmap (frame, PixelFormats.Pbgra32, null, 0);
+                    }
+
+                    var sourceRect = new Int32Rect (0, 0, 
+                        Math.Min (sourceFrame.PixelWidth, displayBuffer.PixelWidth),
+                        Math.Min (sourceFrame.PixelHeight, displayBuffer.PixelHeight));
+
+                    sourceFrame.CopyPixels (sourceRect, displayBuffer.BackBuffer, 
+                        displayBuffer.BackBufferStride * displayBuffer.PixelHeight, 
+                        displayBuffer.BackBufferStride);
+
+                    displayBuffer.AddDirtyRect (sourceRect);
+                }
+                finally
+                {
+                    displayBuffer.Unlock();
+                }
+            }
         }
 
         private void OnFrameChange (object sender, EventArgs e)
@@ -66,10 +123,18 @@ namespace GARbro.GUI
                 return;
 
             currentFrameIndex = (currentFrameIndex + 1) % frames.Count;
-            Source = frames[currentFrameIndex];
 
-            // Set the timer for the next frame
-            animationTimer.Interval = TimeSpan.FromMilliseconds (frameDelays[currentFrameIndex]);
+            if (displayBuffer != null)
+                CopyFrameToBuffer (frames[currentFrameIndex]);
+            else
+                Source = frames[currentFrameIndex];
+
+            int delay = currentFrameIndex < frameDelays.Count ? 
+                frameDelays[currentFrameIndex] : 100;
+
+            if (delay <= 0) delay = 10;
+
+            animationTimer.Interval = TimeSpan.FromMilliseconds (delay);
         }
 
         /// <summary>
@@ -79,7 +144,12 @@ namespace GARbro.GUI
         {
             if (isAnimated && frames.Count > 1)
             {
-                animationTimer.Interval = TimeSpan.FromMilliseconds (frameDelays[currentFrameIndex]);
+                int initialDelay = currentFrameIndex < frameDelays.Count ? 
+                    frameDelays[currentFrameIndex] : 100;
+
+                if (initialDelay <= 0) initialDelay = 10;
+
+                animationTimer.Interval = TimeSpan.FromMilliseconds (initialDelay);
                 animationTimer.Start();
             }
         }
@@ -89,7 +159,7 @@ namespace GARbro.GUI
         /// </summary>
         public void StopAnimation ()
         {
-            if (animationTimer != null && isAnimated && animationTimer.IsEnabled)
+            if (animationTimer != null && animationTimer.IsEnabled)
                 animationTimer.Stop();
         }
 
@@ -100,12 +170,26 @@ namespace GARbro.GUI
         {
             StopAnimation();
 
+            lock (bufferLock)
+            {
+                displayBuffer = null;
+            }
+
             if (frames != null)
             {
-                for (int i = 0; i < frames.Count; i++) frames[i] = null;
                 bool collect = frames?.Count > 7;
+
+                for (int i = 0; i < frames.Count; i++)
+                    frames[i] = null;
+
                 frames.Clear();
-                if (collect) GC.Collect();
+
+                if (collect)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                }
             }
 
             frameDelays?.Clear();
@@ -126,8 +210,7 @@ namespace GARbro.GUI
         /// <summary>
         /// Check if animation is paused
         /// </summary>
-        public bool IsPaused 
-        { 
+        public bool IsPaused {
             get { return animationTimer != null && !animationTimer.IsEnabled && isAnimated; }
         }
 

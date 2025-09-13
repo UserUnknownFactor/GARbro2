@@ -135,7 +135,7 @@ namespace GameRes
             return new ImageData (flipped, info);
         }
     }
-    
+
     public class AnimatedImageData : ImageData, IDisposable
     {
         public List<BitmapSource> Frames { get; set; }
@@ -189,7 +189,8 @@ namespace GameRes
             if (null == format)
                 return null;
 
-            file.Position = 0;
+            if (file.CanSeek)
+                file.Position = 0;
             return format.Item1.Read(file, format.Item2);
         }
 
@@ -199,7 +200,8 @@ namespace GameRes
             {
                 try
                 {
-                    file.Position = 0;
+                    if (file.CanSeek)
+                        file.Position = 0;
                     ImageMetaData metadata = impl.ReadMetaData (file);
                     if (null != metadata)
                     {

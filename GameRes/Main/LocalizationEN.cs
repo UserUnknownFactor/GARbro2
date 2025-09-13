@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17172; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17221; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -350,7 +350,8 @@ public static partial class Localization
                 { "WritingArchive", new LocalizationEntry { Singular = "Writing archive..." } },
                 { "FinalizingArchive", new LocalizationEntry { Singular = "Finalizing archive..." } },
                 { "PackingComplete", new LocalizationEntry { Singular = "Packing complete" } },
-                { "FileIofN", new LocalizationEntry { Singular = " - File {0}/{1}" } }
+                { "FileIofN", new LocalizationEntry { Singular = " - File {0}/{1}" } },
+                { "NoImageDecoder", new LocalizationEntry { Singular = "Image decoder not found" } }
             });
     }
 }

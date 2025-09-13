@@ -7,9 +7,9 @@ namespace GameRes.Formats.Crowd
     [Export(typeof(AudioFormat))]
     public class EogAudio : AudioFormat
     {
-        public override string         Tag { get { return "EOG"; } }
+        public override string         Tag { get { return "EOG/OGG"; } }
         public override string Description { get { return "Crowd engine audio format (Ogg/Vorbis)"; } }
-        public override uint     Signature { get { return 0x004D5243; } } // 'CRM'
+        public override uint     Signature { get { return  0x004D5243; } } // 'CRM'
 
         public EogAudio ()
         {
