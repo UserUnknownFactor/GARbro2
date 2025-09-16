@@ -88,7 +88,17 @@ namespace GARbro.GUI
             // Hide overlay controls
             OverlayPanel.Visibility = Visibility.Collapsed;
 
-            EnsureImageLoadedForGrid();
+            if (MainWindow.AutoCropTransparent.Get<bool>() && 
+                    m_current_preview?.Entry != null && 
+                    m_current_preview.Entry.Type == "image")
+            {
+                // Reload to get uncropped version for grid mode
+                UpdatePreviewPane(m_current_preview.Entry);
+            }
+            else
+            {
+                EnsureImageLoadedForGrid();
+            }
 
             if (_mediaControl != null)
                 _mediaControl.UpdateSpriteButtons (false);

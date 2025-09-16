@@ -104,6 +104,8 @@ DefaultEncoding→Default file names encoding→→→
 ODNAudioSampleRate→Default audio sampling rate→→→
 Tim2AlphaFormat→Choose Tim2 image alpha format.¶
 It can't be read correctly from the file.→→→
+Output Format→Output Format→→→
+Image format to use→Image format to use→→→
 // GUI strings
 ButtonCancel→Cancel→→→
 ButtonExtract→Extract→→→
@@ -187,6 +189,7 @@ MsgConfirmDeleteFiles→Are you sure you want to delete these files?→→→
 TextDeleteFiles→Delete files→→→
 MsgDeletedItems→Deleted {0} file→Deleted {0} files→→
 MenuFitWindow→Fit preview _window to image→→→
+MenuCropTransparent→Crop _transparent image areas→→→
 MenuToggleMenuBar→Show/hide main _menu bar→→→
 MenuToggleStatusBar→Show/hide _status bar→→→
 MenuToggleToolBar→Show/hide _toolbar→→→
@@ -258,6 +261,7 @@ TextFormats→Formats→→→
 TextPreferences→Preferences→→→
 TextViewer→Image viewer→→→
 winDownScaleImage→Scale large images to fit window→→→
+winAutoCropTransparent→Crop big transparent image areas surrounding image pixels→→→
 MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
 TooltipStop→Stop→→→
 TooltipPause→Pause→→→

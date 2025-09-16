@@ -36,7 +36,7 @@ namespace GARbro.GUI
         }
 
         static readonly IEnumerable<IResourceSetting> ViewerSettings = new [] {
-            MainWindow.DownScaleImage,
+            MainWindow.DownScaleImage, MainWindow.AutoCropTransparent,
         };
 
         SettingsViewModel ViewModel;

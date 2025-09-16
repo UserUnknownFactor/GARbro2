@@ -18,7 +18,9 @@ namespace GARbro.GUI.Preview
         private readonly               Image _imageCanvas;          // This is the static image viewer
         private readonly ImagePreviewControl _animatedImageViewer;  // This is for animated images
         private readonly    AsyncImageLoader _imageLoader;
+        private bool _currentImageIsCropped = false;
 
+        public bool IsCurrentImageCropped => _currentImageIsCropped;
         public override bool IsActive => _imageCanvas.Visibility == Visibility.Visible || 
                                          _animatedImageViewer.Visibility == Visibility.Visible;
 
@@ -104,7 +106,7 @@ namespace GARbro.GUI.Preview
             _mainWindow.RemoveGridOverlay();
             _mainWindow.StopSpriteAnimation();
 
-            _mainWindow._spriteAnimator = new SpriteSheetAnimator (result.StaticImage);
+            _mainWindow._spriteAnimator = new SpriteSheetAnimator (processedImage);
 
             if (_mainWindow.SpriteSheetPanel.Visibility != Visibility.Visible)
                 _mainWindow.ShowSpriteSheetControls();
@@ -115,8 +117,12 @@ namespace GARbro.GUI.Preview
 
         private BitmapSource ProcessImageForDisplay (BitmapSource image)
         {
-            if (!MainWindow.DownScaleImage.Get<bool>() ||
-                image.Format.BitsPerPixel != 32 || 
+            _currentImageIsCropped = false;
+            bool isStaticMode = _mainWindow.SpriteLayoutCombo?.SelectedIndex == 0;
+
+            if (!MainWindow.AutoCropTransparent.Get<bool>() ||
+                !isStaticMode ||
+                image.Format.BitsPerPixel < 32 || 
                 image.PixelWidth * image.PixelHeight > 4096 * 4096)
                 return image;
 
@@ -180,8 +186,6 @@ namespace GARbro.GUI.Preview
             try
             {
                 var cropped = new CroppedBitmap (source, bounds);
-
-                // Create a new bitmap to ensure it's not dependent on the original
                 var newBitmap = new WriteableBitmap (cropped);
                 newBitmap.Freeze();
 
@@ -189,7 +193,6 @@ namespace GARbro.GUI.Preview
             }
             catch
             {
-                // If cropping fails, return original
                 return source;
             }
         }
@@ -226,7 +229,6 @@ namespace GARbro.GUI.Preview
             _animatedImageViewer.Reset();
             _animatedImageViewer.Visibility = Visibility.Collapsed;
             _imageCanvas.Visibility = Visibility.Visible;
-
             _mainWindow.HideSpriteSheetControls();
             _mainWindow._spriteAnimator = null;
         }

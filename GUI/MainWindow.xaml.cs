@@ -36,6 +36,7 @@ namespace GARbro.GUI
         public  App App { get { return m_app; } }
 
         public static readonly GuiResourceSetting DownScaleImage = new GuiResourceSetting ("winDownScaleImage");
+        public static readonly GuiResourceSetting AutoCropTransparent = new GuiResourceSetting ("winAutoCropTransparent");
 
         const StringComparison StringIgnoreCase = StringComparison.CurrentCultureIgnoreCase;
 
@@ -61,6 +62,7 @@ namespace GARbro.GUI
             InitializeModelControls();
 
             FitWindowMenuItem.IsChecked = DownScaleImage.Get<bool>();
+            AutoCropMenuItem.IsChecked = AutoCropTransparent.Get<bool>(); 
 
             if (null == Settings.Default.appRecentFiles)
                 Settings.Default.appRecentFiles = new StringCollection();
@@ -80,6 +82,10 @@ namespace GARbro.GUI
             DownScaleImage.PropertyChanged += (s, e) => {
                 ApplyDownScaleSetting();
                 FitWindowMenuItem.IsChecked = DownScaleImage.Get<bool>();
+            };
+            AutoCropTransparent.PropertyChanged += (s, e) => {
+                AutoCropMenuItem.IsChecked = AutoCropTransparent.Get<bool>();
+                RefreshPreviewPane();
             };
             pathLine.EnterKeyDown += acb_OnKeyDown;
 
@@ -512,6 +518,11 @@ namespace GARbro.GUI
             DownScaleImage.Value = !DownScaleImage.Get<bool>();
         }
 
+        private void AutoCropImageExec (object sender, ExecutedRoutedEventArgs e)
+        {
+            AutoCropTransparent.Value = !AutoCropTransparent.Get<bool>();
+        }
+
         private void HideStatusBarExec (object sender, ExecutedRoutedEventArgs e)
         {
             ToggleVisibility (AppStatusBar);
@@ -661,6 +672,11 @@ namespace GARbro.GUI
             e.CanExecute = ImageCanvas.Source != null;
         }
 
+        private void CanExecuteAutoCropImage (object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = ImageCanvas.Source != null && SpriteLayoutCombo?.SelectedIndex == 0;
+        }
+
         private void CanExecutePlaybackControl (object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = _previewStateMachine.CurrentMediaType != MediaType.None;
@@ -739,6 +755,7 @@ namespace GARbro.GUI
         public static readonly RoutedCommand Ascend = new RoutedCommand();
         public static readonly RoutedCommand ScaleImage = new RoutedCommand();
         public static readonly RoutedCommand ResetWindowPosition = new RoutedCommand();
+        public static readonly RoutedCommand AutoCropImage = new RoutedCommand();
     }
 
     #endregion

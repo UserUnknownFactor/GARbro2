@@ -155,6 +155,11 @@
                               InputGestureText="Ctrl+H"
                               Command="{x:Static local:Commands.FitWindow}"
                               IsCheckable="True"/>
+                    <MenuItem Name="AutoCropMenuItem"
+                              Header="{gre:Localize MenuCropTransparent}" 
+                              InputGestureText="Ctrl+T"
+                              Command="{x:Static local:Commands.AutoCropImage}"
+                              IsCheckable="True"/>
                     <MenuItem Header="{gre:Localize CtxMenuRefresh}" InputGestureText="F5"
                           Command="{x:Static local:Commands.Refresh}"/>
                     <Separator/>
@@ -796,5 +801,6 @@
         <CommandBinding Command="{x:Static local:Commands.Ascend}"      Executed="AscendExec" CanExecute="CanExecuteAlways"/>
         <CommandBinding Command="{x:Static local:Commands.Exit}"       Executed="ExitExec"       CanExecute="CanExecuteAlways"/>
         <CommandBinding Command="{x:Static local:Commands.ResetWindowPosition}"  Executed="ResetWindowPositionExec" CanExecute="CanExecuteAlways"/>
+        <CommandBinding Command="{x:Static local:Commands.AutoCropImage}" Executed="AutoCropImageExec" CanExecute="CanExecuteAutoCropImage"/>
     </Window.CommandBindings>
 </Window>
