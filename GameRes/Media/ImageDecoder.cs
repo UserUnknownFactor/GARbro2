@@ -39,7 +39,8 @@ namespace GameRes
             {
                 if (null == m_image)
                 {
-                    m_file.Position = 0;
+                    if (m_file.CanSeek)
+                        m_file.Position = 0;
                     m_image = SourceFormat.Read (m_file, Info);
                 }
                 return m_image;

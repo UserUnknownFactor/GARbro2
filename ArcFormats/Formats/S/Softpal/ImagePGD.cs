@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using GameRes.Utility;
 
 namespace GameRes.Formats.Softpal
@@ -10,8 +11,9 @@ namespace GameRes.Formats.Softpal
     public class Pgd11Format : ImageFormat
     {
         public override string         Tag { get { return "PGD/11_C"; } }
-        public override string Description { get { return "Image format used by Softpal subsidiaries"; } }
-        public override uint     Signature { get { return 0x1C4547; } } // 'GE\x1C'
+        public override string Description { get { return "Softpal subsidiaries image format"; } }
+        public override uint     Signature { get { return  0x1C4547; } } // 'GE\x1C'
+        public override bool      CanWrite { get { return  false; } }
 
         public Pgd11Format ()
         {
@@ -58,7 +60,54 @@ namespace GameRes.Formats.Softpal
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("Pgd11Format.Write not implemented");
+            var writer = new BinaryWriter(file, System.Text.Encoding.ASCII, true);
+
+            // Write header
+            writer.Write((byte)'G');
+            writer.Write((byte)'E');
+            writer.Write((byte)0x1C);
+            writer.Write((byte)0);
+            writer.Write(image.OffsetX);
+            writer.Write(image.OffsetY);
+            writer.Write(image.Width);
+            writer.Write(image.Height);
+            writer.Write(0); // Reserved
+            writer.Write(0); // Reserved
+            writer.Write(0); // Reserved
+            writer.Write((byte)'1');
+            writer.Write((byte)'1');
+            writer.Write((byte)'_');
+            writer.Write((byte)'C');
+
+            // Convert to BGRA if necessary
+            var bitmap = image.Bitmap;
+            if (bitmap.Format != PixelFormats.Bgra32)
+                bitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+
+            int stride = (int)image.Width * 4;
+            var pixels = new byte[stride * (int)image.Height];
+            bitmap.CopyPixels(pixels, stride, 0);
+
+            // Separate into planes
+            int plane_size = (int)image.Width * (int)image.Height;
+            var planes = new byte[plane_size * 4];
+            int src = 0;
+            for (int i = 0; i < plane_size; i++)
+            {
+                planes[i] = pixels[src++];                    // B
+                planes[plane_size + i] = pixels[src++];       // G
+                planes[plane_size * 2 + i] = pixels[src++];   // R
+                planes[plane_size * 3 + i] = pixels[src++];   // A
+            }
+
+            // Compress and write
+            using (var compressor = new PgdWriter())
+            {
+                var compressed = compressor.Pack11(planes);
+                writer.Write(planes.Length);  // Unpacked size
+                writer.Write(compressed.Length); // Packed size
+                writer.Write(compressed);
+            }
         }
     }
 
@@ -66,8 +115,9 @@ namespace GameRes.Formats.Softpal
     public class Pgd00Format : ImageFormat
     {
         public override string         Tag { get { return "PGD/00_C"; } }
-        public override string Description { get { return "Image format used by Softpal subsidiaries"; } }
+        public override string Description { get { return "Softpal subsidiaries image format"; } }
         public override uint     Signature { get { return 0; } }
+        public override bool      CanWrite { get { return false; } }
 
         public Pgd00Format ()
         {
@@ -81,10 +131,10 @@ namespace GameRes.Formats.Softpal
                 return null;
             return new ImageMetaData
             {
-                Width   = header.ToUInt32 (8),
+                Width   = header.ToUInt32 (8 ),
                 Height  = header.ToUInt32 (12),
-                OffsetX = header.ToInt32 (0),
-                OffsetY = header.ToInt32 (4),
+                OffsetX = header.ToInt32  (0 ),
+                OffsetY = header.ToInt32  (4 ),
                 BPP     = 32,
             };
         }
@@ -107,7 +157,36 @@ namespace GameRes.Formats.Softpal
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("Pgd00Format.Write not implemented");
+            var writer = new BinaryWriter(file, System.Text.Encoding.ASCII, true);
+
+            // Write header
+            writer.Write(image.OffsetX);
+            writer.Write(image.OffsetY);
+            writer.Write(image.Width);
+            writer.Write(image.Height);
+            writer.Write(0); // Reserved
+            writer.Write(0); // Reserved
+            writer.Write((byte)'0');
+            writer.Write((byte)'0');
+            writer.Write((byte)'_');
+            writer.Write((byte)'C');
+
+            // Convert to TGA format
+            using (var tgaStream = new MemoryStream())
+            {
+                var tgaFormat = new TgaFormat();
+                tgaFormat.Write(tgaStream, image);
+                var tgaData = tgaStream.ToArray();
+
+                // Compress and write
+                using (var compressor = new PgdWriter())
+                {
+                    var compressed = compressor.Pack00(tgaData);
+                    writer.Write(tgaData.Length);     // Unpacked size
+                    writer.Write(compressed.Length);   // Packed size
+                    writer.Write(compressed);
+                }
+            }
         }
     }
 
@@ -115,9 +194,9 @@ namespace GameRes.Formats.Softpal
     public class PgdTgaFormat : TgaFormat
     {
         public override string         Tag { get { return "PGD/TGA"; } }
-        public override string Description { get { return "Image format used by Softpal subsidiaries"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool      CanWrite { get { return false; } }
+        public override string Description { get { return "Softpal subsidiaries image format"; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public PgdTgaFormat ()
         {
@@ -134,7 +213,7 @@ namespace GameRes.Formats.Softpal
             uint width  = header.ToUInt32 (8);
             uint height = header.ToUInt32 (12);
             if (0 == width || 0 == height
-                || width != header.ToUInt16 (0x24)
+                || width  != header.ToUInt16 (0x24)
                 || height != header.ToUInt16 (0x26))
                 return null;
             stream.Position = 0x18;
@@ -155,7 +234,18 @@ namespace GameRes.Formats.Softpal
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("PgdTgaFormat.Write not implemented");
+            var writer = new BinaryWriter(file, System.Text.Encoding.ASCII, true);
+
+            // Write PGD header
+            writer.Write(image.OffsetX);
+            writer.Write(image.OffsetY);
+            writer.Write(image.Width);
+            writer.Write(image.Height);
+            writer.Write(0L); // Reserved 8 bytes
+            writer.Write(0L); // Reserved 8 bytes
+
+            // Write TGA data
+            base.Write(file, image);
         }
     }
 
@@ -168,8 +258,9 @@ namespace GameRes.Formats.Softpal
     public class PgdGeFormat : ImageFormat
     {
         public override string         Tag { get { return "PGD/GE"; } }
-        public override string Description { get { return "Image format used by Softpal subsidiaries"; } }
-        public override uint     Signature { get { return 0x204547; } } // 'GE '
+        public override string Description { get { return "Softpal subsidiaries image format"; } }
+        public override uint     Signature { get { return  0x204547; } } // 'GE '
+        public override bool      CanWrite { get { return  true; } }
 
         public PgdGeFormat ()
         {
@@ -183,8 +274,8 @@ namespace GameRes.Formats.Softpal
             {
                 Width   = header.ToUInt32 (0x0C),
                 Height  = header.ToUInt32 (0x10),
-                OffsetX = header.ToInt32 (4),
-                OffsetY = header.ToInt32 (8),
+                OffsetX = header.ToInt32  (4),
+                OffsetY = header.ToInt32  (8),
                 BPP     = 32,
                 Method  = header.ToUInt16 (0x1C),
             };
@@ -201,7 +292,34 @@ namespace GameRes.Formats.Softpal
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("PgdGeFormat.Write not implemented");
+            var writer = new BinaryWriter(file, System.Text.Encoding.ASCII, true);
+
+            // Default to method 1 for simplicity
+            int method = 1;
+
+            // Write header
+            writer.Write((byte)'G');
+            writer.Write((byte)'E');
+            writer.Write((byte)' ');
+            writer.Write((byte)0);
+            writer.Write(image.OffsetX);
+            writer.Write(image.OffsetY);
+            writer.Write(image.Width);
+            writer.Write(image.Height);
+            writer.Write(0); // Reserved
+            writer.Write(0); // Reserved
+            writer.Write((short)method);
+            writer.Write((short)0); // Reserved
+
+            byte[] processedData;
+            using (var processor = new PgdWriter())
+            {
+                processedData = processor.PreProcessGE(image, method);
+                var compressed = processor.PackGE(processedData);
+                writer.Write(processedData.Length);  // Unpacked size
+                writer.Write(compressed.Length);      // Packed size
+                writer.Write(compressed);
+            }
         }
     }
 
@@ -215,7 +333,8 @@ namespace GameRes.Formats.Softpal
     {
         public override string         Tag { get { return "PGD3"; } }
         public override string Description { get { return "Softpal incremental image format"; } }
-        public override uint     Signature { get { return 0x33444750; } } // 'PGD3'
+        public override uint     Signature { get { return  0x33444750; } } // 'PGD3'
+        public override bool      CanWrite { get { return  false; } } // need mor RE for writing
 
         public Pgd3Format ()
         {
@@ -294,8 +413,355 @@ namespace GameRes.Formats.Softpal
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("Pgd3Format.Write not implemented");
+            throw new NotImplementedException ("Pgd3Format.Write not implemented / uses a base image");
         }
+    }
+
+    internal sealed class PgdWriter : IDisposable
+    {
+        public byte[] Pack11(byte[] input)
+        {
+            return PackWithLookBehind(input, 0xFFC);
+        }
+
+        public byte[] Pack00(byte[] input)
+        {
+            return PackWithLookBehind(input, 3000);
+        }
+
+        public byte[] PackGE(byte[] input)
+        {
+            using (var output = new MemoryStream())
+            using (var writer = new BinaryWriter(output))
+            {
+                int src = 0;
+                int ctl_bits = 0;
+                int ctl_pos = 0;
+                byte ctl = 0;
+
+                while (src < input.Length)
+                {
+                    if (ctl_bits == 0)
+                    {
+                        ctl_pos = (int)output.Position;
+                        writer.Write((byte)0);
+                        ctl_bits = 8;
+                        ctl = 0;
+                    }
+
+                    // Try to find a match
+                    int match_offset = 0;
+                    int match_length = 0;
+                    int max_offset = Math.Min(src, 0xFFFF);
+
+                    for (int offset = 1; offset <= max_offset && offset <= 0xFFF0; offset++)
+                    {
+                        int len = 0;
+                        int max_len = Math.Min(input.Length - src, 0x7FFF);
+                        while (len < max_len && src + len < input.Length && 
+                               input[src - offset + len] == input[src + len])
+                        {
+                            len++;
+                        }
+                        if (len >= 4 && len > match_length)
+                        {
+                            match_offset = offset;
+                            match_length = len;
+                        }
+                    }
+
+                    if (match_length >= 4)
+                    {
+                        // Write compressed data
+                        ctl |= (byte)(1 << (8 - ctl_bits));
+                        match_length -= 4;
+                        int packed = (match_offset << 4);
+                        if (match_length < 8)
+                        {
+                            packed |= match_length | 8;
+                            writer.Write((ushort)packed);
+                        }
+                        else
+                        {
+                            packed |= (match_length >> 8) & 7;
+                            writer.Write((ushort)packed);
+                            writer.Write((byte)(match_length & 0xFF));
+                        }
+                        src += match_length + 4;
+                    }
+                    else
+                    {
+                        // Write literal data
+                        int literal_length = 1;
+                        while (src + literal_length < input.Length && literal_length < 255)
+                        {
+                            // Check if next bytes would form a good match
+                            bool found_match = false;
+                            for (int offset = 1; offset <= Math.Min(src + literal_length, 0xFFF0); offset++)
+                            {
+                                if (src + literal_length + 4 <= input.Length)
+                                {
+                                    int len = 0;
+                                    while (len < 4 && src + literal_length + len < input.Length &&
+                                           input[src + literal_length - offset + len] == input[src + literal_length + len])
+                                    {
+                                        len++;
+                                    }
+                                    if (len >= 4)
+                                    {
+                                        found_match = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (found_match)
+                                break;
+                            literal_length++;
+                        }
+
+                        writer.Write((byte)literal_length);
+                        writer.Write(input, src, literal_length);
+                        src += literal_length;
+                    }
+
+                    ctl_bits--;
+                    if (ctl_bits == 0)
+                    {
+                        long current_pos = output.Position;
+                        output.Position = ctl_pos;
+                        writer.Write(ctl);
+                        output.Position = current_pos;
+                    }
+                }
+
+                // Write final control byte if needed
+                if (ctl_bits > 0 && ctl_bits < 8)
+                {
+                    long current_pos = output.Position;
+                    output.Position = ctl_pos;
+                    writer.Write(ctl);
+                    output.Position = current_pos;
+                }
+
+                return output.ToArray();
+            }
+        }
+
+        private byte[] PackWithLookBehind(byte[] input, int lookBehind)
+        {
+            using (var output = new MemoryStream())
+            using (var writer = new BinaryWriter(output))
+            {
+                int src = 0;
+                int ctl_bits = 0;
+                int ctl_pos = 0;
+                byte ctl = 0;
+
+                while (src < input.Length)
+                {
+                    if (ctl_bits == 0)
+                    {
+                        ctl_pos = (int)output.Position;
+                        writer.Write((byte)0);
+                        ctl_bits = 8;
+                        ctl = 0;
+                    }
+
+                    // Try to find a match
+                    int match_offset = 0;
+                    int match_length = 0;
+                    int search_start = Math.Max(0, src - lookBehind);
+
+                    for (int pos = search_start; pos < src; pos++)
+                    {
+                        int len = 0;
+                        while (len < 255 && src + len < input.Length && 
+                               input[pos + len] == input[src + len])
+                        {
+                            len++;
+                        }
+                        if (len > match_length)
+                        {
+                            match_offset = pos;
+                            match_length = len;
+                        }
+                    }
+
+                    if (match_length >= 3)
+                    {
+                        // Write compressed reference
+                        ctl |= (byte)(1 << (8 - ctl_bits));
+                        int offset = match_offset;
+                        if (src > lookBehind)
+                            offset -= (src - lookBehind);
+                        writer.Write((ushort)offset);
+                        writer.Write((byte)match_length);
+                        src += match_length;
+                    }
+                    else
+                    {
+                        // Write literal data
+                        int literal_length = 1;
+                        while (src + literal_length < input.Length && literal_length < 255)
+                        {
+                            // Check if next position would create a good match
+                            bool found_match = false;
+                            int next_pos = src + literal_length;
+                            int next_search_start = Math.Max(0, next_pos - lookBehind);
+
+                            for (int pos = next_search_start; pos < next_pos; pos++)
+                            {
+                                if (next_pos + 2 < input.Length &&
+                                    input[pos] == input[next_pos] &&
+                                    input[pos + 1] == input[next_pos + 1] &&
+                                    input[pos + 2] == input[next_pos + 2])
+                                {
+                                    found_match = true;
+                                    break;
+                                }
+                            }
+                            if (found_match)
+                                break;
+                            literal_length++;
+                        }
+
+                        writer.Write((byte)literal_length);
+                        writer.Write(input, src, literal_length);
+                        src += literal_length;
+                    }
+
+                    ctl_bits--;
+                    if (ctl_bits == 0)
+                    {
+                        long current_pos = output.Position;
+                        output.Position = ctl_pos;
+                        writer.Write(ctl);
+                        output.Position = current_pos;
+                    }
+                }
+
+                // Write final control byte if needed
+                if (ctl_bits > 0 && ctl_bits < 8)
+                {
+                    long current_pos = output.Position;
+                    output.Position = ctl_pos;
+                    writer.Write(ctl);
+                    output.Position = current_pos;
+                }
+
+                return output.ToArray();
+            }
+        }
+
+        public byte[] PreProcessGE(ImageData image, int method)
+        {
+            var bitmap = image.Bitmap;
+            switch (method)
+            {
+                case 1: return PreProcess1(bitmap);
+                case 2: return PreProcess2(bitmap);
+                case 3: return PreProcess3(bitmap);
+                default:
+                    throw new NotSupportedException($"PGD compression method {method} not supported for writing");
+            }
+        }
+
+        private byte[] PreProcess1(BitmapSource bitmap)
+        {
+            // Convert to BGRA32 and separate into planes
+            if (bitmap.Format != PixelFormats.Bgra32)
+                bitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+
+            int width = bitmap.PixelWidth;
+            int height = bitmap.PixelHeight;
+            int stride = width * 4;
+            var pixels = new byte[stride * height];
+            bitmap.CopyPixels(pixels, stride, 0);
+
+            int plane_size = width * height;
+            var output = new byte[plane_size * 4];
+
+            int src = 0;
+            for (int i = 0; i < plane_size; i++)
+            {
+                output[plane_size * 3 + i] = pixels[src++]; // B -> fourth plane
+                output[plane_size * 2 + i] = pixels[src++]; // G -> third plane
+                output[plane_size     + i] = pixels[src++]; // R -> second plane
+                output[i] = pixels[src++];                  // A -> first plane
+            }
+
+            return output;
+        }
+
+        private byte[] PreProcess2(BitmapSource bitmap)
+        {
+            // This is complex YUV encoding - simplified implementation
+            throw new NotImplementedException("Method 2 encoding not yet implemented");
+        }
+
+        private byte[] PreProcess3(BitmapSource bitmap)
+        {
+            // Palette-based compression
+            int bpp = bitmap.Format.BitsPerPixel;
+            if (bpp != 24 && bpp != 32)
+            {
+                if (bpp == 32)
+                    bitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgra32, null, 0);
+                else
+                    bitmap = new FormatConvertedBitmap(bitmap, PixelFormats.Bgr24, null, 0);
+                bpp = bitmap.Format.BitsPerPixel;
+            }
+
+            int width      = bitmap.PixelWidth;
+            int height     = bitmap.PixelHeight;
+            int pixel_size = bpp / 8;
+            int stride     = width * pixel_size;
+            var pixels     = new byte[stride * height];
+            bitmap.CopyPixels(pixels, stride, 0);
+
+            // Pre-process with differential encoding
+            var output = new MemoryStream();
+            var writer = new BinaryWriter(output);
+
+            // Write mini-header
+            writer.Write((ushort)0); // padding
+            writer.Write((ushort)bpp);
+            writer.Write((ushort)width);
+            writer.Write((ushort)height);
+
+            // Control bytes for each row
+            var control = new byte[height];
+            var rowData = new MemoryStream();
+
+            for (int row = 0; row < height; row++)
+            {
+                int row_offset = row * stride;
+                var row_writer = new BinaryWriter(rowData);
+
+                // Simple encoding: store first pixel, then differences
+                control[row] = 0;
+
+                // Write first pixel
+                row_writer.Write(pixels, row_offset, pixel_size);
+
+                // Write differences
+                for (int x = pixel_size; x < stride; x++)
+                {
+                    row_writer.Write((byte)(pixels[row_offset + x] - pixels[row_offset + x - pixel_size]));
+                }
+            }
+
+            // Write control bytes and row data
+            writer.Write(control);
+            rowData.Position = 0;
+            rowData.CopyTo(output);
+
+            return output.ToArray();
+        }
+
+        #region IDisposable Members
+        public void Dispose () { }
+        #endregion
     }
 
     internal sealed class PgdReader : IDisposable
@@ -405,9 +871,8 @@ namespace GameRes.Formats.Softpal
                     int offset = m_input.ReadUInt16();
                     count = offset & 7;
                     if (0 == (offset & 8))
-                    {
                         count = count << 8 | m_input.ReadByte();
-                    }
+
                     count += 4;
                     offset >>= 4;
                     Binary.CopyOverlapped (m_output, dst - offset, dst, count);
@@ -487,8 +952,8 @@ namespace GameRes.Formats.Softpal
 
         static byte Clamp (int val)
         {
-            if (val > 255)      val = 255;
-            else if (val < 0)   val = 0;
+            if      (val > 255) val = 255;
+            else if (val <  0 ) val = 0;
             return (byte)val;
         }
 
@@ -555,9 +1020,7 @@ namespace GameRes.Formats.Softpal
         }
 
         #region IDisposable Members
-        public void Dispose ()
-        {
-        }
+        public void Dispose () { }
         #endregion
     }
 }

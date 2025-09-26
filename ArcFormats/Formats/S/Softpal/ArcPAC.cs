@@ -9,7 +9,7 @@ namespace GameRes.Formats.Softpal
     public class PacOpener : ArchiveFormat
     {
         public override string         Tag { get { return "PAC/SOFTPAL"; } }
-        public override string Description { get { return "Archive format used by Softpal subsidiaries"; } }
+        public override string Description { get { return "Softpal subsidiaries archive format"; } }
         public override uint     Signature { get { return 0; } }
         public override bool  IsHierarchic { get { return false; } }
         public override bool      CanWrite { get { return false; } }
@@ -37,6 +37,9 @@ namespace GameRes.Formats.Softpal
             }
             if (first_offset >= file.MaxOffset)
                 return null;
+
+            Comment = "Softpal";
+
             return ReadIndex (file, count, index_offset, name_length);
         }
 
@@ -90,7 +93,7 @@ namespace GameRes.Formats.Softpal
     public class Pac2Opener : PacOpener
     {
         public override string         Tag { get { return "PAC/AMUSE"; } }
-        public override string Description { get { return "Archive format used by Amuse Craft subsidiaries"; } }
+        public override string Description { get { return "Amuse Craft subsidiaries archive format"; } }
         public override uint     Signature { get { return 0x20434150; } } // 'PAC '
         public override bool  IsHierarchic { get { return false; } }
         public override bool      CanWrite { get { return false; } }
@@ -106,6 +109,8 @@ namespace GameRes.Formats.Softpal
             uint first_offset = file.View.ReadUInt32 (index_offset+name_length+4);
             if (first_offset != index_offset + (uint)count*(name_length+8))
                 return null;
+
+            Comment = "Amuse Craft";
 
             return ReadIndex (file, count, index_offset, name_length);
         }

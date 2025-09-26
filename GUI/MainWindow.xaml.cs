@@ -650,21 +650,20 @@ namespace GARbro.GUI
 
         private void CanExecuteConvertMedia (object sender, CanExecuteRoutedEventArgs e)
         {
-            if (CurrentDirectory.SelectedItems.Count >= 1)
-            {
+            if (CurrentDirectory.SelectedItems.Count >= 1) 
                 e.CanExecute = !ViewModel.IsArchive;
-            }
         }
 
         private void CanExecuteOnImage (object sender, CanExecuteRoutedEventArgs e)
         {
             var entry = CurrentDirectory.SelectedItem as EntryViewModel;
-            e.CanExecute = !ViewModel.IsArchive && entry != null && entry.Type == "image";
+            e.CanExecute = !ViewModel.IsArchive && entry?.Type == "image";
         }
 
         private void CanExecuteScaleImage (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = ImageCanvas.Source != null;
+            e.CanExecute = ImageCanvas.Source != null && 
+                (SpriteLayoutCombo == null || SpriteLayoutCombo.SelectedIndex != 1);
         }
 
         private void CanExecuteFitWindow (object sender, CanExecuteRoutedEventArgs e)

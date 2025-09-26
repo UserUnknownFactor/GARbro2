@@ -89,7 +89,7 @@ namespace GameRes.Formats.EmonEngine
             if (0 != unpacked_size && unpacked_size < entry.UnpackedSize)
             {
                 uint packed_size = LittleEndian.ToUInt32 (header, 0);
-                int part1_size = (int)entry.UnpackedSize - unpacked_size;
+                int part1_size = (int)entry.Size;
                 var data = new byte[entry.UnpackedSize];
                 using (var input = arc.File.CreateStream (entry.Offset+12+packed_size, entry.Size))
                 using (var lzss = new LzssStream (input))

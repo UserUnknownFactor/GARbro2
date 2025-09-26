@@ -435,7 +435,7 @@ namespace GameRes.Formats.Cyberworks
                     };
                     if (!entry.CheckPlacement (file.MaxOffset))
                         return null;
-                    entry.IsPacked = entry.UnpackedSize != entry.Size;
+                    entry.IsPacked = entry.UnpackedSize != entry.Size && entry.UnpackedSize != 0;
                     dir.Add (entry);
                 }
             }
@@ -612,7 +612,7 @@ namespace GameRes.Formats.Cyberworks
             var entry = new PackedEntry { Name = id.ToString ("D6") };
             entry.UnpackedSize = m_index.ReadUInt32();
             entry.Size = m_index.ReadUInt32();
-            entry.IsPacked = entry.UnpackedSize != entry.Size;
+            entry.IsPacked = entry.UnpackedSize != entry.Size && entry.UnpackedSize != 0;
             entry.Offset = m_index.ReadUInt32();
             return entry;
         }

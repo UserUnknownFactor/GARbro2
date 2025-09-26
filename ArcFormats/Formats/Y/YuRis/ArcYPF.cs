@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
@@ -86,6 +87,7 @@ namespace GameRes.Formats.YuRis
         public Dictionary<string, YpfScheme>    KnownSchemes;
     }
 
+    #region Snappy
     internal static class SnappyNative
     {
         private const string DllName32 = @"x86\snappy32.dll";
@@ -145,6 +147,7 @@ namespace GameRes.Formats.YuRis
             }
         }
     }
+    #endregion
 
     [Export(typeof(ArchiveFormat))]
     public class YpfOpener : ArchiveFormat
@@ -174,9 +177,8 @@ namespace GameRes.Formats.YuRis
         {
             long ypf_offset = 0;
             if (file.View.AsciiEqual (0, "MZ"))
-            {
                 ypf_offset = FindYser (file);
-            }
+
             if (!file.View.AsciiEqual (ypf_offset, "YPF\0"))
                 return null;
 
@@ -188,11 +190,13 @@ namespace GameRes.Formats.YuRis
             if (dir_size > file.View.Reserve (ypf_offset+0x20, dir_size))
                 return null;
             var parser = new Parser (file, version, count, dir_size);
-
             var scheme = QueryEncryptionScheme (file.Name, version);
             var dir = parser.ScanDir (scheme, ypf_offset);
             if (null == dir || 0 == dir.Count)
                 return null;
+
+            string key = KnownSchemes.FirstOrDefault(kvp => kvp.Value == scheme).Key;
+            Comment = key != null ? $"Type: {key}" : "";
 
             if (scheme.ScriptKey != 0)
                 return new YpfArchive (file, this, dir, scheme.ScriptKey, scheme.CompressType);

@@ -120,18 +120,24 @@ namespace GameRes.Formats.Cyberworks
                     else if ('b' == type || 'c' == type)
                     {
                         var size_buf = new byte[4];
-                        input.Read (size_buf, 0 , 4);
+                        input.Read (size_buf, 0, 4);
                         int png_size = BigEndian.ToInt32 (size_buf, 0);
-                        BitmapSource frame;
-                        // work-around for possible extra padding before PNG data
-                        using (var membuf = new MemoryStream (png_size+4))
+
+                        byte[] allData;
+                        using (var membuf = new MemoryStream())
                         {
                             input.CopyTo (membuf);
-                            membuf.Seek (-png_size, SeekOrigin.End);
+                            allData = membuf.ToArray();
+                        }
+
+                        BitmapSource frame;
+                        using (var membuf = new MemoryStream (allData, allData.Length - png_size, png_size))
+                        {
                             var decoder = new PngBitmapDecoder (membuf, BitmapCreateOptions.None,
                                                                 BitmapCacheOption.OnLoad);
                             frame = decoder.Frames[0];
                         }
+
                         Info.Width = (uint)frame.PixelWidth;
                         Info.Height = (uint)frame.PixelHeight;
                         if (frame.Format.BitsPerPixel != 32)
@@ -151,6 +157,7 @@ namespace GameRes.Formats.Cyberworks
             var header = ReadHeader();
             if (0 == Info.Width || Info.Width >= 0x8000 || 0 == Info.Height || Info.Height >= 0x8000)
                 throw new InvalidFormatException();
+
             int flags     = header[0];
             int unpacked_size = header[5];
             int bits_size = header[7];
