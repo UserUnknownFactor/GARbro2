@@ -23,10 +23,11 @@ namespace GameRes.Formats.Unity
             m_is_little_endian = is_little_endian;
         }
 
-        public List<Entry> Parse (AssetReader input, long base_offset = 0)
+        public List<Entry> Parse (AssetReader input)
         {
             var asset = new Asset();
             asset.Load (input);
+
             var dir = new List<Entry>();
             m_bundles = new Dictionary<string, BundleEntry>();
             var used_names = new HashSet<string>();
@@ -34,7 +35,7 @@ namespace GameRes.Formats.Unity
 
             foreach (var obj in asset.Objects.Where (o => o.TypeName == "AssetBundle"))
             {
-                input.Position = obj.Offset + base_offset;
+                input.Position = obj.Offset;
                 try
                 {
                     var bundle_name = input.ReadString(); // m_Name
@@ -54,7 +55,7 @@ namespace GameRes.Formats.Unity
                         input.ReadInt32(); // preloadSize
                         input.ReadInt32(); // m_FileID
                         long path_id = input.ReadInt64();
-                        path_id_map[path_id] = asset_name;
+                        path_id_map[path_id] = Path.GetFileNameWithoutExtension (asset_name);
                     }
                 }
                 catch
@@ -64,7 +65,7 @@ namespace GameRes.Formats.Unity
 
             foreach (var obj in asset.Objects.Where (o => o.TypeId > 0))
             {
-                input.Position = obj.Offset + base_offset;
+                input.Position = obj.Offset;
                 AssetEntry entry = null;
                 int id = obj.TypeId > 0 ? obj.TypeId : obj.ClassId;
 
@@ -74,6 +75,10 @@ namespace GameRes.Formats.Unity
                     int lastSlash = name.LastIndexOfAny (new[] { '/', '\\' });
                     if (lastSlash >= 0)
                         name = name.Substring (lastSlash + 1);
+                    if (!string.IsNullOrEmpty(name))
+                        name = $"{name}-{obj.PathId}";
+                    else
+                        name = obj.PathId.ToString();
                 }
 
                 switch (id)
@@ -82,7 +87,7 @@ namespace GameRes.Formats.Unity
                         entry = new AssetEntry
                         {
                             Name = name ?? GetObjectName (input, obj),
-                            Type = "shader",
+                            Type = "",
                             Offset = obj.Offset,
                             Size = obj.Size,
                         };
@@ -92,7 +97,7 @@ namespace GameRes.Formats.Unity
                         entry = new AssetEntry
                         {
                             Name = name ?? GetObjectName (input, obj),
-                            Type = "script",
+                            Type = "",
                             Offset = obj.Offset,
                             Size = obj.Size,
                         };
@@ -171,20 +176,20 @@ namespace GameRes.Formats.Unity
                             uint size = input.ReadUInt32();
                             entry = new AssetEntry
                             {
-                                Name = name ?? asset_name,
+                                Name = name ?? $"{asset_name}-{obj.PathId}",
                                 Offset = input.Position,
                                 Size = size,
                             };
 
                             string ext = Path.GetExtension (entry.Name).ToLowerInvariant();
-                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".tga" || ext == ".bmp")
+                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || entry.Name.Contains(".webp") || entry.Name.Contains(".jpg") || entry.Name.Contains(".png") || ext == ".tga" || ext == ".bmp")
                                 entry.Type = "image";
                             else if (ext == ".txt" || ext == ".json" || ext == ".xml" || ext == ".html" || ext == ".css" || ext == ".js")
-                                entry.Type = "text";
+                                entry.Type = "script";
                             else if (ext == ".wav" || ext == ".mp3" || ext == ".ogg")
                                 entry.Type = "audio";
                             else
-                                entry.Type = "text";
+                                entry.Type = "script";
                             break;
                         }
                     case 128: // Font
@@ -192,7 +197,7 @@ namespace GameRes.Formats.Unity
                             entry = new AssetEntry
                             {
                                 Name = name ?? GetObjectName (input, obj),
-                                Type = "font",
+                                Type = "",
                                 Offset = obj.Offset,
                                 Size = obj.Size,
                             };
@@ -203,7 +208,7 @@ namespace GameRes.Formats.Unity
                             entry = new AssetEntry
                             {
                                 Name = name ?? GetObjectName (input, obj),
-                                Type = "material",
+                                Type = "",
                                 Offset = obj.Offset,
                                 Size = obj.Size,
                             };
@@ -214,7 +219,7 @@ namespace GameRes.Formats.Unity
                             entry = new AssetEntry
                             {
                                 Name = name ?? GetObjectName (input, obj),
-                                Type = "mesh",
+                                Type = "",
                                 Offset = obj.Offset,
                                 Size = obj.Size,
                             };
@@ -225,7 +230,7 @@ namespace GameRes.Formats.Unity
                             entry = new AssetEntry
                             {
                                 Name = name ?? GetObjectName (input, obj),
-                                Type = "animation",
+                                Type = "",
                                 Offset = obj.Offset,
                                 Size = obj.Size,
                             };
@@ -236,7 +241,7 @@ namespace GameRes.Formats.Unity
                             entry = new AssetEntry
                             {
                                 Name = name ?? GetObjectName (input, obj),
-                                Type = "sprite",
+                                Type = "",
                                 Offset = obj.Offset,
                                 Size = obj.Size,
                             };
@@ -271,7 +276,7 @@ namespace GameRes.Formats.Unity
 
         private string GetObjectName (AssetReader input, UnityObject obj, string prefix = null)
         {
-            string name = NamedObject.PeekName(input, obj.Offset);
+            string name = NamedObject.PeekName(input, input.Position);
             if (string.IsNullOrEmpty(name))
             {
                 if (string.IsNullOrEmpty(obj.ContainerName))
@@ -324,7 +329,7 @@ namespace GameRes.Formats.Unity
                     entry.Name += ".sprite";
                     break;
                 case "script":
-                    entry.Name += ".dat";
+                    entry.Name += ".txt";
                     break;
             }
         }

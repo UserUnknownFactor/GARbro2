@@ -47,6 +47,18 @@ namespace GameRes
         }
     }
 
+    public class AnimationMetaData : ImageMetaData
+    {
+        public int  FrameCount { get; set; } = 1;
+        public bool IsAnimated { get { return FrameCount > 1; } }
+
+        public override string GetComment()
+        {
+            var n_frames = IsAnimated ? FrameCount.Pluralize ("n_frames") : "";
+            return Localization.Format ("MsgImageSize", Width, Height, BPP, n_frames);
+        }
+    }
+
     public class ImageEntry : Entry
     {
         public override string Type { get { return "image"; } }

@@ -10,19 +10,10 @@ using GameRes.Utility;
 
 namespace GameRes
 {
-    public class PngMetaData : ImageMetaData
+    public class PngMetaData : AnimationMetaData
     {
-        public int  FrameCount { get; set; } = 1;
         public int   PlayCount { get; set; } = 0; // 0 = infinite
-        public bool IsAnimated { get { return FrameCount > 1; } }
-
         public Dictionary<string, byte[]> CustomChunks { get; set; } = new Dictionary<string, byte[]>();
-
-        public override string GetComment()
-        {
-            var n_frames = IsAnimated ? FrameCount.Pluralize ("n_frames") : "";
-            return Localization.Format ("MsgImageSize", Width, Height, BPP, n_frames);
-        }
     }
 
     public class PngImageData : ImageData

@@ -8,19 +8,19 @@ using System.Windows.Media.Imaging;
 
 namespace GameRes.Formats.Softpal
 {
-    internal class EpegIndexEntry
+    internal class EpegFrameEntry
     {
         public uint Flags;
         public uint Offset;
 
-        public EpegIndexEntry (IBinaryStream file)
+        public EpegFrameEntry (IBinaryStream file)
         {
             Offset = file.ReadUInt32();
             Flags  = file.ReadUInt32();
         }
     }
 
-    [Export (typeof (ImageFormat))]
+    [Export(typeof(ImageFormat))]
     public class EpegFormat : ImageFormat
     {
         public override string         Tag { get { return "EPEG"; } }
@@ -32,14 +32,13 @@ namespace GameRes.Formats.Softpal
             Extensions = new string[] { "epg" };
         }
 
-        internal class EpegMetaData : ImageMetaData
+        internal class EpegMetaData : AnimationMetaData
         {
             public int KeyframeInterval;
-            public int IndexCount;
             public bool HasAudio;
-            public uint KeyFrameNum;
+            //public uint KeyFrameNum;
             public float FPS;
-            public List<EpegIndexEntry> Index;
+            public List<EpegFrameEntry> FrameIndex;
             public long FrameDataStart;
         }
 
@@ -55,16 +54,16 @@ namespace GameRes.Formats.Softpal
                 Height           =  header.ToUInt16 (0x0E),
                 KeyframeInterval =  header.ToInt16  (0x10),
                 FPS              =  header.ToInt32  (0x14) / 1000.0f,
-                IndexCount       =  header.ToInt32  (0x1C),
-                KeyFrameNum      =  header.ToUInt32 (0x20),
+                FrameCount       =  header.ToInt32  (0x1C),
+                //KeyFrameNum      =  header.ToUInt32 (0x20),
                 HasAudio         = (header.ToUInt32 (0x2C) & 2) != 0,
-                Index            = new List<EpegIndexEntry>(),
+                FrameIndex            = new List<EpegFrameEntry>(),
                 BPP              = 24
             };
 
             file.Position = 0x24;
-            for (int i = 0; i < meta.IndexCount + 2; i++)
-                meta.Index.Add (new EpegIndexEntry (file));
+            for (int i = 0; i < meta.FrameCount + 2; i++)
+                meta.FrameIndex.Add (new EpegFrameEntry (file));
 
             meta.FrameDataStart = file.Position;
 
@@ -78,8 +77,33 @@ namespace GameRes.Formats.Softpal
             return ReadAnimation (file, meta);
         }
 
+        private static (int actualHeight, int cropTop) DetectPaddingFromDimensions (uint width, uint height)
+        {
+            int[] commonHeights = { 
+                240, 300, 360, 480, 600, 720, 768, 800, 900, 960, 1024, 1050, 1080, 1200, 1440, 1600 
+            };
+
+            foreach (int commonHeight in commonHeights)
+            {
+                int diff = (int)height - commonHeight;
+                if (diff > 0 && diff <= 8)
+                {
+                    // Check if the height is a multiple of macroblock alignment
+                    if (height % 8 == 0)
+                    {
+                        int cropTop = diff / 2;
+                        return (commonHeight, cropTop);
+                    }
+                }
+            }
+            // No padding
+            return ((int)height, 0);
+        }
+
         private AnimatedImageData ReadAnimation (IBinaryStream file, EpegMetaData meta)
         {
+            var (actualHeight, cropTop) = DetectPaddingFromDimensions (meta.Width, meta.Height);
+
             var frames = new List<BitmapSource>();
             var delays = new List<int>();
             byte[] referenceFrame = null;
@@ -89,12 +113,12 @@ namespace GameRes.Formats.Softpal
 
             file.Position = meta.FrameDataStart;
 
-            for (int i = 0; i < meta.Index.Count - 1; i++)
+            for (int i = 0; i < meta.FrameIndex.Count - 1; i++)
             {
-                if (meta.Index[i].Flags == 0xFFFFFFFF)
+                if (meta.FrameIndex[i].Flags == 0xFFFFFFFF)
                     break;
 
-                file.Position = meta.Index[i].Offset;
+                file.Position = meta.FrameIndex[i].Offset;
 
                 var uncompressedSize = file.ReadInt32();
                 var compressedSize = file.ReadInt32();
@@ -124,8 +148,6 @@ namespace GameRes.Formats.Softpal
 
                         for (int j=0; j < uvySize; j++)
                             outputFrame[j] ^= buffer[j];
-
-                        Array.Copy (outputFrame, referenceFrame, uvySize);
                     }
                     else if (uncompressedSize >= uvySize + mvSize)
                     {
@@ -134,7 +156,6 @@ namespace GameRes.Formats.Softpal
                         Array.Copy (referenceFrame, outputFrame, uvySize);
 
                         ApplyDifferential (referenceFrame, buffer, outputFrame, (int)meta.Width, (int)meta.Height);
-                        //Array.Copy (outputFrame, referenceFrame, uvySize); // <- this is intended
                     }
                 }
 
@@ -146,8 +167,22 @@ namespace GameRes.Formats.Softpal
                         ImageData.DefaultDpiX, ImageData.DefaultDpiY,
                         PixelFormats.Bgr24, null, rgb, (int)meta.Width * 3);
 
-                    bmp.Freeze();
-                    frames.Add (bmp);
+                    if (cropTop > 0)
+                    {
+                        // Or we'd have black lines since the format seems aligned:
+                        //  (400 ×) 304 =   38 × 8 (perfect 8px macroblock alignment)
+                        //  (400 ×) 300 = 37.5 × 8 (unaligned but standard 4:3 ratio)
+                        var croppedBmp = new CroppedBitmap(bmp, 
+                            new System.Windows.Int32Rect(0, cropTop, (int)meta.Width, actualHeight));
+                        croppedBmp.Freeze();
+                        frames.Add(croppedBmp);
+                    }
+                    else
+                    {
+                        bmp.Freeze();
+                        frames.Add(bmp);
+                    }
+                    
                     delays.Add((int)(1000.0f / meta.FPS));
                 }
             }
@@ -324,60 +359,56 @@ namespace GameRes.Formats.Softpal
             var rgb = new byte[width * height * 3];
 
             int segment_size = (int)(width * height / 4);
-            int src0 = 0;                    // U data
-            int src1 = segment_size;         // V data  
-            int src2 = segment_size * 2;     // Y data
+            int uOffset = 0;
+            int vOffset = segment_size;
+            int yOffset = segment_size * 2;
 
-            int dst = 0;
-            int stride = (int)width * 3;
-
-            // Process in 2x2 blocks exactly like PGD
-            for (int y = 0; y < height / 2; y++)
+            // same logic as PGD but refactored
+            for (int blockY = 0; blockY < height / 2; blockY++)
+            for (int blockX = 0; blockX < width  / 2; blockX++)
             {
-                for (int x = 0; x < width / 2; x++)
+                sbyte U = (sbyte)data[uOffset++];
+                sbyte V = (sbyte)data[vOffset++];
+
+                int b = 226 * U;
+                int g = -43 * U - 89 * V;
+                int r = 179 * V;
+
+                // Get the 4 Y values for this 2x2 block
+                // Y values are stored in raster order in the Y plane
+                int y0 = (int)(yOffset + (blockY * 2) * width + (blockX * 2)); // top-left
+                int y1 = y0 + 1;                                               // top-right
+                int y2 = (int)(y0 + width);                                    // bottom-left
+                int y3 = y2 + 1;                                               // bottom-right
+
+                int[] yIndices = { y0, y1, y2, y3 };
+                int[][] pixelPos = {
+                    new[] {blockX * 2,     blockY * 2},      // top-left
+                    new[] {blockX * 2 + 1, blockY * 2},      // top-right
+                    new[] {blockX * 2,     blockY * 2 + 1},  // bottom-left
+                    new[] {blockX * 2 + 1, blockY * 2 + 1}   // bottom-right
+                };
+
+                for (int i = 0; i < 4; i++)
                 {
-                    if (src0 >= data.Length || src1 >= data.Length || src2 + 3 >= data.Length)
-                        break;
+                    if (yIndices[i] >= data.Length) continue;
 
-                    // Get U and V for this 2x2 block
-                    sbyte U = (sbyte)data[src0++];
-                    sbyte V = (sbyte)data[src1++];
+                    int y_value = data[yIndices[i]] << 7;
+                    int rgbIndex = (int)((pixelPos[i][1] * width + pixelPos[i][0]) * 3);
 
-                    // Calculate color differences
-                    int b = 226 * U;
-                    int g = -43 * U - 89 * V;
-                    int r = 179 * V;
+                    int B = (y_value + b) >> 7;
+                    int G = (y_value + g) >> 7;
+                    int R = (y_value + r) >> 7;
 
-                    // Apply to each pixel in the 2x2 block
-                    int[] offsets = { 0, 1, (int)width, (int)width + 1 };
+                    // Clamp
+                    if (B > 255) B = 255; else if (B < 0) B = 0;
+                    if (G > 255) G = 255; else if (G < 0) G = 0;
+                    if (R > 255) R = 255; else if (R < 0) R = 0;
 
-                    for (int i = 0; i < 4; i++)
-                    {
-                        int pixel_offset = offsets[i];
-                        int y_value = data[src2 + pixel_offset] << 7;
-
-                        int rgb_offset = dst + 3 * pixel_offset;
-
-                        // Calculate final RGB values
-                        int B = (y_value + b) >> 7;
-                        int G = (y_value + g) >> 7;
-                        int R = (y_value + r) >> 7;
-
-                        // Clamp
-                        if (B > 255) B = 255; else if (B < 0) B = 0;
-                        if (G > 255) G = 255; else if (G < 0) G = 0;
-                        if (R > 255) R = 255; else if (R < 0) R = 0;
-
-                        rgb[rgb_offset    ] = (byte)B;
-                        rgb[rgb_offset + 1] = (byte)G;
-                        rgb[rgb_offset + 2] = (byte)R;
-                    }
-
-                    src2 += 2;  // Move to next 2x2 block in Y data
-                    dst  += 6;  // Move to next 2x2 block in output
+                    rgb[rgbIndex    ] = (byte)B;
+                    rgb[rgbIndex + 1] = (byte)G;
+                    rgb[rgbIndex + 2] = (byte)R;
                 }
-                src2 += (int)width;  // Skip to next row of 2x2 blocks
-                dst  += stride;      // Skip to next row in output
             }
 
             return rgb;

@@ -22,6 +22,11 @@ namespace GameRes.Formats.Cyberworks
         }
     }
 
+    internal class DatPackedEntry: PackedEntry
+    {
+        public override bool IsPacked { get { return UnpackedSize != Size && UnpackedSize != 0; } }
+    }
+
     internal abstract class ArchiveNameParser
     {
         readonly Regex m_regex;
@@ -251,11 +256,9 @@ namespace GameRes.Formats.Cyberworks
         public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
             Stream input = arc.File.CreateStream (entry.Offset, entry.Size);
-            var pent = entry as PackedEntry;
-            if (null != pent && pent.IsPacked)
-            {
+            var pent = entry as DatPackedEntry;
+            if (pent !=  null && pent.IsPacked)
                 input = new LzssStream (input);
-            }
             return input;
         }
 
@@ -425,7 +428,7 @@ namespace GameRes.Formats.Cyberworks
                     }
                     else if ("k" == fields[4] || "j" == fields[4])
                         type = "audio";
-                    var entry = new PackedEntry
+                    var entry = new DatPackedEntry
                     {
                         Name = name,
                         Type = type,
@@ -435,7 +438,6 @@ namespace GameRes.Formats.Cyberworks
                     };
                     if (!entry.CheckPlacement (file.MaxOffset))
                         return null;
-                    entry.IsPacked = entry.UnpackedSize != entry.Size && entry.UnpackedSize != 0;
                     dir.Add (entry);
                 }
             }
@@ -604,16 +606,17 @@ namespace GameRes.Formats.Cyberworks
 
         uint m_fault_id = 100000;
 
-        internal PackedEntry ReadEntryInfo ()
+        internal DatPackedEntry ReadEntryInfo ()
         {
             uint id = m_index.ReadUInt32();
             if (id > m_fault_id)
                 id = m_fault_id++;
-            var entry = new PackedEntry { Name = id.ToString ("D6") };
-            entry.UnpackedSize = m_index.ReadUInt32();
-            entry.Size = m_index.ReadUInt32();
-            entry.IsPacked = entry.UnpackedSize != entry.Size && entry.UnpackedSize != 0;
-            entry.Offset = m_index.ReadUInt32();
+            var entry = new DatPackedEntry { 
+                Name         = id.ToString ("D6"),
+                UnpackedSize = m_index.ReadUInt32(),
+                Size         = m_index.ReadUInt32(),
+                Offset       = m_index.ReadUInt32()
+            };
             return entry;
         }
 

@@ -42,7 +42,7 @@ namespace GameRes
             if (file.Length < 8)
                 return null;
             
-            if (!file.Name.EndsWith (".mpg"))
+            if (!file.Name.EndsWith (".mpg", StringComparison.OrdinalIgnoreCase))
                 return null;
 
             var meta = new VideoMetaData

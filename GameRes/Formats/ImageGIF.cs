@@ -8,18 +8,6 @@ using System.Windows.Media;
 
 namespace GameRes
 {
-    public class GifMetaData : ImageMetaData
-    {
-        public int  FrameCount { get; set; } = 1;
-        public bool IsAnimated { get { return FrameCount > 1; } }
-
-        public override string GetComment()
-        {
-            var n_frames = IsAnimated ? FrameCount.Pluralize ("n_frames") : "";
-            return Localization.Format ("MsgImageSize", Width, Height, BPP, n_frames);
-        }
-    }
-
     [Export(typeof(ImageFormat))]
     public class GifFormat : ImageFormat
     {
@@ -522,7 +510,7 @@ namespace GameRes
                 return null;
 
             // Read Logical Screen Descriptor
-            var meta    = new GifMetaData();
+            var meta    = new AnimationMetaData();
             meta.Width  = file.ReadUInt16();
             meta.Height = file.ReadUInt16();
 

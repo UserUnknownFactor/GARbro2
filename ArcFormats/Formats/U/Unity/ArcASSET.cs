@@ -41,127 +41,11 @@ namespace GameRes.Formats.Unity
                 if (null == dir || 0 == dir.Count)
                     return null;
 
-                dir = OrganizeByType(dir);
+                dir = UnityAssetHelper.OrganizeByType (dir);
 
                 var res_map = index.GenerateResourceMap (dir);
                 return new UnityResourcesAsset (file, this, dir, res_map);
             }
-        }
-
-        private List<Entry> OrganizeByType(List<Entry> entries)
-        {
-            var organized = new List<Entry>();
-            var typeGroups = new Dictionary<string, List<Entry>>();
-            var typeCounts = new Dictionary<string, int>();
-            
-            // Group entries by type
-            foreach (var entry in entries)
-            {
-                var assetEntry = entry as AssetEntry;
-                if (assetEntry == null)
-                {
-                    organized.Add(entry);
-                    continue;
-                }
-                
-                string typeName = GetCleanTypeName(assetEntry);
-                
-                if (!typeGroups.ContainsKey(typeName))
-                {
-                    typeGroups[typeName] = new List<Entry>();
-                    typeCounts[typeName] = 0;
-                }
-                
-                typeGroups[typeName].Add(assetEntry);
-                typeCounts[typeName]++;
-            }
-            
-            foreach (var group in typeGroups.OrderBy(g => g.Key))
-            {
-                string folderName = group.Key;
-                
-                if (group.Value.Count > 1)
-                    folderName = $"{group.Key} ({group.Value.Count})";
-                
-                var sortedEntries = group.Value.OrderBy(e => GetSortName(e)).ToList();
-                
-                foreach (var entry in sortedEntries)
-                {
-                    var assetEntry = entry as AssetEntry;
-                    
-                    string originalName = entry.Name;
-                    if (string.IsNullOrEmpty(originalName))
-                    {
-                        originalName = $"{group.Key}_{assetEntry.AssetObject.PathId:X16}";
-                    }
-                    else
-                    {
-                        int lastSlash = originalName.LastIndexOfAny(new[] { '/', '\\' });
-                        if (lastSlash >= 0)
-                            originalName = originalName.Substring(lastSlash + 1);
-                    }
-                    
-                    entry.Name = Path.Combine(group.Key, originalName).Replace('\\', '/');
-                    
-                    organized.Add(entry);
-                }
-            }
-            
-            return organized;
-        }
-
-        private string GetCleanTypeName(AssetEntry entry)
-        {
-            if (entry.AssetObject == null)
-                return "Unknown";
-                
-            string typeName = entry.AssetObject.TypeName;
-            
-            switch (typeName)
-            {
-                case "Texture2D":
-                    return "Textures";
-                case "AudioClip":
-                    return "Audio";
-                case "TextAsset":
-                    return "Text";
-                case "Shader":
-                    return "Shaders";
-                case "Material":
-                    return "Materials";
-                case "Mesh":
-                    return "Meshes";
-                case "AnimationClip":
-                    return "Animations";
-                case "Font":
-                    return "Fonts";
-                case "MonoBehaviour":
-                    return "Scripts";
-                case "GameObject":
-                    return "GameObjects";
-                case "Sprite":
-                    return "Sprites";
-                case "VideoClip":
-                    return "Videos";
-                default:
-                    // For unknown types, try to make it more readable
-                    if (string.IsNullOrEmpty(typeName))
-                        return $"Type_{entry.AssetObject.ClassId}";
-                    return typeName;
-            }
-        }
-
-        private string GetSortName(Entry entry)
-        {
-            // Try to extract a meaningful sort name
-            string name = entry.Name;
-            if (string.IsNullOrEmpty(name))
-            {
-                var assetEntry = entry as AssetEntry;
-                if (assetEntry != null)
-                    return assetEntry.AssetObject.PathId.ToString("X16");
-            }
-            return name;
         }
 
         public override Stream OpenEntry (ArcFile arc, Entry entry)
@@ -210,6 +94,94 @@ namespace GameRes.Formats.Unity
                 if (reader != null)
                     reader.Dispose();
             }
+        }
+    }
+
+    internal static class UnityAssetHelper
+    {
+        public static List<Entry> OrganizeByType (List<Entry> entries)
+        {
+            var organized = new List<Entry>();
+            var typeGroups = new Dictionary<string, List<Entry>>();
+
+            // Group entries by type
+            foreach (var entry in entries)
+            {
+                string typeName = GetCleanTypeName (entry);
+
+                if (!typeGroups.ContainsKey (typeName))
+                    typeGroups[typeName] = new List<Entry>();
+
+                typeGroups[typeName].Add (entry);
+            }
+
+            // Create folder structure
+            foreach (var group in typeGroups.OrderBy (g => g.Key))
+            {
+                foreach (var entry in group.Value.OrderBy (e => e.Name))
+                {
+                    string originalName = VFS.GetFileName (entry.Name);
+                    entry.Name = VFS.CombinePath (group.Key, originalName);
+                    organized.Add (entry);
+                }
+            }
+
+            return organized;
+        }
+
+        private static string GetCleanTypeName (Entry entry)
+        {
+            var assetEntry = entry as AssetEntry;
+            if (assetEntry?.AssetObject == null)
+                return "Resources";
+
+            string typeName = assetEntry.AssetObject.TypeName;
+
+            switch (typeName)
+            {
+                case "Texture2D":
+                    return "Textures";
+                case "AudioClip":
+                    return "Audio";
+                case "TextAsset":
+                    return "Text";
+                case "Shader":
+                    return "Shaders";
+                case "Material":
+                    return "Materials";
+                case "Mesh":
+                    return "Meshes";
+                case "AnimationClip":
+                    return "Animations";
+                case "Font":
+                    return "Fonts";
+                case "MonoBehaviour":
+                    return "Scripts";
+                case "GameObject":
+                    return "GameObjects";
+                case "Sprite":
+                    return "Sprites";
+                case "VideoClip":
+                    return "Videos";
+                default:
+                    // For unknown types, try to make it more readable
+                    if (string.IsNullOrEmpty(typeName))
+                        return $"Type_{(entry as AssetEntry)?.AssetObject?.ClassId}";
+                    return typeName;
+            }
+        }
+
+        private static string GetSortName (Entry entry)
+        {
+            // Try to extract a meaningful sort name
+            string name = entry.Name;
+            if (string.IsNullOrEmpty (name))
+            {
+                var assetEntry = entry as AssetEntry;
+                if (assetEntry != null)
+                    return assetEntry.AssetObject.PathId.ToString ("X16");
+            }
+            return name;
         }
     }
 

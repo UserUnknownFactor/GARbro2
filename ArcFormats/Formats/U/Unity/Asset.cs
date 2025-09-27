@@ -226,7 +226,7 @@ namespace GameRes.Formats.Unity
         public AssetReader Open (Stream input)
         {
             var stream = new StreamRegion (input, Offset, Size, true);
-            var reader = new AssetReader (stream, "");
+            var reader = new AssetReader (stream, ContainerName);
             reader.SetupReaders (Asset);
             return reader;
         }
@@ -741,7 +741,7 @@ namespace GameRes.Formats.Unity
         public bool IsAligned { get { return (Flags & 0x4000) != 0; } }
 
         static readonly string Null = "(null)";
-        static readonly Lazy<byte[]> StringsDat = new Lazy<byte[]>(() => LoadResource("strings.dat"));
+        static readonly Lazy<byte[]> StringsDat = new Lazy<byte[]>(() => LoadTypeArray("strings.dat"));
 
         public TypeTree (int format)
         {
@@ -837,12 +837,41 @@ namespace GameRes.Formats.Unity
             return Binary.GetCString (strings, offset, strings.Length - offset, Encoding.UTF8);
         }
 
-        internal static byte[] LoadResource (string name)
+        internal static byte[] LoadTypeArray (string name)
         {
-            var res = EmbeddedResource.Load (name, typeof (TypeTree));
-            if (null == res)
-                throw new FileNotFoundException("Resource not found.", name);
-            return res;
+                var strings = new string[]
+                {
+        "AABB", "AnimationClip", "AnimationCurve", "AnimationState", "Array", "Base", "BitField", "bitset",
+        "bool", "char", "ColorRGBA", "Component", "data", "deque", "double", "dynamic_array",
+        "FastPropertyName", "first", "float", "Font", "GameObject", "Generic Mono", "GradientNEW", "GUID",
+        "GUIStyle", "int", "list", "long long", "map", "Matrix4x4f", "MdFour", "MonoBehaviour",
+        "MonoScript", "m_ByteSize", "m_Curve", "m_EditorClassIdentifier", "m_EditorHideFlags", "m_Enabled", "m_ExtensionPtr", "m_GameObject",
+        "m_Index", "m_IsArray", "m_IsStatic", "m_MetaFlag", "m_Name", "m_ObjectHideFlags", "m_PrefabInternal", "m_PrefabParentObject",
+        "m_Script", "m_StaticEditorFlags", "m_Type", "m_Version", "Object", "pair", "PPtr<Component>", "PPtr<GameObject>",
+        "PPtr<Material>", "PPtr<MonoBehaviour>", "PPtr<MonoScript>", "PPtr<Object>", "PPtr<Prefab>", "PPtr<Sprite>", "PPtr<TextAsset>", "PPtr<Texture>",
+        "PPtr<Texture2D>", "PPtr<Transform>", "Prefab", "Quaternionf", "Rectf", "RectInt", "RectOffset", "second",
+        "set", "short", "size", "SInt16", "SInt32", "SInt64", "SInt8", "staticvector",
+        "string", "TextAsset", "TextMesh", "Texture", "Texture2D", "Transform", "TypelessData", "UInt16",
+        "UInt32", "UInt64", "UInt8", "unsigned int", "unsigned long long", "unsigned short", "vector", "Vector2f",
+        "Vector3f", "Vector4f", "m_ScriptingClassIdentifier", "Gradient", "Type*", "int2_storage", "int3_storage", "BoundsInt",
+        "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset", "FileSize", "Hash128"
+                };
+
+                int totalSize = 0;
+                foreach (var str in strings) totalSize += Encoding.ASCII.GetByteCount(str) + 1;
+
+                var result = new byte[totalSize];
+                int offset = 0;
+
+                foreach (var str in strings)
+                {
+                    var bytes = Encoding.ASCII.GetBytes(str);
+                    Buffer.BlockCopy(bytes, 0, result, offset, bytes.Length);
+                    offset += bytes.Length;
+                    result[offset++] = 0; // null terminator
+                }
+
+                return result;
         }
     }
 

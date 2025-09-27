@@ -68,9 +68,9 @@ namespace GameRes
 
     public class PackedEntry : Entry
     {
-        public long PackedSize   { get => Size; } // alias
-        public long UnpackedSize { get; set; }
-        public bool IsPacked     { get; set; }
+        public       long PackedSize { get => Size; set => Size = value; } // alias
+        public     long UnpackedSize { get; set; }
+        public virtual bool IsPacked { get; set; }
     }
 
     public abstract class IResource
