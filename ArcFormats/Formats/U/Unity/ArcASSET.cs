@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -34,7 +35,7 @@ namespace GameRes.Formats.Unity
                 || data_offset >= file_size || data_offset < header_size)
                 return null;
             using (var stream = file.CreateStream())
-            using (var input = new AssetReader (stream))
+            using (var input = new AssetReader (stream, file.Name))
             {
                 var index = new ResourcesAssetsDeserializer (file.Name);
                 var dir = index.Parse (input);
@@ -99,6 +100,128 @@ namespace GameRes.Formats.Unity
 
     internal static class UnityAssetHelper
     {
+        public static Entry FindResourceEntry (ArcFile arc, string sourceName)
+        {
+            if (string.IsNullOrEmpty (sourceName))
+                return null;
+
+            var fileName = VFS.GetFileName (sourceName);
+            var filenameOnly = Path.GetFileNameWithoutExtension (fileName) + ".";
+
+            return arc.Dir.FirstOrDefault (e => {
+                return e.Name == fileName ||
+                e.Name == sourceName ||
+                (e.Name.EndsWith (".resS") && e.Name.Contains (filenameOnly)) ||
+                (e.Name.EndsWith (".resource") && e.Name.Contains (filenameOnly));
+            });
+        
+    }
+
+        // For bundle entries - load from within the archive
+        public static byte[] LoadResourceData (ArcFile arc, string source, long offset, long size)
+        {
+            var resEntry = FindResourceEntry (arc, source);
+            if (resEntry == null)
+                return LoadExternalResourceData (source, offset, size);
+
+            using (var stream = arc.OpenEntry (resEntry))
+            {
+                stream.Position = offset;
+                var data = new byte[size];
+                stream.Read (data, 0, (int)size);
+                return data;
+            }
+        }
+
+        public static byte[] LoadExternalResourceData (string source, long offset, long size)
+        {
+            if (string.IsNullOrEmpty (source))
+                return null;
+
+            string resourcePath = source;
+            if (resourcePath.StartsWith ("archive:"))
+            {
+                resourcePath = VFS.GetFileName (resourcePath);
+                resourcePath = VFS.CombinePath ("Resources", resourcePath); // since we put them here
+            }
+
+            // First try to find the file in the entire VFS hierarchy
+            try
+            {
+                var entry = VFS.FindFileInHierarchy (resourcePath);
+                if (entry != null)
+                {
+                    using (var input = VFS.OpenStreamInHierarchy (entry))
+                    {
+                        return VFS.ReadFromAnyStream (input, offset, size);
+                    }
+                }
+            }
+            catch (FileNotFoundException)
+            {
+            }
+
+            if (resourcePath.EndsWith (".resS", StringComparison.OrdinalIgnoreCase))
+            {
+                if (VFS.CurrentArchive != null)
+                {
+                    try
+                    {
+                        // Try to find in the same directory as the current archive
+                        var entry = VFS.FindFileInArchiveDirectory (resourcePath);
+                        if (entry != null)
+                        {
+                            using (var input = VFS.OpenStreamInHierarchy (entry))
+                            {
+                                return VFS.ReadFromAnyStream (input, offset, size);
+                            }
+                        }
+                    }
+                    catch (FileNotFoundException)
+                    {
+                    }
+
+                    // If still not found, try the real filesystem as a last resort
+                    var dir = VFS.GetDirectoryName (VFS.CurrentArchive.File.Name);
+                    if (VFS.IsPathRooted (dir))
+                    {
+                        var fullPath = Path.Combine (dir, resourcePath);
+                        if (File.Exists (fullPath))
+                        {
+                            using (var input = BinaryStream.FromFile (fullPath))
+                            {
+                                input.Position = offset;
+                                var data = new byte[size];
+                                input.Read (data, 0, (int)size);
+                                return data;
+                            }
+                        }
+                    }
+                }
+            }
+
+            var fileName = VFS.GetFileName (resourcePath);
+            if (fileName != resourcePath)
+            {
+                try
+                {
+                    var entry = VFS.FindFileInHierarchy (fileName);
+                    if (entry != null)
+                    {
+                        using (var input = VFS.OpenStreamInHierarchy (entry))
+                        {
+                            return VFS.ReadFromAnyStream (input, offset, size);
+                        }
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                }
+            }
+
+            return null;
+        }
+
         public static List<Entry> OrganizeByType (List<Entry> entries)
         {
             var organized = new List<Entry>();
@@ -165,7 +288,7 @@ namespace GameRes.Formats.Unity
                     return "Videos";
                 default:
                     // For unknown types, try to make it more readable
-                    if (string.IsNullOrEmpty(typeName))
+                    if (string.IsNullOrEmpty (typeName))
                         return $"Type_{(entry as AssetEntry)?.AssetObject?.ClassId}";
                     return typeName;
             }

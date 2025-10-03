@@ -98,15 +98,16 @@ namespace GARbro.GUI
         {
             get
             {
-                return string.Format (Localization._T ("MsgVersion"), AssemblyVersion);
+                return string.Format (Localization._T ("MsgVersion"), ProductVersion);
             }
         }
 
-        public string AssemblyVersion
+        public string ProductVersion
         {
             get
             {
-                return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                return System.Diagnostics.FileVersionInfo.GetVersionInfo(
+                    Assembly.GetExecutingAssembly().Location).ProductVersion;
             }
         }
 

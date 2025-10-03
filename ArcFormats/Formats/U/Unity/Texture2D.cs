@@ -72,9 +72,7 @@ namespace GameRes.Formats.Unity
         public void Load (AssetReader reader, UnityTypeData type)
         {
             m_assetReader = reader;
-
             var version = type.Version;
-
             base.Load (reader);
 
             if (version[0] > 2017 || (version[0] == 2017 && version[1] >= 3)) // 2017.3+
@@ -169,119 +167,19 @@ namespace GameRes.Formats.Unity
 
         public void LoadData (AssetReader reader)
         {
+            if (m_Data != null && m_Data.Length > 0)
+                return;
+
             if (m_StreamData != null && m_StreamData.Size > 0 && !string.IsNullOrEmpty (m_StreamData.Path))
             {
-                // For bundles, the data is already loaded in OpenImage
-                if (m_Data != null && m_Data.Length > 0)
-                    return;
-                
-                // For non-bundle files, try to load from external file
-                m_Data = LoadStreamingData (reader.Name);
+                // For raw assets, we need to load external data here
+                // For bundles, it's loaded in OpenImage
+                m_Data = UnityAssetHelper.LoadExternalResourceData (
+                    m_StreamData.Path, m_StreamData.Offset, m_StreamData.Size
+                );
             }
-            else if (m_DataLength > 0 && (m_Data == null || m_Data.Length == 0))
-            {
-                // Read inline data
+            else if (m_DataLength > 0)
                 m_Data = reader.ReadBytes (m_DataLength);
-            }
-        }
-
-        private byte[] LoadStreamingData (string source)
-        {
-            if (m_StreamData == null || string.IsNullOrEmpty (m_StreamData.Path))
-                return null;
-
-            string resourcePath = m_StreamData.Path;
-            if (resourcePath.StartsWith ("archive:")) { 
-                resourcePath = VFS.GetFileName (resourcePath);
-                resourcePath = VFS.CombinePath ("Resources", resourcePath);
-            }
-            try
-            {
-                // First try to find the file in the entire VFS hierarchy
-                try
-                {
-                    var entry = VFS.FindFileInHierarchy (resourcePath);
-                    if (entry != null)
-                    {
-                        using (var input = VFS.OpenStreamInHierarchy (entry))
-                        {
-                            return VFS.ReadFromAnyStream (input, m_StreamData.Offset, m_StreamData.Size);
-                        }
-                    }
-                }
-                catch (FileNotFoundException)
-                {
-                }
-
-                // If not found and it's a .resS file, try relative to current archive
-                if (resourcePath.EndsWith (".resS", StringComparison.OrdinalIgnoreCase))
-                {
-                    var assetFile = m_assetReader;
-                    if (assetFile != null && VFS.CurrentArchive != null)
-                    {
-                        try
-                        {
-                            // Try to find in the same directory as the current archive
-                            var entry = VFS.FindFileInArchiveDirectory (resourcePath);
-                            if (entry != null)
-                            {
-                                using (var input = VFS.OpenStreamInHierarchy (entry))
-                                {
-                                    return VFS.ReadFromAnyStream (input, m_StreamData.Offset, m_StreamData.Size);
-                                }
-                            }
-                        }
-                        catch (FileNotFoundException)
-                        {
-                            // Continue
-                        }
-
-                        // If still not found, try the real filesystem as a last resort
-                        var dir = VFS.GetDirectoryName (VFS.CurrentArchive.File.Name);
-                        if (VFS.IsPathRooted (dir))
-                        {
-                            var fullPath = Path.Combine (dir, resourcePath);
-                            if (File.Exists (fullPath))
-                            {
-                                using (var input = BinaryStream.FromFile (fullPath))
-                                {
-                                    input.Position = m_StreamData.Offset;
-                                    var data = new byte[m_StreamData.Size];
-                                    input.Read (data, 0, (int)m_StreamData.Size);
-                                    return data;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Try with just the filename if all else fails
-                var fileName = VFS.GetFileName (resourcePath);
-                if (fileName != resourcePath)
-                {
-                    try
-                    {
-                        var entry = VFS.FindFileInHierarchy (fileName);
-                        if (entry != null)
-                        {
-                            using (var input = VFS.OpenStreamInHierarchy (entry))
-                            {
-                                return VFS.ReadFromAnyStream (input, m_StreamData.Offset, m_StreamData.Size);
-                            }
-                        }
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        new FileNotFoundException (String.Format ("Unable to find resource {}.", resourcePath));
-                    }
-                }
-
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
         }
 
 

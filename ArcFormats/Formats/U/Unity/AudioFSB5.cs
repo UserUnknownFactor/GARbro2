@@ -93,12 +93,14 @@ namespace GameRes.Formats.Fmod
         List<Sample> ReadSamples ()
         {
             var header = m_input.ReadHeader (0x3C);
+
             int version             = header.ToInt32 (4);
             int sample_count        = header.ToInt32 (8);
             m_sample_header_size    = header.ToInt32 (0xC);
             m_name_table_size       = header.ToInt32 (0x10);
             m_data_size             = header.ToInt32 (0x14);
-            m_format = (SoundFormat)header.ToInt32 (0x18);
+            m_format   = (SoundFormat)header.ToInt32 (0x18);
+
             if (!Supported.Contains (m_format))
                 throw new NotSupportedException();
 

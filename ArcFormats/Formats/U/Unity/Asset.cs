@@ -27,17 +27,17 @@ namespace GameRes.Formats.Unity
         Dictionary<int, TypeTree> m_types = new Dictionary<int, TypeTree>();
         Dictionary<long, UnityObject> m_objects = new Dictionary<long, UnityObject>();
 
-        bool m_big_id_enabled;
-        long m_file_size;
-        int m_metadata_size;
-        long m_unknown;
+        bool  m_big_id_enabled;
+        long  m_file_size;
+        int   m_metadata_size;
+        long  m_unknown;
 
-        public int Format { get { return m_format; } }
-        public bool IsLittleEndian { get { return m_is_little_endian; } }
-        public long DataOffset { get { return m_data_offset; } }
-        public UnityTypeData Tree { get { return m_tree; } }
+        public                       int Format { get { return m_format; } }
+        public              bool IsLittleEndian { get { return m_is_little_endian; } }
+        public                  long DataOffset { get { return m_data_offset; } }
+        public               UnityTypeData Tree { get { return m_tree; } }
         public IEnumerable<UnityObject> Objects { get { return m_objects.Values; } }
-        public bool BigIdEnabled { get { return m_big_id_enabled; } }
+        public          bool BigIdEnabled { get { return m_big_id_enabled; } }
 
         public void Load (AssetReader input)
         {
@@ -247,6 +247,7 @@ namespace GameRes.Formats.Unity
                 Offset = reader.ReadInt64();
             else
                 Offset = reader.ReadOffset();
+
             Offset += Asset.DataOffset;
 
             Size = reader.ReadUInt32();

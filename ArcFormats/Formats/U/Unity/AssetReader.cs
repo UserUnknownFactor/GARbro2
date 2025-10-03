@@ -224,6 +224,11 @@ namespace GameRes.Formats.Unity
                 for (int i = 0; i < count; ++i)
                     array[i] = (T)(object)ReadFloat();
             }
+            else if (typeof(T) == typeof(double))
+            {
+                for (int i = 0; i < count; ++i)
+                    array[i] = (T)(object)ReadDouble();
+            }
             else if (typeof(T) == typeof(byte))
             {
                 for (int i = 0; i < count; ++i)
@@ -284,6 +289,14 @@ namespace GameRes.Formats.Unity
             var buf = new Union();
             buf.u = ReadUInt32();
             return buf.f;
+        }
+
+        /// <summary>
+        /// Read float value from a stream.
+        /// </summary>
+        public double ReadDouble ()
+        {
+            return ReadUInt64();
         }
 
         bool _disposed = false;

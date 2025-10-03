@@ -75,10 +75,8 @@ namespace GameRes.Formats.Unity
                     int lastSlash = name.LastIndexOfAny (new[] { '/', '\\' });
                     if (lastSlash >= 0)
                         name = name.Substring (lastSlash + 1);
-                    if (!string.IsNullOrEmpty(name))
+                    if (!string.IsNullOrEmpty (name))
                         name = $"{name}-{obj.PathId}";
-                    else
-                        name = obj.PathId.ToString();
                 }
 
                 switch (id)
@@ -145,28 +143,14 @@ namespace GameRes.Formats.Unity
                     case 83: // AudioClip
                         {
                             var clip = new AudioClip();
-                            clip.Load (input);
+                            clip.Load (input, asset.Tree);
+
+                            var decoder = new AudioClipDecoder (clip);
+                            entry = decoder.CreateEntry();
+                            entry.AssetObject = obj;
+
                             if (!string.IsNullOrEmpty (clip.m_Source))
-                            {
-                                entry = new AssetEntry
-                                {
-                                    Name = name ?? $"{clip.m_Name}-{obj.PathId}",
-                                    Type = "audio",
-                                    Offset = clip.m_Offset,
-                                    Size = (uint)clip.m_Size,
-                                    Bundle = GetBundle (clip.m_Source),
-                                };
-                            }
-                            else if (clip.m_Size != 0)
-                            {
-                                entry = new AssetEntry
-                                {
-                                    Name = name ?? $"{clip.m_Name}-{obj.PathId}",
-                                    Type = "audio",
-                                    Offset = input.Position,
-                                    Size = (uint)clip.m_Size,
-                                };
-                            }
+                                entry.Bundle = GetBundle (clip.m_Source);
                             break;
                         }
                     case 49:  // TextAsset
@@ -182,7 +166,7 @@ namespace GameRes.Formats.Unity
                             };
 
                             string ext = Path.GetExtension (entry.Name).ToLowerInvariant();
-                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || entry.Name.Contains(".webp") || entry.Name.Contains(".jpg") || entry.Name.Contains(".png") || ext == ".tga" || ext == ".bmp")
+                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || entry.Name.Contains (".webp") || entry.Name.Contains (".jpg") || entry.Name.Contains (".png") || ext == ".tga" || ext == ".bmp")
                                 entry.Type = "image";
                             else if (ext == ".txt" || ext == ".json" || ext == ".xml" || ext == ".html" || ext == ".css" || ext == ".js")
                                 entry.Type = "script";
@@ -247,6 +231,23 @@ namespace GameRes.Formats.Unity
                             };
                             break;
                         }
+                    case 329: // VideoClip
+                        {
+                            var clip = new VideoClip();
+                            clip.Load (input, asset.Tree);
+                            
+                            entry = new VideoEntry
+                            {
+                                Name = Path.GetFileName (clip.m_OriginalPath),
+                                Type = "video",
+                                Offset = clip.m_ExternalResources.m_Offset,
+                                Size = (uint)clip.m_ExternalResources.m_Size
+                            };
+                            
+                            if (!string.IsNullOrEmpty (clip.m_ExternalResources.m_Source))
+                                entry.Bundle = GetBundle (clip.m_ExternalResources.m_Source);
+                            break;
+                        }
                     default:
                         // For other types, create a generic entry
                         /*entry = new AssetEntry
@@ -276,20 +277,20 @@ namespace GameRes.Formats.Unity
 
         private string GetObjectName (AssetReader input, UnityObject obj, string prefix = null)
         {
-            string name = NamedObject.PeekName(input, input.Position);
-            if (string.IsNullOrEmpty(name))
+            string name = NamedObject.PeekName (input, input.Position);
+            if (string.IsNullOrEmpty (name))
             {
-                if (string.IsNullOrEmpty(obj.ContainerName))
+                if (string.IsNullOrEmpty (obj.ContainerName))
                     return $"{obj.PathId}";
 
                 return $"{obj.ContainerName}-{obj.PathId}";
             }
 
-            if (!string.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty (name))
                 name = prefix + name;
 
             foreach (char c in Path.GetInvalidFileNameChars())
-                name = name.Replace(c, '_');
+                name = name.Replace (c, '_');
 
             return $"{name}-{obj.PathId}";
         }
@@ -342,7 +343,7 @@ namespace GameRes.Formats.Unity
             var resS_files = VFS.GetFiles();
             foreach (var resS_file in resS_files)
             {
-                if (!resS_file.Name.EndsWith(".resS")) continue;
+                if (!resS_file.Name.EndsWith (".resS")) continue;
                 string fileName = Path.GetFileName (resS_file.Name);
                 if (!res_map.ContainsKey (fileName))
                 {

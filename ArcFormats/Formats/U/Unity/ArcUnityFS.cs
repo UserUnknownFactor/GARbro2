@@ -130,7 +130,6 @@ namespace GameRes.Formats.Unity
 
             UnityAssetHelper.OrganizeByType (dir);
 
-
             return new UnityBundle (file, this, dir, index.Segments, index.Bundles);
         }
 
@@ -155,28 +154,73 @@ namespace GameRes.Formats.Unity
         {
             var uarc = (UnityBundle)arc;
             var aent = entry as AssetEntry;
-            Stream input = new BundleStream (uarc.File, uarc.Segments);
+
+            if (aent?.AssetObject?.TypeName == "AudioClip")
+            {
+                Stream input = new BundleStream (uarc.File, uarc.Segments);
+                if (aent.ParentBundle != null)
+                    input = new StreamRegion (input, aent.ParentBundle.Offset + aent.AssetObject.Offset, aent.AssetObject.Size);
+                else
+                    input = new StreamRegion (input, aent.AssetObject.Offset, aent.AssetObject.Size);
+
+                var reader = new AssetReader (input, entry.Name);
+                reader.SetupReaders (aent.AssetObject.Asset);
+
+                var clip = new AudioClip();
+                clip.Load (reader, aent.AssetObject.Asset.Tree);
+                reader.Dispose();
+
+                byte[] audioData = null;
+                if (!string.IsNullOrEmpty (clip.m_Source))
+                    audioData = UnityAssetHelper.LoadResourceData (arc, clip.m_Source, clip.m_Offset, clip.m_Size);
+                else if (clip.m_AudioData != null)
+                    audioData = clip.m_AudioData;
+                else if (clip.m_Size > 0)
+                {
+                    long dataOffset = 0;
+                    if (aent.ParentBundle != null)
+                        dataOffset = aent.ParentBundle.Offset + aent.AssetObject.Offset + aent.AssetObject.Size - clip.m_Size;
+                    else
+                        dataOffset = aent.AssetObject.Offset + aent.AssetObject.Size - clip.m_Size;
+
+                    input = new BundleStream (uarc.File, uarc.Segments);
+                    input = new StreamRegion (input, dataOffset, clip.m_Size);
+                    audioData = new byte[clip.m_Size];
+                    input.Read (audioData, 0, (int)clip.m_Size);
+                    input.Dispose();
+                }
+
+                if (audioData == null || audioData.Length == 0)
+                    return Stream.Null;
+
+                audioData = clip.ConvertToAudio (audioData);
+                return new MemoryStream (audioData);
+            }
+
+            Stream result = new BundleStream (uarc.File, uarc.Segments);
+
             if (aent?.ParentBundle != null)
             {
                 long actualOffset = aent.ParentBundle.Offset + entry.Offset;
-                input = new StreamRegion (input, actualOffset, entry.Size);
+                result = new StreamRegion (result, actualOffset, entry.Size);
             }
             else
-            input = new StreamRegion (input, entry.Offset, entry.Size);
+                result = new StreamRegion (result, entry.Offset, entry.Size);
 
             if (aent != null && aent.IsEncrypted)
             {
-            using (input)
-            {
-                var data = new byte[entry.Size];
-                input.Read (data, 0, data.Length);
-                DecryptAsset (data);
-                return new BinMemoryStream (data);
+                using (result)
+                {
+                    var data = new byte[entry.Size];
+                    result.Read (data, 0, data.Length);
+                    DecryptAsset (data);
+                    return new BinMemoryStream (data);
+                }
             }
+
+            return result;
         }
 
-            return input;
-        }
         public override IImageDecoder OpenImage (ArcFile arc, Entry entry)
         {
             var aent = entry as AssetEntry;
@@ -185,46 +229,32 @@ namespace GameRes.Formats.Unity
 
             var uarc = (UnityBundle)arc;
             var obj = aent.AssetObject;
-            Stream input;
+
+            Stream input = new BundleStream (uarc.File, uarc.Segments);
             if (aent.ParentBundle != null)
             {
-                input = new BundleStream (uarc.File, uarc.Segments);
-                input = new StreamRegion (input, aent.ParentBundle.Offset + obj.Offset, obj.Size);
+                var actualOffset = aent.ParentBundle.Offset + obj.Offset;
+                input = new StreamRegion (input, actualOffset, obj.Size);
             }
             else
-            {
-                input = new BundleStream (uarc.File, uarc.Segments);
-            input = new StreamRegion (input, obj.Offset, obj.Size);
-            }
+                input = new StreamRegion (input, obj.Offset, obj.Size);
+
             var reader = new AssetReader (input, entry.Name);
             reader.SetupReaders (obj.Asset);
 
             Texture2D tex = new Texture2D();
             tex.Load (reader, obj.Asset.Tree);
 
-            // Check if texture has streaming data in .resS
-            if (tex.m_StreamData != null && tex.m_StreamData.Size > 0 && aent.Bundle != null)
+            if (tex.m_StreamData != null && tex.m_StreamData.Size > 0 && 
+                !string.IsNullOrEmpty (tex.m_StreamData.Path))
             {
-                // Find the .resS bundle in the same archive
-                var resSEntry = arc.Dir.FirstOrDefault (e =>
-                    e.Name == aent.Bundle.Name ||
-                    e.Name.EndsWith (aent.Bundle.Name));
-
-                if (resSEntry != null)
+                var data = UnityAssetHelper.LoadResourceData(
+                    arc, tex.m_StreamData.Path, tex.m_StreamData.Offset, tex.m_StreamData.Size
+                );
+                if (data != null)
                 {
-                    // The texture data is in the .resS file at the specified offset
-
-                    // Create a new BundleStream and read from the correct position
-                    using (var resSStream = arc.OpenEntry (resSEntry))
-                    {
-                        // Position at: resS bundle offset + texture offset within resS
-                        resSStream.Position = tex.m_StreamData.Offset;
-
-                        // Read the texture data
-                        tex.m_Data = new byte[tex.m_StreamData.Size];
-                        resSStream.Read (tex.m_Data, 0, tex.m_Data.Length);
-                        tex.m_DataLength = (int)tex.m_StreamData.Size;
-                    }
+                    tex.m_Data = data;
+                    tex.m_DataLength = data.Length;
                 }
             }
 
@@ -423,8 +453,8 @@ namespace GameRes.Formats.Unity
                     entry.Bundle = bundle;
 
                 entry.ParentBundle = bundle;
-                string name;
-                if (!id_map.TryGetValue (obj.PathId, out name))
+
+                if (!id_map.TryGetValue (obj.PathId, out string name))
                     name = GetObjectName (file, obj);
                 else
                     name = ShortenPath (name);
