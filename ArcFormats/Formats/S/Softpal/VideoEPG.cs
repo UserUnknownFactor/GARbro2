@@ -151,7 +151,7 @@ namespace GameRes.Formats.Softpal
                     }
                     else if (uncompressedSize >= uvySize + mvSize)
                     {
-                        // Motion‑compensated differential frame
+                        // Motion-compensated differential frame
                         outputFrame = new byte[uvySize];
                         Array.Copy (referenceFrame, outputFrame, uvySize);
 

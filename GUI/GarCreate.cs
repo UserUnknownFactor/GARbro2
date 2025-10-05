@@ -131,8 +131,9 @@ namespace GARbro.GUI
             try
             {
                 using (var tmp_file = new GARbro.Shell.TemporaryFile (
-                        Path.GetDirectoryName (m_arc_name),
-                        Path.GetRandomFileName ()))
+                        VFS.GetDirectoryName (m_arc_name),
+                        Path.GetFileNameWithoutExtension (Path.GetRandomFileName ()) + 
+                        Path.GetExtension (m_arc_name) ))
                 {
                     m_total = m_file_list.Count() + 1;
                     using (var file = File.Create (tmp_file.Name))

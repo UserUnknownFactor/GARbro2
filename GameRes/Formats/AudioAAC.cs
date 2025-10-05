@@ -95,8 +95,12 @@ namespace GameRes.Formats
             // ADTS: 0xFFF* (sync word)
             // MP4/M4A container: various signatures
             Signatures = new uint[] { 0, 0x46494441 };
-            Extensions = new string[] { "aac" };
+            Extensions = new string[] { "aac", "m4a" };
         }
+
+        public static AudioFormat Instance { get { return s_AacFormat.Value; } }
+
+        static readonly ResourceInstance<AudioFormat> s_AacFormat = new ResourceInstance<AudioFormat>("AAC");
 
         public override SoundInput TryOpen (IBinaryStream file)
         {

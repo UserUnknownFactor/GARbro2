@@ -1058,7 +1058,7 @@ namespace GameRes
                             }
                             catch
                             {
-                                throw new FileNotFoundException ($"Unable to find: {desired[Count-1]}");
+                                throw new FileNotFoundException (string.Format ("Unable to find: {0}", desired[Count-1]));
                             }
                         }
                         throw;

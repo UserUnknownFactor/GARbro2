@@ -42,7 +42,7 @@ namespace GARbro.GUI.Preview
                 return false;
 
             var filename = entry.Name.ToLower();
-            var extension = Path.GetExtension (filename);
+            var extension = VFS.GetExtension (filename);
             
             if (!string.IsNullOrEmpty (extension) && _plugins.ContainsKey (extension))
             {

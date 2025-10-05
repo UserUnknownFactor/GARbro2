@@ -54,7 +54,7 @@ namespace GARbro.GUI
         public EntryViewModel (Entry entry, int priority)
         {
             Source = entry;
-            Name = GetRelativePath(entry.Name);
+            Name = GetRelativePath (entry.Name);
             Priority = priority;
         }
 
@@ -69,7 +69,7 @@ namespace GARbro.GUI
                     _isEditing = value;
                     if (_isEditing)
                         EditingName = Name;
-                    OnPropertyChanged("IsEditing");
+                    OnPropertyChanged ("IsEditing");
                 }
             }
         }
@@ -83,42 +83,42 @@ namespace GARbro.GUI
                 if (_editingName != value)
                 {
                     _editingName = value;
-                    OnPropertyChanged("EditingName");
+                    OnPropertyChanged ("EditingName");
                 }
             }
         }
 
-        private string GetRelativePath(string fullPath)
+        private string GetRelativePath (string fullPath)
         {
-            if (string.IsNullOrEmpty(fullPath) || fullPath == VFS.DIR_PARENT)
+            if (string.IsNullOrEmpty (fullPath) || fullPath == VFS.DIR_PARENT)
                 return fullPath;
 
-            if (!Path.IsPathRooted(fullPath))
-                return SafeGetFileName(fullPath);
+            if (!VFS.IsPathRooted (fullPath))
+                return SafeGetFileName (fullPath);
 
             try
             {
                 string currentDir = VFS.Top.CurrentDirectory;
-                if (string.IsNullOrEmpty(currentDir))
+                if (string.IsNullOrEmpty (currentDir))
                     currentDir = Directory.GetCurrentDirectory();
 
-                currentDir = Path.GetFullPath(currentDir);
-                fullPath = Path.GetFullPath(fullPath);
+                currentDir = Path.GetFullPath (currentDir);
+                fullPath = Path.GetFullPath (fullPath);
 
-                if (fullPath.StartsWith(currentDir, StringComparison.OrdinalIgnoreCase))
+                if (fullPath.StartsWith (currentDir, StringComparison.OrdinalIgnoreCase))
                 {
-                    string relativePath = fullPath.Substring(currentDir.Length);
-                    if (relativePath.StartsWith(Path.DirectorySeparatorChar.ToString()) || 
-                        relativePath.StartsWith(Path.AltDirectorySeparatorChar.ToString()))
+                    string relativePath = fullPath.Substring (currentDir.Length);
+                    if (relativePath.StartsWith (Path.DirectorySeparatorChar.ToString()) || 
+                        relativePath.StartsWith (Path.AltDirectorySeparatorChar.ToString()))
                     {
-                        relativePath = relativePath.Substring(1);
+                        relativePath = relativePath.Substring (1);
                     }
                     return relativePath;
                 }
             }
             catch { }
 
-            return SafeGetFileName(fullPath);
+            return SafeGetFileName (fullPath);
         }
 
         private static readonly char[] SeparatorCharacters = { '\\', '/' };
@@ -126,24 +126,24 @@ namespace GARbro.GUI
         /// <summary>
         /// Same as Path.GetFileName, but robustly ignores invalid characters
         /// </summary>
-        string SafeGetFileName(string filename)
+        string SafeGetFileName (string filename)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty (filename))
                 return string.Empty;
 
-            filename = filename.TrimEnd(SeparatorCharacters);
+            filename = filename.TrimEnd (SeparatorCharacters);
 
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty (filename))
                 return string.Empty;
 
-            var name_start = filename.LastIndexOfAny(SeparatorCharacters);
+            var name_start = filename.LastIndexOfAny (SeparatorCharacters);
             if (name_start == -1)
                 return filename;
 
             if (name_start == filename.Length - 1)
                 return string.Empty;
 
-            return filename.Substring(name_start + 1);
+            return filename.Substring (name_start + 1);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -243,7 +243,7 @@ namespace GARbro.GUI
     {
         public ImageFormat Source { get; private set; }
         public string Tag {
-            get { return null != Source ? Source.Tag : Localization._T("TextAsIs"); }
+            get { return null != Source ? Source.Tag : Localization._T ("TextAsIs"); }
         }
 
         public ImageFormatModel (ImageFormat impl = null)

@@ -75,8 +75,7 @@ namespace GameRes.Formats.RPGMaker
 
                 RpgmvDecryptor.LastKey = key;
 
-                return new RpgmvpMetaData
-                {
+                return new RpgmvpMetaData {
                     Width = info.Width,
                     Height = info.Height,
                     OffsetX = info.OffsetX,
@@ -176,10 +175,11 @@ namespace GameRes.Formats.RPGMaker
             {
                 // Search up the directory tree
                 var currentDir = VFS.GetDirectoryName (filename);
-                while (!string.IsNullOrEmpty (currentDir))
-                {
-                    var path = Path.Combine (currentDir, system_filename);
+                bool doRoot = false;
 
+                while (!string.IsNullOrEmpty (currentDir) || doRoot)
+                {
+                    var path = VFS.CombinePath (currentDir, system_filename);
                     try
                     {
                         var entry = VFS.FindFileInHierarchy (path);
@@ -193,11 +193,16 @@ namespace GameRes.Formats.RPGMaker
                             }
                         }
                     }
-                    catch (FileNotFoundException)
-                    {
-                    }
+                    catch (FileNotFoundException) { }
 
-                    currentDir = VFS.GetDirectoryName (currentDir);
+                    if (doRoot) break;
+
+                    var newDir = VFS.GetDirectoryName (currentDir);
+                    if ((string.IsNullOrEmpty (newDir) && 
+                            !string.IsNullOrEmpty (currentDir))
+                            || newDir == currentDir)
+                        doRoot = true; // the game can be at the root level
+                    currentDir = newDir;
                 }
             }
 

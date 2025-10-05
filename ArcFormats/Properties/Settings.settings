@@ -236,5 +236,11 @@
     <Setting Name="CCNCompressionEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">true</Value>
     </Setting>
+    <Setting Name="GALVersion" Type="System.String" Scope="User">
+      <Value>GAL v107</value>
+    </Setting>
+    <Setting Name="GALCompression" Type="System.String" Scope="User">
+      <Value>zlib</value>
+    </Setting>
   </Settings>
 </SettingsFile>

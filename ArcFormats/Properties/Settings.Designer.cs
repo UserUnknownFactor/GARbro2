@@ -527,7 +527,7 @@ namespace GameRes.Formats.Properties {
                 this["ZIPEncodingCP"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("932")]
@@ -539,7 +539,7 @@ namespace GameRes.Formats.Properties {
                 this["DiscImageFileNameCP"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("932")]
@@ -551,7 +551,7 @@ namespace GameRes.Formats.Properties {
                 this["SevenZipNamesSrcCP"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("932")]
@@ -900,7 +900,7 @@ namespace GameRes.Formats.Properties {
                 this["DXA_Password"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -936,7 +936,7 @@ namespace GameRes.Formats.Properties {
                 this["TIM2AlphaFormat"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
@@ -966,7 +966,7 @@ namespace GameRes.Formats.Properties {
                 this["Password"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("TLG6 (Golomb)")]
@@ -981,7 +981,7 @@ namespace GameRes.Formats.Properties {
                 this["TLGVersion"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("RGBMasked")]
@@ -996,7 +996,7 @@ namespace GameRes.Formats.Properties {
                 this["CCNOutputFormat"] = value;
             }
         }
-        
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
@@ -1008,5 +1008,36 @@ namespace GameRes.Formats.Properties {
                 this["CCNCompressionEnabled"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("GAL v107")]
+        public string GALVersion
+        {
+            get
+            {
+                return ((string)(this["GALVersion"]));
+            }
+            set
+            {
+                this["GALVersion"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("zlib")]
+        public string GALCompression
+        {
+            get
+            {
+                return ((string)(this["GALCompression"]));
+            }
+            set
+            {
+                this["GALCompression"] = value;
+            }
+        }
+
     }
 }

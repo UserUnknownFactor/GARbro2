@@ -1107,8 +1107,9 @@ namespace GameRes.Formats.KiriKiri
             if (i < 0)
                 return null;
             var tags = new TagsParser (tail, i + 4);
-            if (!tags.Parse())
+            if (!tags.Parse() || !tags.HasKey (1))
                 return null;
+
             var base_name = tags.GetString (1);
             meta.OffsetX = tags.GetInt (2) & 0xFFFF;
             meta.OffsetY = tags.GetInt (3) & 0xFFFF;
@@ -2064,6 +2065,8 @@ namespace GameRes.Formats.KiriKiri
 
         public int GetInt (int key)
         {
+            if (!m_map.ContainsKey (key))
+                return 0;
             var val = m_map[key];
             switch (val.Item2)
             {
@@ -2077,6 +2080,8 @@ namespace GameRes.Formats.KiriKiri
 
         public string GetString (int key)
         {
+            if (!m_map.ContainsKey (key))
+                return null;
             var val = m_map[key];
             return Encodings.cp932.GetString (m_tags, val.Item1, val.Item2);
         }

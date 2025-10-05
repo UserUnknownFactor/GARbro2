@@ -91,10 +91,10 @@ namespace GARbro.GUI
             if (value.IsArchive && value.Path.Count > 1)
             {
                 // Show the archive name and the path within it
-                var archiveName = Path.GetFileName(value.Path[value.Path.Count - 2]);
+                var archiveName = VFS.GetFileName (value.Path[value.Path.Count - 2]);
                 var currentDir = value.Path.Last();
 
-                if (!string.IsNullOrEmpty(currentDir))
+                if (!string.IsNullOrEmpty (currentDir))
                 {
                     // We're in a subdirectory of the archive
                     pathLine.Text = archiveName + VFS.DIR_DELIMITER + currentDir;
