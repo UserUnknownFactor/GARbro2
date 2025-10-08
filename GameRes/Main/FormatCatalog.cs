@@ -429,8 +429,9 @@ namespace GameRes
                {
                    range = range.OrderByDescending (f => 
                    {
-                       if (f is ArchiveFormat)     return 3;
-                       else if (f is AudioFormat)  return 2;
+                       if (f is ArchiveFormat)     return 4;
+                       else if (f is AudioFormat)  return 3;
+                       else if (f is VideoFormat)  return 2;
                        else if (f is ImageFormat)  return 0;
                        else                        return 1;
                    });

@@ -65,30 +65,53 @@ namespace GameRes.Formats.Macromedia
                 {
                     if (chunk.Type == Types.DefineSprite)
                     {
+                        // DefineSprite only needs header (ID + frame count), not the children data
+                        var sprite_header = new byte[4];
+                        Buffer.BlockCopy (chunk.Data, 0, sprite_header, 0, 4);
+
+                        var sprite_chunk = new SwfChunk (Types.DefineSprite, 4) { Data = sprite_header };
+
                         var sprite_entry = new SwfSpriteEntry
                         {
-                            Name = string.Format ("Sprite_{0:D5}", chunk.Id),
-                            Type = "sprite",
-                            Chunk = chunk,
+                            Name = string.Format ("DefineSprite_{0:D5}.dat", chunk.Id),
+                            Type = "",
+                            Chunk = sprite_chunk,
                             Offset = 0,
-                            Size = (uint)chunk.Length,
+                            Size = 4,
                             Children = new List<Entry>()
                         };
 
                         if (sprite_stack.Count > 0)
-                            sprite_stack.Peek().Children.Add(sprite_entry);
+                            sprite_stack.Peek().Children.Add (sprite_entry);
                         else
-                            AddToResourceGroup(resource_groups, "Sprites", sprite_entry);
+                            AddToResourceGroup (resource_groups, "Sprites", sprite_entry);
 
-                        sprite_stack.Push(sprite_entry);
+                        sprite_stack.Push (sprite_entry);
                     }
                     else if (chunk.Type == Types.End && sprite_stack.Count > 0)
                     {
-                        sprite_stack.Pop();
+                        var completed_sprite = sprite_stack.Pop();
+
+                        if (completed_sprite.Children != null && completed_sprite.Children.Count > 0)
+                        {
+                            var contents_folder = new SwfEntry
+                            {
+                                Name = string.Format ("Sprite_{0:D5}", completed_sprite.Chunk.Id),
+                                Type = "folder",
+                                Offset = 0,
+                                Size = 0,
+                                Children = completed_sprite.Children
+                            };
+                            if (sprite_stack.Count == 0)
+                                AddToResourceGroup (resource_groups, "Sprites", contents_folder);
+                            else
+                                sprite_stack.Peek().Children.Add (contents_folder);
+                        }
+                        completed_sprite.Children = new List<Entry>();
                     }
                     else if (IsSoundStream (chunk))
                     {
-                        HandleSoundStream(chunk, ref current_stream, base_name, resource_groups);
+                        HandleSoundStream (chunk, ref current_stream, base_name, resource_groups);
                     }
                     else if (TypeMap.ContainsKey (chunk.Type))
                     {
@@ -97,7 +120,7 @@ namespace GameRes.Formats.Macromedia
                         {
                             if (sprite_stack.Count > 0)
                             {
-                                sprite_stack.Peek().Children.Add(entry);
+                                sprite_stack.Peek().Children.Add (entry);
                             }
                             else
                             {
@@ -120,7 +143,7 @@ namespace GameRes.Formats.Macromedia
                             Size = 0,
                             Children = group.Value
                         };
-                        root_entries.Add(folder);
+                        root_entries.Add (folder);
                     }
                 }
 
@@ -140,14 +163,29 @@ namespace GameRes.Formats.Macromedia
                 Type = type,
                 Chunk = chunk,
                 Offset = 0,
-                Size = (uint)chunk.Length
+                Size = (uint)chunk.Length,
+                Children = null
             };
+        }
+
+        private static byte[] s_jpegTables = null;
+        internal static void SetJpegTables (byte[] tables)
+        {
+            s_jpegTables = tables;
+        }
+
+        internal static byte[] GetJpegTables()
+        {
+            return s_jpegTables;
         }
 
         private string GenerateResourceName (SwfChunk chunk, string baseName)
         {
             string prefix = GetResourcePrefix (chunk.Type);
             string extension = GetResourceExtension (chunk.Type);
+
+            if (chunk.Type == Types.DefineSprite)
+                return string.Format ("Sprite_{0:D5}.dat", chunk.Id);
 
             if (chunk.Id >= 0)
                 return string.Format ("{0}_{1:D5}.{2}", prefix, chunk.Id, extension);
@@ -257,8 +295,9 @@ namespace GameRes.Formats.Macromedia
             groups[groupName].Add (entry);
         }
 
-        private void HandleSoundStream (SwfChunk chunk, ref SwfSoundEntry currentStream, 
-                                     string baseName, Dictionary<string, List<Entry>> resourceGroups)
+        private void HandleSoundStream (
+            SwfChunk chunk, ref SwfSoundEntry currentStream, 
+            string baseName, Dictionary<string, List<Entry>> resourceGroups)
         {
             switch (chunk.Type)
             {
@@ -275,6 +314,7 @@ namespace GameRes.Formats.Macromedia
                         Type = "audio",
                         Chunk = chunk,
                         Offset = 0,
+                        Children = null
                     };
                     AddToResourceGroup (resourceGroups, "Audio", currentStream);
                     break;
@@ -283,7 +323,7 @@ namespace GameRes.Formats.Macromedia
                     if (currentStream != null)
                     {
                         currentStream.Size += (uint)(chunk.Data.Length - 4);
-                        currentStream.SoundStream.Add(chunk);
+                        currentStream.SoundStream.Add (chunk);
                     }
                     break;
             }
@@ -298,9 +338,9 @@ namespace GameRes.Formats.Macromedia
                 var swfEntry = entry as SwfEntry;
                 if (swfEntry != null)
                 {
-                    swfEntry.Path = string.IsNullOrEmpty(parentPath) 
+                    swfEntry.Path = string.IsNullOrEmpty (parentPath) 
                         ? entry.Name 
-                        : parentPath + "/" + entry.Name;
+                        : VFS.CombinePath (parentPath, entry.Name);
 
                     if (swfEntry.Type != "folder")
                     {
@@ -309,14 +349,14 @@ namespace GameRes.Formats.Macromedia
                     }
 
                     if (swfEntry.Children != null && swfEntry.Children.Count > 0)
-                        result.AddRange (FlattenHierarchy(swfEntry.Children, swfEntry.Path));
+                        result.AddRange (FlattenHierarchy (swfEntry.Children, swfEntry.Path));
                 }
             }
 
             return result;
         }
 
-        internal static bool IsSoundStream(SwfChunk chunk)
+        internal static bool IsSoundStream (SwfChunk chunk)
         {
             return chunk.Type == Types.SoundStreamHead
                 || chunk.Type == Types.SoundStreamHead2
@@ -385,44 +425,44 @@ namespace GameRes.Formats.Macromedia
             { Types.DefineSound,            "audio" },
             { Types.DoAction,               "script" },
             { Types.DoInitAction,           "script" },
-            { Types.DefineShape,            "shape" },
-            { Types.DefineShape2,           "shape" },
-            { Types.DefineShape3,           "shape" },
-            { Types.DefineText,             "text" },
-            { Types.DefineText2,            "text" },
-            { Types.DefineFont,             "font" },
-            { Types.DefineFont2,            "font" },
-            { Types.DefineFont3,            "font" },
-            { Types.DefineButton,           "button" },
-            { Types.DefineButton2,          "button" },
-            { Types.DefineSprite,           "sprite" },
+            { Types.DefineShape,            "" },
+            { Types.DefineShape2,           "" },
+            { Types.DefineShape3,           "" },
+            { Types.DefineText,             "script" },
+            { Types.DefineText2,            "script" },
+            { Types.DefineFont,             "" },
+            { Types.DefineFont2,            "" },
+            { Types.DefineFont3,            "" },
+            { Types.DefineButton,           "" },
+            { Types.DefineButton2,          "" },
+            { Types.DefineSprite,           "" },
             { Types.DefineVideoStream,      "video" },
             { Types.VideoFrame,             "video" },
-            { Types.JpegTables,             "data" },
-            { Types.DefineMorphShape,       "shape" },
-            { Types.DefineMorphShape2,      "shape" },
-            { Types.DefineBinary,           "binary" },
-            { Types.DefineEditText,         "text" },
-            { Types.PlaceObject,            "placement" },
-            { Types.PlaceObject2,           "placement" },
-            { Types.PlaceObject3,           "placement" },
-            { Types.RemoveObject,           "placement" },
-            { Types.RemoveObject2,          "placement" },
+            { Types.JpegTables,             "" },
+            { Types.DefineMorphShape,       "" },
+            { Types.DefineMorphShape2,      "" },
+            { Types.DefineBinary,           "" },
+            { Types.DefineEditText,         "script" },
+            { Types.PlaceObject,            "" },
+            { Types.PlaceObject2,           "" },
+            { Types.PlaceObject3,           "" },
+            { Types.RemoveObject,           "" },
+            { Types.RemoveObject2,          "" },
         };
 
-        delegate Stream Extractor(SwfEntry entry);
+        delegate Stream Extractor (SwfEntry entry);
 
-        public override Stream OpenEntry(ArcFile arc, Entry entry)
+        public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
             var swent = (SwfEntry)entry;
 
             Extractor extract;
-            if (!ExtractMap.TryGetValue(swent.Chunk.Type, out extract))
+            if (!ExtractMap.TryGetValue (swent.Chunk.Type, out extract))
                 extract = ExtractChunk;
-            return extract(swent);
+            return extract (swent);
         }
 
-        public override IImageDecoder OpenImage(ArcFile arc, Entry entry)
+        public override IImageDecoder OpenImage (ArcFile arc, Entry entry)
         {
             var swent = (SwfEntry)entry;
             ImageFormat format = null;
@@ -445,17 +485,17 @@ namespace GameRes.Formats.Macromedia
                     format = new SwfJpeg3Format();
                     break;
                 default:
-                    return base.OpenImage(arc, entry);
+                    return base.OpenImage (arc, entry);
             }
 
-            var stream = new BinMemoryStream(swent.Chunk.Data);
-            var info = format.ReadMetaData(stream);
+            var stream = new BinMemoryStream (swent.Chunk.Data);
+            var info = format.ReadMetaData (stream);
             if (info == null)
-                return base.OpenImage(arc, entry);
+                return base.OpenImage (arc, entry);
 
             stream.Position = 0;
-            var image = format.Read(stream, info);
-            return new ImageFormatDecoder(stream, format, info, image);
+            var image = format.Read (stream, info);
+            return new ImageFormatDecoder (stream, format, info, image);
         }
     }
 
@@ -471,7 +511,7 @@ namespace GameRes.Formats.Macromedia
         public ImageMetaData Info { get { return m_info; } }
         public ImageData Image { get { return m_data; } }
 
-        public ImageFormatDecoder(Stream input, ImageFormat format, ImageMetaData info, ImageData data)
+        public ImageFormatDecoder (Stream input, ImageFormat format, ImageMetaData info, ImageData data)
         {
             m_input  = input;
             m_format = format;
@@ -497,9 +537,9 @@ namespace GameRes.Formats.Macromedia
             Signatures = new uint[0];
         }
 
-        public override void Write(Stream file, ImageData bitmap)
+        public override void Write (Stream file, ImageData bitmap)
         {
-            throw new NotImplementedException("SWF image writing not supported");
+            throw new NotImplementedException ("SWF image writing not supported");
         }
     }
 
@@ -508,31 +548,84 @@ namespace GameRes.Formats.Macromedia
         public override string Tag { get { return "JPEG/SWF"; } }
         public override string Description { get { return "SWF JPEG image"; } }
 
-        public override ImageMetaData ReadMetaData(IBinaryStream file)
+        public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
-            // For DefineBitsJPEG, skip the ID and find JPEG
-            file.Position = 2;
-            var data = file.ReadBytes((int)(file.Length - 2));
-            int jpegPos = JpegUtility.FindSignature(data);
-            if (jpegPos < 0)
-                return null;
+            file.Position = 2; // Skip ID
+            var imageData = file.ReadBytes((int)(file.Length - 2));
 
-            using (var jpeg = new BinMemoryStream(data, jpegPos, data.Length - jpegPos))
+            byte[] completeJpeg = CombineJpegData (imageData);
+
+            using (var jpeg = new BinMemoryStream (completeJpeg))
             {
-                return ImageFormat.Jpeg.ReadMetaData(jpeg);
+                return ImageFormat.Jpeg.ReadMetaData (jpeg);
             }
         }
 
-        public override ImageData Read(IBinaryStream file, ImageMetaData info)
+        public override ImageData Read (IBinaryStream file, ImageMetaData info)
         {
-            file.Position = 2;
-            var data = file.ReadBytes((int)(file.Length - 2));
-            int jpegPos = JpegUtility.FindSignature(data);
+            file.Position = 2; // Skip ID
+            var imageData = file.ReadBytes((int)(file.Length - 2));
 
-            using (var jpeg = new BinMemoryStream(data, jpegPos, data.Length - jpegPos))
+            // Combine with JPEG tables if available
+            byte[] completeJpeg = CombineJpegData (imageData);
+
+            using (var jpeg = new BinMemoryStream (completeJpeg))
             {
-                return ImageFormat.Jpeg.Read(jpeg, info);
+                return ImageFormat.Jpeg.Read (jpeg, info);
             }
+        }
+
+        private byte[] CombineJpegData (byte[] imageData)
+        {
+            var jpegTables = SwfOpener.GetJpegTables();
+
+            // If no JPEG tables stored, try to find JPEG signature in the data itself
+            if (jpegTables == null || jpegTables.Length < 4)
+            {
+                int jpegPos = JpegUtility.FindSignature (imageData);
+                if (jpegPos >= 0)
+                    return imageData.Skip (jpegPos).ToArray();
+                return imageData;
+            }
+
+            // Find where the JPEG tables end (look for FFD9 - End of Image marker)
+            int tablesEnd = -1;
+            for (int i = 2; i < jpegTables.Length - 1; i++)
+            {
+                if (jpegTables[i] == 0xFF && jpegTables[i + 1] == 0xD9)
+                {
+                    tablesEnd = i;
+                    break;
+                }
+            }
+
+            if (tablesEnd < 0)
+                tablesEnd = jpegTables.Length;
+
+             int imageStart = 0;
+            for (int i = 0; i < imageData.Length - 1; i++)
+            {
+                if (imageData[i] == 0xFF && imageData[i + 1] == 0xD8)
+                {
+                    imageStart = i + 2; // Skip the SOI marker
+                    break;
+                }
+            }
+
+            var result = new byte[tablesEnd + (imageData.Length - imageStart)];
+            Buffer.BlockCopy (jpegTables, 2, result, 0, tablesEnd - 2); // Skip tables SOI
+            Buffer.BlockCopy (imageData, imageStart, result, tablesEnd - 2, imageData.Length - imageStart);
+
+             if (result[0] != 0xFF || result[1] != 0xD8)
+            {
+                var withHeader = new byte[result.Length + 2];
+                withHeader[0] = 0xFF;
+                withHeader[1] = 0xD8;
+                Buffer.BlockCopy (result, 0, withHeader, 2, result.Length);
+                return withHeader;
+            }
+
+            return result;
         }
     }
 
@@ -541,27 +634,27 @@ namespace GameRes.Formats.Macromedia
         public override string Tag { get { return "JPEG2/SWF"; } }
         public override string Description { get { return "SWF JPEG2 image"; } }
 
-        public override ImageMetaData ReadMetaData(IBinaryStream file)
+        public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
             file.Position = 2; // Skip ID
             var data = file.ReadBytes((int)(file.Length - 2));
-            var normalized = JpegUtility.NormalizeJPEG(data);
+            var normalized = JpegUtility.NormalizeJPEG (data);
 
-            using (var jpeg = new BinMemoryStream(normalized))
+            using (var jpeg = new BinMemoryStream (normalized))
             {
-                return ImageFormat.Jpeg.ReadMetaData(jpeg);
+                return ImageFormat.Jpeg.ReadMetaData (jpeg);
             }
         }
 
-        public override ImageData Read(IBinaryStream file, ImageMetaData info)
+        public override ImageData Read (IBinaryStream file, ImageMetaData info)
         {
             file.Position = 2; // Skip ID
             var data = file.ReadBytes((int)(file.Length - 2));
-            var normalized = JpegUtility.NormalizeJPEG(data);
+            var normalized = JpegUtility.NormalizeJPEG (data);
 
-            using (var jpeg = new BinMemoryStream(normalized))
+            using (var jpeg = new BinMemoryStream (normalized))
             {
-                return ImageFormat.Jpeg.Read(jpeg, info);
+                return ImageFormat.Jpeg.Read (jpeg, info);
             }
         }
     }
@@ -571,33 +664,33 @@ namespace GameRes.Formats.Macromedia
         public override string Tag { get { return "JPEG3/SWF"; } }
         public override string Description { get { return "SWF JPEG3 image with alpha"; } }
 
-        public override ImageMetaData ReadMetaData(IBinaryStream file)
+        public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
             file.Position = 2; // Skip ID
             int jpegLength = file.ReadInt32();
-            var data = file.ReadBytes(jpegLength);
-            var normalized = JpegUtility.NormalizeJPEG(data);
+            var data = file.ReadBytes (jpegLength);
+            var normalized = JpegUtility.NormalizeJPEG (data);
 
-            using (var jpeg = new BinMemoryStream(normalized))
+            using (var jpeg = new BinMemoryStream (normalized))
             {
-                var info = ImageFormat.Jpeg.ReadMetaData(jpeg);
+                var info = ImageFormat.Jpeg.ReadMetaData (jpeg);
                 if (info != null)
                     info.BPP = 32; // Has alpha channel
                 return info;
             }
         }
 
-        public override ImageData Read(IBinaryStream file, ImageMetaData info)
+        public override ImageData Read (IBinaryStream file, ImageMetaData info)
         {
             file.Position = 2; // Skip ID
             int jpegLength = file.ReadInt32();
-            var jpegData = file.ReadBytes(jpegLength);
-            var normalized = JpegUtility.NormalizeJPEG(jpegData);
+            var jpegData = file.ReadBytes (jpegLength);
+            var normalized = JpegUtility.NormalizeJPEG (jpegData);
 
             BitmapSource image;
-            using (var jpeg = new BinMemoryStream(normalized))
+            using (var jpeg = new BinMemoryStream (normalized))
             {
-                var jpegImage = ImageFormat.Jpeg.Read(jpeg, info);
+                var jpegImage = ImageFormat.Jpeg.Read (jpeg, info);
                 image = jpegImage.Bitmap;
             }
 
@@ -605,31 +698,31 @@ namespace GameRes.Formats.Macromedia
             int alphaSize = (int)(file.Length - file.Position);
             if (alphaSize > 0)
             {
-                var alphaData = file.ReadBytes(alphaSize);
-                using (var alphaStream = new BinMemoryStream(alphaData))
-                using (var zstream = new ZLibStream(alphaStream, CompressionMode.Decompress))
+                var alphaData = file.ReadBytes (alphaSize);
+                using (var alphaStream = new BinMemoryStream (alphaData))
+                using (var zstream = new ZLibStream (alphaStream, CompressionMode.Decompress))
                 {
                     var alpha = new byte[info.Width * info.Height];
-                    zstream.Read(alpha, 0, alpha.Length);
+                    zstream.Read (alpha, 0, alpha.Length);
 
                     // Convert to BGRA32 if needed
                     if (image.Format != PixelFormats.Bgr32)
-                        image = new FormatConvertedBitmap(image, PixelFormats.Bgr32, null, 0);
+                        image = new FormatConvertedBitmap (image, PixelFormats.Bgr32, null, 0);
 
                     int stride = (int)info.Width * 4;
                     var pixels = new byte[stride * info.Height];
-                    image.CopyPixels(pixels, stride, 0);
+                    image.CopyPixels (pixels, stride, 0);
 
                     // Apply alpha
                     int srcAlpha = 0;
                     for (int dst = 3; dst < pixels.Length; dst += 4)
                         pixels[dst] = alpha[srcAlpha++];
 
-                    return ImageData.Create(info, PixelFormats.Bgra32, null, pixels, stride);
+                    return ImageData.Create (info, PixelFormats.Bgra32, null, pixels, stride);
                 }
             }
 
-            return new ImageData(image, info);
+            return new ImageData (image, info);
         }
     }
 
@@ -639,7 +732,7 @@ namespace GameRes.Formats.Macromedia
         public override string Description { get { return "SWF Lossless image"; } }
         protected virtual bool HasAlpha { get { return false; } }
 
-        public override ImageMetaData ReadMetaData(IBinaryStream file)
+        public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
             file.Position = 0; // Chunk data includes everything
             file.ReadUInt16(); // ID
@@ -659,18 +752,18 @@ namespace GameRes.Formats.Macromedia
             return new ImageMetaData { Width = width, Height = height, BPP = bpp };
         }
 
-        public override ImageData Read(IBinaryStream file, ImageMetaData info)
+        public override ImageData Read (IBinaryStream file, ImageMetaData info)
         {
             file.Position = 2; // Skip ID
-            byte format = file.ReadUInt8();
-            ushort width = file.ReadUInt16();
-            ushort height = file.ReadUInt16();
+            byte format   = file.ReadUInt8 ();
+            ushort width  = file.ReadUInt16 ();
+            ushort height = file.ReadUInt16 ();
 
             int colors = 0;
             if (format == 3)
-                colors = file.ReadUInt8() + 1;
+                colors = file.ReadUInt8 () + 1;
 
-            using (var zstream = new ZLibStream(file.AsStream, CompressionMode.Decompress, true))
+            using (var zstream = new ZLibStream (file.AsStream, CompressionMode.Decompress, true))
             {
                 PixelFormat pixelFormat;
                 BitmapPalette palette = null;
@@ -680,7 +773,7 @@ namespace GameRes.Formats.Macromedia
                     case 3:
                         pixelFormat = PixelFormats.Indexed8;
                         var palFormat = HasAlpha ? PaletteFormat.RgbA : PaletteFormat.RgbX;
-                        palette = ReadPalette(zstream, colors, palFormat);
+                        palette = ReadPalette (zstream, colors, palFormat);
                         break;
                     case 4:
                         pixelFormat = PixelFormats.Bgr565;
@@ -689,45 +782,75 @@ namespace GameRes.Formats.Macromedia
                         pixelFormat = HasAlpha ? PixelFormats.Bgra32 : PixelFormats.Bgr32;
                         break;
                     default:
-                        throw new InvalidFormatException();
+                        throw new InvalidFormatException ();
                 }
 
-                int stride = (int)info.Width * (info.BPP / 8);
-                var pixels = new byte[(int)info.Height * stride];
+                int bytesPerPixel = format == 3 ? 1 : (format == 4 ? 2 : 4);
+                int stride = (int)width * bytesPerPixel;
 
-                if (format == 3) // Indexed
+                // For format 5, SWF uses ARGB but we need BGRA
+                if (format == 5)
                 {
-                    int rowSize = (int)info.Width;
+                    // Each scanline is aligned to 4-byte boundary in SWF
+                    int alignedStride = (stride + 3) & ~3;
+                    var tempBuffer = new byte[alignedStride * height];
+
+                    int totalRead = 0;
+                    while (totalRead < tempBuffer.Length)
+                    {
+                        int bytesRead = zstream.Read (tempBuffer, totalRead, tempBuffer.Length - totalRead);
+                        if (bytesRead == 0)
+                            break;
+                        totalRead += bytesRead;
+                    }
+
+                    // Convert from ARGB to BGRA
+                    var pixels = new byte[stride * height];
+                    for (int y = 0; y < height; y++)
+                    {
+                        int srcOffset = y * alignedStride;
+                        int dstOffset = y * stride;
+
+                        for (int x = 0; x < width; x++)
+                        {
+                            int srcIdx = srcOffset + x * 4;
+                            int dstIdx = dstOffset + x * 4;
+
+                            byte a = tempBuffer[srcIdx];
+                            byte r = tempBuffer[srcIdx + 1];
+                            byte g = tempBuffer[srcIdx + 2];
+                            byte b = tempBuffer[srcIdx + 3];
+
+                            pixels[dstIdx] = b;
+                            pixels[dstIdx + 1] = g;
+                            pixels[dstIdx + 2] = r;
+                            pixels[dstIdx + 3] = a;
+                        }
+                    }
+
+                    return ImageData.Create (info, pixelFormat, palette, pixels);
+                }
+                else if (format == 3) // Indexed
+                {
+                    int rowSize = (int)width;
                     int alignedRowSize = (rowSize + 3) & ~3;
+                    var pixels = new byte[rowSize * height];
                     var rowBuffer = new byte[alignedRowSize];
 
-                    for (int y = 0; y < info.Height; y++)
+                    for (int y = 0; y < height; y++)
                     {
-                        zstream.Read(rowBuffer, 0, alignedRowSize);
-                        Buffer.BlockCopy(rowBuffer, 0, pixels, y * rowSize, rowSize);
+                        zstream.Read (rowBuffer, 0, alignedRowSize);
+                        Buffer.BlockCopy (rowBuffer, 0, pixels, y * rowSize, rowSize);
                     }
-                }
-                else
-                {
-                    zstream.Read(pixels, 0, pixels.Length);
-                }
 
-                if (format == 5) // 32-bit ARGB to BGRA
-                {
-                    for (int i = 0; i < pixels.Length; i += 4)
-                    {
-                        byte a = pixels[i];
-                        byte r = pixels[i + 1];
-                        byte g = pixels[i + 2];
-                        byte b = pixels[i + 3];
-                        pixels[i] = b;
-                        pixels[i + 1] = g;
-                        pixels[i + 2] = r;
-                        pixels[i + 3] = a;
-                    }
+                    return ImageData.Create (info, pixelFormat, palette, pixels);
                 }
-
-                return ImageData.Create(info, pixelFormat, palette, pixels);
+                else // format == 4
+                {
+                    var pixels = new byte[stride * height];
+                    zstream.Read (pixels, 0, pixels.Length);
+                    return ImageData.Create (info, pixelFormat, palette, pixels);
+                }
             }
         }
     }
@@ -745,7 +868,7 @@ namespace GameRes.Formats.Macromedia
 
     internal static class JpegUtility
     {
-        public static int FindSignature(byte[] data, int startPos = 0)
+        public static int FindSignature (byte[] data, int startPos = 0)
         {
             while (startPos < data.Length - 1)
             {
@@ -756,7 +879,7 @@ namespace GameRes.Formats.Macromedia
             return -1;
         }
 
-        public static byte[] NormalizeJPEG(byte[] jpegData)
+        public static byte[] NormalizeJPEG (byte[] jpegData)
         {
             // Find the first JPEG tables final FFD9 (End of Image marker)
             int firstFFD9 = -1;
@@ -793,8 +916,8 @@ namespace GameRes.Formats.Macromedia
             int totalLength = tablesLength + imageDataLength;
 
             byte[] result = new byte[totalLength];
-            Buffer.BlockCopy(jpegData, 0, result, 0, tablesLength);
-            Buffer.BlockCopy(jpegData, imageDataStart, result, tablesLength, imageDataLength);
+            Buffer.BlockCopy (jpegData, 0, result, 0, tablesLength);
+            Buffer.BlockCopy (jpegData, imageDataStart, result, tablesLength, imageDataLength);
 
             return result;
         }
@@ -911,7 +1034,7 @@ namespace GameRes.Formats.Macromedia
 
         List<SwfChunk>  m_chunks = new List<SwfChunk>();
 
-        public List<SwfChunk> Parse ()
+        public List<SwfChunk> Parse()
         {
             ReadDimensions();
             m_bits.Reset();
@@ -924,27 +1047,32 @@ namespace GameRes.Formats.Macromedia
                 var chunk = ReadChunk();
                 if (null == chunk)
                     break;
+
+                // Store JPEG tables globally for DefineBitsJPEG tags
+                if (chunk.Type == Types.JpegTables)
+                    SwfOpener.SetJpegTables (chunk.Data);
+
                 m_chunks.Add (chunk);
 
                 if (chunk.Type == Types.DefineSprite)
-                    ReadSpriteContents(chunk);
+                    ReadSpriteContents (chunk);
             }
             return m_chunks;
         }
 
-        void ReadSpriteContents(SwfChunk spriteChunk)
+        void ReadSpriteContents (SwfChunk spriteChunk)
         {
-            using (var spriteData = new BinMemoryStream(spriteChunk.Data))
+            using (var spriteData = new BinMemoryStream (spriteChunk.Data))
             {
                 spriteData.Position = 4;
 
-                using (var spriteBits = new MsbBitStream(spriteData, true))
+                using (var spriteBits = new MsbBitStream (spriteData, true))
                 {
 
                     var originalInput = m_input;
                     var originalBits = m_bits;
 
-                    m_input = new BinaryStream(spriteData, m_input.Name);
+                    m_input = new BinaryStream (spriteData, m_input.Name);
                     m_bits = spriteBits;
 
                     try
@@ -954,7 +1082,7 @@ namespace GameRes.Formats.Macromedia
                             var chunk = ReadChunk();
                             if (null == chunk)
                                 break;
-                            m_chunks.Add(chunk);
+                            m_chunks.Add (chunk);
                             if (chunk.Type == Types.End)
                                 break;
                         }

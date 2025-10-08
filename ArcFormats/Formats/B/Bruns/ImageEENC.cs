@@ -17,11 +17,12 @@ namespace GameRes.Formats.Bruns
     [Export(typeof(ImageFormat))]
     public class EencFormat : ImageFormat
     {
-        public override string         Tag { get { return "EENC"; } }
+        public override string         Tag { get { return "EENC/IMAGE"; } }
         public override string Description { get { return "Bruns system encrypted image"; } }
-        public override uint     Signature { get { return 0x434E4545; } } // 'EENC'
+        public override uint     Signature { get { return  0x434E4545; } } // 'EENC'
+        public override bool      CanWrite { get { return  true; } }
 
-        static readonly uint EencKey =  0xDEADBEEF;
+        internal static readonly uint EencKey =  0xDEADBEEF;
 
         public EencFormat ()
         {
@@ -33,7 +34,9 @@ namespace GameRes.Formats.Bruns
         {
             var header = stream.ReadHeader (8);
             bool compressed = 'Z' == header[3];
-            uint key = header.ToUInt32 (4) ^ EencKey;
+            uint size = header.ToUInt32 (4);
+            uint key = size ^ EencKey;
+
             Stream input = new StreamRegion (stream.AsStream, 8, true);
             try
             {
@@ -87,7 +90,53 @@ namespace GameRes.Formats.Bruns
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new System.NotImplementedException ("EencFormat.Write not implemented");
+            ImageFormat targetFormat = ImageFormat.Png;
+            bool useCompression = true;
+            string ext = Path.GetExtension (file is FileStream fs ? fs.Name : "").ToLowerInvariant();
+            if (ext == ".png") useCompression = false;
+
+            byte[] originalData;
+            using (var imageBuffer = new MemoryStream())
+            {
+                targetFormat.Write (imageBuffer, image);
+                originalData = imageBuffer.ToArray();
+            }
+            WriteEncrypted (file, originalData, useCompression);
+        }
+
+        public static void WriteEncrypted (Stream file, byte[] data, bool compress)
+        {
+            uint originalSize = (uint)data.Length;
+
+            file.WriteByte ((byte)'E');
+            file.WriteByte ((byte)'E');
+            file.WriteByte ((byte)'N');
+            file.WriteByte (compress ? (byte)'Z' : (byte)'C');
+
+            var sizeBytes = BitConverter.GetBytes (originalSize);
+            file.Write (sizeBytes, 0, 4);
+
+            byte[] dataToEncrypt = data;
+            if (compress)
+            {
+                using (var compressedBuffer = new MemoryStream())
+                {
+                    using (var zlibStream = new ZLibStream (compressedBuffer, CompressionMode.Compress, true))
+                    {
+                        zlibStream.Write (data, 0, data.Length);
+                    }
+                    dataToEncrypt = compressedBuffer.ToArray();
+                }
+            }
+
+            uint key = originalSize ^ EencKey;
+            for (int i = 0; i < dataToEncrypt.Length; ++i)
+            {
+                int pos = i & 3;
+                dataToEncrypt[i] ^= (byte)(key >> (pos << 3));
+            }
+
+            file.Write (dataToEncrypt, 0, dataToEncrypt.Length);
         }
     }
 
