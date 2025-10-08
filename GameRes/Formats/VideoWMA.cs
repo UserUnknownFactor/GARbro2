@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.ComponentModel.Composition;
 using System.Windows.Media;
+using System.Linq;
 
 namespace GameRes
 {
@@ -71,7 +72,9 @@ namespace GameRes
             if (!CompareGuid(guid, ASF_HEADER_GUID))
                 return null;
 
-            if (File.Exists(info.FileName))
+            if (File.Exists(info.FileName) &&
+                Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
             {
                 file.Dispose();
                 return new VideoData(info);

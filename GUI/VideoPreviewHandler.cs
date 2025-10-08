@@ -3,6 +3,7 @@ using System.Windows;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -39,6 +40,7 @@ namespace GARbro.GUI
 
         private const uint MF_VERSION = 0x00020070; // Version 2.70
         private const uint MFSTARTUP_FULL = 0;
+        private const uint DISPLAY_TIMER_MS = 100;
 
         #endregion
 
@@ -82,7 +84,7 @@ namespace GARbro.GUI
             Children.Add (mediaPlayer);
 
             positionTimer = new DispatcherTimer();
-            positionTimer.Interval = TimeSpan.FromMilliseconds (100);
+            positionTimer.Interval = TimeSpan.FromMilliseconds (DISPLAY_TIMER_MS);
             positionTimer.Tick += PositionTimer_Tick;
 
             Unloaded += (s, e) => CleanupVideoAsync();
@@ -181,18 +183,19 @@ namespace GARbro.GUI
 
             uint width = videoData.Width > 0 ? videoData.Width : (uint)mediaPlayer.NaturalVideoWidth;
             uint height = videoData.Height > 0 ? videoData.Height : (uint)mediaPlayer.NaturalVideoHeight;
+            double fps = videoData.FrameRate > 0 ? videoData.FrameRate : calculatedFps;
 
             if (width == 0 || height == 0)
             {
                 CurrentCodecInfo = Localization.Format ("VideoCodecInfo",
                     video_name, videoData.Codec, "?", "?", 
-                    videoData.FrameRate > 0 ? videoData.FrameRate.ToString("F1") : "?");
+                    fps > 0 ? fps.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : "?");
             }
             else
             {
                 CurrentCodecInfo = Localization.Format ("VideoCodecInfo",
                     video_name, videoData.Codec, width, height,
-                    videoData.FrameRate > 0 ? videoData.FrameRate.ToString("F1") : "?");
+                    fps > 0 ? fps.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : "?");
             }
         }
 
@@ -257,13 +260,43 @@ namespace GARbro.GUI
                     }
                     try
                     {
-                        // WPF can create temporary cache for buffering here
+                        // WPF can create temporary cache for buffering there
                         var wpfFolder = Path.Combine (Path.GetTempPath(), "WPF");
                         if (Directory.Exists (wpfFolder))
                             Directory.Delete (wpfFolder, true);
                     }
                     catch { }
                 });
+            }
+        }
+
+        private double calculatedFps = 0;
+        private int frameCount = 0;
+        private DateTime lastFpsCalc = DateTime.Now;
+        private TimeSpan lastVideoPosition = TimeSpan.Zero;
+        private DateTime lastInfoUpdate = DateTime.Now;
+
+        private void OnCompositionTargetRendering(object sender, EventArgs e)
+        {
+            if (!IsPlaying || mediaPlayer.Position == lastVideoPosition)
+                return;
+
+            frameCount++;
+            lastVideoPosition = mediaPlayer.Position;
+
+            var elapsed = (DateTime.Now - lastFpsCalc).TotalSeconds;
+
+            if (elapsed >= 1.0) 
+            {
+                calculatedFps = Math.Round(frameCount / elapsed * 10) / 10.0;
+                frameCount = 0;
+                lastFpsCalc = DateTime.Now;
+            }
+
+            if ((DateTime.Now - lastInfoUpdate).TotalSeconds >= 5.0 && calculatedFps > 0)
+            {
+                lastInfoUpdate = DateTime.Now;
+                UpdateCodecInfo(currentVideo);
             }
         }
 
@@ -274,6 +307,7 @@ namespace GARbro.GUI
                 currentVideo.Width = (uint)mediaPlayer.NaturalVideoWidth;
                 currentVideo.Height = (uint)mediaPlayer.NaturalVideoHeight;
                 UpdateCodecInfo (currentVideo);
+                CompositionTarget.Rendering += OnCompositionTargetRendering;
             }
 
             SetVideoStatus (CurrentCodecInfo);
@@ -334,6 +368,7 @@ namespace GARbro.GUI
 
         public void Stop ()
         {
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
             mediaPlayer.Stop();
             mediaPlayer.Position = TimeSpan.Zero;
             IsPlaying = false;

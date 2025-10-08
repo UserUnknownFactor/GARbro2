@@ -42,11 +42,17 @@ namespace GameRes
         //private static readonly uint MOVI_ID = 0x69766F6D; // "movi"
         //private static readonly uint JUNK_ID = 0x4B4E554A; // "JUNK"
 
+        public AviFormat ()
+        {
+            Extensions = new string[] { "avi" };
+        }
+
         public override VideoData Read (IBinaryStream file, VideoMetaData info)
         {
-            info.CommonExtension = "avi";
-
-            if (File.Exists (info.FileName)) {
+            if (File.Exists (info.FileName) &&
+                Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
+            {
                 // real file
                 file.Dispose();
                 return new VideoData (info);

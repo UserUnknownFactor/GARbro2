@@ -17,19 +17,19 @@ namespace GameRes
         public uint Height { get; set; }
 
         /// <summary>Video duration in milliseconds.</summary>
-        public long Duration { get; set; }
+        public virtual long Duration { get; set; }
 
         /// <summary>Video frame rate (frames per second).</summary>
-        public double FrameRate { get; set; }
+        public virtual double FrameRate { get; set; }
 
         /// <summary>Video bitrate in bits per second.</summary>
-        public int BitRate { get; set; }
+        public virtual int BitRate { get; set; }
 
         /// <summary>Video codec name.</summary>
-        public string Codec { get; set; }
+        public virtual string Codec { get; set; }
 
         /// <summary>Audio codec name, if present.</summary>
-        public string AudioCodec { get; set; }
+        public virtual string AudioCodec { get; set; }
 
         /// <summary>Video source file name, if any.</summary>
         public string FileName { get; set; }
@@ -53,15 +53,16 @@ namespace GameRes
         private   Stream m_stream = null;
         private string m_tempFile = null;
 
-        public uint          Width { get; set; }
-        public uint         Height { get; set; }
-        public long       Duration { get; set; }
-        public double    FrameRate { get; set; }
-        public string        Codec { get; set; }
-        public bool       HasAudio { get; set; }
-        public string     FileName { get; set; }
-        public string     TempFile { get { return m_tempFile; } }
-        public Stream       Stream { get { return m_stream; } }
+        public               uint Width { get; set; }
+        public              uint Height { get; set; }
+        public            long Duration { get; set; }
+        public virtual double FrameRate { get; set; }
+        public virtual     string Codec { get; set; }
+        public virtual    bool HasAudio { get; set; }
+
+        public string FileName { get; set; }
+        public string TempFile { get { return m_tempFile; } }
+        public Stream Stream { get { return m_stream; } }
 
         public VideoData(VideoMetaData meta)
         {

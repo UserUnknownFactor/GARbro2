@@ -28,7 +28,7 @@ namespace GameRes
         public override bool      CanWrite { get { return  false; } }
 
         // EBML element IDs (as they appear in Big-Endian in the file)
-#pragma warning disable CS0414
+        #pragma warning disable CS0414
         private static readonly uint EBML_ID = 0x1A45DFA3;
         //private static readonly uint DOCTYPE_ID = 0x4282;
         private static readonly uint SEGMENT_ID = 0x18538067;
@@ -43,7 +43,7 @@ namespace GameRes
         private static readonly byte CODEC_ID_ID = 0x86;
         private static readonly ushort DURATION_ID = 0x4489;
         private static readonly uint TIMECODE_SCALE_ID = 0x2AD7B1;
-#pragma warning restore
+        #pragma warning restore
 
         public WebMFormat()
         {
@@ -52,7 +52,9 @@ namespace GameRes
 
         public override VideoData Read (IBinaryStream file, VideoMetaData info)
         {
-            if (File.Exists (info.FileName))
+            if (File.Exists (info.FileName) &&
+                Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
             {
                 // real file
                 file.Dispose();

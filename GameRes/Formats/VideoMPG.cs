@@ -27,9 +27,17 @@ namespace GameRes
         public override uint     Signature { get { return  0; } }
         public override bool      CanWrite { get { return  false; } }
 
+        public MpgFormat ()
+        {
+            Extensions = new string[] { "mpg" };
+        }
+
         public override VideoData Read (IBinaryStream file, VideoMetaData info)
         {
-            if (File.Exists (info.FileName)) {
+            if (File.Exists (info.FileName) &&
+                Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
+            {
                 file.Dispose();
                 return new VideoData (info);
             }

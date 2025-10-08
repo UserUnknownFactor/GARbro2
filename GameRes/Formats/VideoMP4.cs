@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.ComponentModel.Composition;
 using System.Windows.Media;
+using System.Linq;
 
 namespace GameRes
 {
@@ -11,7 +12,7 @@ namespace GameRes
     {
         public override string         Tag { get { return "MP4"; } }
         public override string Description { get { return "MPEG-4 Video"; } }
-        public override uint     Signature { get { return  0; } } // "ftyp"
+        public override uint     Signature { get { return  0; } }
         public override bool      CanWrite { get { return  false; } }
 
         // MP4 box types
@@ -45,7 +46,10 @@ namespace GameRes
             if (type != FTYP)
                 return null;
 
-            if (File.Exists (info.FileName)) {
+            if (File.Exists (info.FileName) &&
+                Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
+            {
                 // real file
                 file.Dispose();
                 return new VideoData (info);
