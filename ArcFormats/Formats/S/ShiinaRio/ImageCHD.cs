@@ -15,9 +15,9 @@ namespace GameRes.Formats.Forest
     [Export(typeof(ImageFormat))]
     public class ChdFormat : ImageFormat
     {
-        public override string         Tag { get { return "CHD"; } }
+        public override string         Tag { get { return "SR/CHD"; } }
         public override string Description { get { return "Forest image format"; } }
-        public override uint     Signature { get { return 0x444843; } } // 'CHD'
+        public override uint     Signature { get { return  0x444843; } } // 'CHD'
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {

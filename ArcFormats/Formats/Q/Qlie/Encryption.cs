@@ -7,14 +7,13 @@ namespace GameRes.Formats.Qlie
     internal interface IEncryption
     {
         bool IsUnicode { get; }
-
         IndexLayout IndexLayout { get; }
-
+        byte[] PackKeyFile { get; set; }
         uint CalculateHash (byte[] data, int length);
-
         string DecryptName (byte[] name, int name_length);
-
         void DecryptEntry (byte[] data, int offset, int length, QlieEntry entry);
+        void EncryptName (byte[] name, int name_length);
+        void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry);
     }
 
     internal enum IndexLayout
@@ -26,18 +25,16 @@ namespace GameRes.Formats.Qlie
     internal abstract class QlieEncryption : IEncryption
     {
         public virtual bool IsUnicode => false;
-
         public virtual IndexLayout IndexLayout => IndexLayout.WithHash;
-
         /// <summary>
         /// Hash generated from the key data contained within archive index.
         /// </summary>
         public uint ArcKey { get; protected set; }
-
         /// <summary>
         /// Key used to decrypt names, usually same as ArcKey.
         /// </summary>
         public int NameKey { get; protected set; }
+        public byte[] PackKeyFile { get; set; }  // Shared pack keyfile
 
         public static IEncryption Create (ArcView file, Version version, byte[] arc_key)
         {
@@ -53,11 +50,30 @@ namespace GameRes.Formats.Qlie
                 throw new NotSupportedException ("Not supported QLIE archive version");
         }
 
+        public static IEncryption CreateForWriting (Version version, byte[] key_data, byte[] arc_key = null)
+        {
+            if (1 == version.Major)
+                return new EncryptionV1();
+            else if (2 == version.Major)
+                return new EncryptionV2();
+            else if (3 == version.Major && 1 == version.Minor)
+                return new EncryptionV3_1 (key_data);
+            else if (3 == version.Major && 0 == version.Minor)
+                return new EncryptionV3 (key_data, arc_key);
+            else
+                throw new NotSupportedException ("Not supported QLIE archive version");
+        }
+
         public abstract uint CalculateHash (byte[] data, int length);
-
         public abstract string DecryptName (byte[] name, int name_length);
-
         public abstract void DecryptEntry (byte[] data, int offset, int length, QlieEntry entry);
+
+        public virtual void EncryptName (byte[] name, int name_length)
+        {
+            DecryptName(name, name_length);
+        }
+
+        public abstract void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry);
     }
 
     internal class EncryptionV1 : QlieEncryption
@@ -109,12 +125,38 @@ namespace GameRes.Formats.Qlie
                 }
             }
         }
+
+        public override void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry)
+        {
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException ("offset");
+            if (length > data.Length || offset > data.Length - length)
+                throw new ArgumentOutOfRangeException ("length");
+            uint arc_key = ArcKey;
+
+            ulong hash = 0xA73C5F9DA73C5F9Dul;
+            ulong xor = arc_key ^ 0xFEC9753Eu;
+            xor |= xor << 32;
+            ulong prev = xor;
+            unsafe
+            {
+                fixed (byte* raw = data)
+                {
+                    ulong* encoded = (ulong*)(raw + offset);
+                    for (int i = 0; i < length / 8; ++i)
+                    {
+                        hash = MMX.PAddD (hash, 0xCE24F523CE24F523ul) ^ prev;
+                        prev = *encoded;
+                        *encoded++ = prev ^ hash;
+                    }
+                }
+            }
+        }
     }
 
     internal class EncryptionV2 : QlieEncryption
     {
         public override IndexLayout IndexLayout => m_layout;
-
         private IndexLayout m_layout;
 
         public EncryptionV2 (IndexLayout layout = IndexLayout.WithHash)
@@ -163,6 +205,33 @@ namespace GameRes.Formats.Qlie
                 }
             }
         }
+
+        public override void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry)
+        {
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException ("offset");
+            if (length > data.Length || offset > data.Length - length)
+                throw new ArgumentOutOfRangeException ("length");
+            uint arc_key = ArcKey;
+
+            ulong hash = 0xA73C5F9DA73C5F9Dul;
+            ulong xor = ((uint)length + arc_key) ^ 0xFEC9753Eu;
+            xor |= xor << 32;
+            ulong prev = xor;
+            unsafe
+            {
+                fixed (byte* raw = data)
+                {
+                    ulong* encoded = (ulong*)(raw + offset);
+                    for (int i = 0; i < length / 8; ++i)
+                    {
+                        hash = MMX.PAddD (hash, 0xCE24F523CE24F523ul) ^ prev;
+                        prev = *encoded;
+                        *encoded++ = prev ^ hash;
+                    }
+                }
+            }
+        }
     }
 
     internal class EncryptionV3 : EncryptionV2
@@ -172,7 +241,6 @@ namespace GameRes.Formats.Qlie
         /// null if not used.
         /// </summary>
         internal byte[] GameKeyData;
-
         internal bool GameKeyIsEmpty { get { return GameKeyData != null && GameKeyData.Length == 0; } }
 
         public EncryptionV3 (ArcView file, byte[] game_key)
@@ -180,6 +248,13 @@ namespace GameRes.Formats.Qlie
             GameKeyData = game_key;
             var key_data = file.View.ReadBytes (file.MaxOffset-0x41C, 0x100);
             ArcKey = CalculateHash (key_data, key_data.Length) & 0x0FFFFFFFu;
+            NameKey = (int)ArcKey;
+        }
+
+        public EncryptionV3 (byte[] key_data, byte[] game_key)
+        {
+            GameKeyData = game_key;
+            ArcKey = CalculateHash (key_data, Math.Min(key_data.Length, 256)) & 0x0FFFFFFFu;
             NameKey = (int)ArcKey;
         }
 
@@ -206,20 +281,23 @@ namespace GameRes.Formats.Qlie
 
         public override void DecryptEntry (byte[] data, int offset, int length, QlieEntry entry)
         {
-            var key_file = entry.KeyFile;
-            if (null == key_file || GameKeyIsEmpty)
+            if (null == PackKeyFile || GameKeyIsEmpty)
             {
                 base.DecryptEntry (data, offset, length, entry);
                 return;
             }
-            // play it safe with 'unsafe' sections
             if (offset < 0)
                 throw new ArgumentOutOfRangeException ("offset");
             if (length > data.Length || offset > data.Length - length)
                 throw new ArgumentOutOfRangeException ("length");
-
             if (length < 8)
                 return;
+
+            if (entry.EncryptionMethod == 2)
+            {
+                DecryptObfuscated(data, offset, length, entry);
+                return;
+            }
 
             var file_name = entry.RawName;
             uint hash = 0x85F532;
@@ -239,8 +317,8 @@ namespace GameRes.Formats.Qlie
                 seed ^= 0x453A;
 
             var mt = new QlieMersenneTwister (seed);
-            if (key_file != null)
-                mt.XorState (key_file);
+            if (PackKeyFile != null)
+                mt.XorState (PackKeyFile);
             if (GameKeyData != null)
                 mt.XorState (GameKeyData);
 
@@ -277,16 +355,250 @@ namespace GameRes.Formats.Qlie
                 }
             }
         }
+
+        public override void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry)
+        {
+            if (entry.EncryptionMethod == 0 || PackKeyFile == null)
+            {
+                base.EncryptEntry (data, offset, length, entry);
+                return;
+            }
+
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException ("offset");
+            if (length > data.Length || offset > data.Length - length)
+                throw new ArgumentOutOfRangeException ("length");
+            if (length < 8)
+                return;
+
+            if (entry.EncryptionMethod == 2)
+            {
+                EncryptObfuscated(data, offset, length, entry);
+                return;
+            }
+
+            var file_name = entry.RawName;
+            uint hash = 0x85F532;
+            uint seed = 0x33F641;
+
+            for (uint i = 0; i < file_name.Length; i++)
+            {
+                hash += (i & 0xFF) * file_name[i];
+                seed ^= hash;
+            }
+
+            seed += ArcKey ^ (7 * ((uint)length & 0xFFFFFF) + (uint)length
+                              + hash + (hash ^ (uint)length ^ 0x8F32DCu));
+            seed = 9 * (seed & 0xFFFFFF);
+
+            if (GameKeyData != null)
+                seed ^= 0x453A;
+
+            var mt = new QlieMersenneTwister (seed);
+            if (PackKeyFile != null)
+                mt.XorState (PackKeyFile);
+            if (GameKeyData != null)
+                mt.XorState (GameKeyData);
+
+            ulong[] table = new ulong[16];
+            for (int i = 0; i < table.Length; ++i)
+                table[i] = mt.Rand64();
+
+            for (int i = 0; i < 9; ++i)
+                mt.Rand();
+
+            ulong hash64 = mt.Rand64();
+            uint t = mt.Rand() & 0xF;
+            unsafe
+            {
+                fixed (byte* raw_data = &data[offset])
+                {
+                    ulong* data64 = (ulong*)raw_data;
+                    int qword_length = length / 8;
+                    for (int i = 0; i < qword_length; ++i)
+                    {
+                        hash64 = MMX.PAddD (hash64 ^ table[t], table[t]);
+                        ulong original = data64[i];
+                        data64[i] = original ^ hash64;
+                        hash64 = MMX.PAddB (hash64, original) ^ original;
+                        hash64 = MMX.PAddW (MMX.PSllD (hash64, 1), original);
+                        t = (t + 1) & 0xF;
+                    }
+                }
+            }
+        }
+
+        private void DecryptObfuscated(byte[] data, int offset, int length, QlieEntry entry)
+        {
+            var file_name = entry.RawName;
+            uint hash = 0x8845282;
+            uint seed = 0x4470769;
+
+            for (uint i = 0; i < file_name.Length; i++)
+            {
+                hash += (i & 0xFF) * file_name[i];
+                seed ^= hash;
+            }
+
+            seed = seed + (ArcKey ^ (13 * ((uint)length & 0xFFFFFF) + (uint)length
+                          + hash + (hash ^ (uint)length ^ 0x56E213)));
+            seed = 13 * (seed & 0xFFFFFF);
+
+            var key1 = GenerateObfuscatedKey(64, seed);
+            var key2 = CreateFileBasedKey(PackKeyFile);
+
+            unsafe
+            {
+                fixed (byte* pData = &data[offset])
+                fixed (byte* pKey1 = key1)
+                fixed (byte* pKey2 = key2)
+                {
+                    ulong* data64 = (ulong*)pData;
+                    ulong* key1_64 = (ulong*)pKey1;
+
+                    int qwords = length / 8;
+                    uint idx = (uint)(pKey1[32] & 0xD);
+                    idx = (8 * idx) & 0x7F;
+
+                    ulong hash64 = key1_64[3];
+
+                    for (int i = 0; i < qwords; i++)
+                    {
+                        ulong k1 = key1_64[(idx & 0xF) / 2];
+                        ulong k2 = *(ulong*)(pKey2 + 8 * (idx & 0x7F));
+                        ulong t = k1 ^ k2;
+
+                        hash64 = MMX.PAddD(hash64 ^ t, t);
+
+                        ulong d = data64[i] ^ hash64;
+                        data64[i] = d;
+
+                        hash64 = MMX.PAddB(hash64, d) ^ d;
+                        hash64 = MMX.PAddW(MMX.PSllD(hash64, 1), d);
+
+                        idx = (idx + 1) & 0x7F;
+                    }
+                }
+            }
+        }
+
+        private void EncryptObfuscated(byte[] data, int offset, int length, QlieEntry entry)
+        {
+            var file_name = entry.RawName;
+            uint hash = 0x8845282;
+            uint seed = 0x4470769;
+
+            for (uint i = 0; i < file_name.Length; i++)
+            {
+                hash += (i & 0xFF) * file_name[i];
+                seed ^= hash;
+            }
+
+            seed = seed + (ArcKey ^ (13 * ((uint)length & 0xFFFFFF) + (uint)length
+                          + hash + (hash ^ (uint)length ^ 0x56E213)));
+            seed = 13 * (seed & 0xFFFFFF);
+
+            var key1 = GenerateObfuscatedKey(64, seed);
+            var key2 = CreateFileBasedKey(PackKeyFile);
+
+            unsafe
+            {
+                fixed (byte* pData = &data[offset])
+                fixed (byte* pKey1 = key1)
+                fixed (byte* pKey2 = key2)
+                {
+                    ulong* data64 = (ulong*)pData;
+                    ulong* key1_64 = (ulong*)pKey1;
+
+                    int qwords = length / 8;
+                    uint idx = (uint)(pKey1[32] & 0xD);
+                    idx = (8 * idx) & 0x7F;
+
+                    ulong hash64 = key1_64[3];
+
+                    for (int i = 0; i < qwords; i++)
+                    {
+                        ulong k1 = key1_64[(idx & 0xF) / 2];
+                        ulong k2 = *(ulong*)(pKey2 + 8 * (idx & 0x7F));
+                        ulong t = k1 ^ k2;
+
+                        hash64 = MMX.PAddD(hash64 ^ t, t);
+
+                        ulong original = data64[i];
+                        data64[i] = original ^ hash64;
+
+                        hash64 = MMX.PAddB(hash64, original) ^ original;
+                        hash64 = MMX.PAddW(MMX.PSllD(hash64, 1), original);
+
+                        idx = (idx + 1) & 0x7F;
+                    }
+                }
+            }
+        }
+
+        private byte[] GenerateObfuscatedKey(int length, uint seed)
+        {
+            var key = new byte[length * 4];
+            uint current = seed;
+
+            for (int i = 0; i < length; i++)
+            {
+                ulong x = 0x8A77F473u * (ulong)(current ^ 0x8A77F473u);
+                current = (uint)((x >> 32) + x);
+                LittleEndian.Pack(current, key, i * 4);
+            }
+
+            return key;
+        }
+
+        private byte[] CreateFileBasedKey(byte[] keyFile)
+        {
+            var key = new byte[0x400];
+
+            for (int i = 0; i < 0x100; i++)
+            {
+                int value;
+                if ((i % 3) != 0)
+                    value = (i + 7) * -(i + 3);
+                else
+                    value = (i + 7) * (i + 3);
+
+                LittleEndian.Pack(value, key, i * 4);
+            }
+
+            if (keyFile != null && keyFile.Length >= 128)
+            {
+                int k = keyFile[49] % 73 + 128;
+                int l = keyFile[79] % 7 + 7;
+
+                for (int i = 0; i < key.Length; i++)
+                {
+                    k = (k + l) % keyFile.Length;
+                    key[i] ^= keyFile[k];
+                }
+            }
+
+            return key;
+        }
     }
 
     internal class EncryptionV3_1 : QlieEncryption
     {
         public override bool IsUnicode { get { return true; } }
+        private byte[] m_keyData;
 
         public EncryptionV3_1 (ArcView file)
         {
             var key_data = file.View.ReadBytes (file.MaxOffset-0x41C, 0x100);
+            m_keyData = key_data;
             ArcKey = CalculateHash (key_data, key_data.Length) & 0x0FFFFFFFu;
+            NameKey = (int)ArcKey;
+        }
+
+        public EncryptionV3_1 (byte[] key_data)
+        {
+            m_keyData = key_data;
+            ArcKey = CalculateHash (key_data, Math.Min(key_data.Length, 256)) & 0x0FFFFFFFu;
             NameKey = (int)ArcKey;
         }
 
@@ -322,11 +634,16 @@ namespace GameRes.Formats.Qlie
             int key = hash;
             for (int i = 0; i < char_count; ++i)
             {
-                key = hash + i + 8 * key;
+                key = (hash + i + 8 * key) & 0xFFFF;
                 name[i*2  ] ^= (byte)key;
                 name[i*2+1] ^= (byte)(key >> 8);
             }
             return Encoding.Unicode.GetString (name, 0, name_length);
+        }
+
+        public override void EncryptName (byte[] name, int name_length)
+        {
+            DecryptName (name, name_length);
         }
 
         public override void DecryptEntry (byte[] data, int offset, int length, QlieEntry entry)
@@ -347,6 +664,28 @@ namespace GameRes.Formats.Qlie
                         DecryptV1 (raw_data, length, entry);
                     else
                         DecryptV2 (raw_data, length, entry);
+                }
+            }
+        }
+
+        public override void EncryptEntry (byte[] data, int offset, int length, QlieEntry entry)
+        {
+            if (0 == entry.EncryptionMethod)
+                return;
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException ("offset");
+            if (length > data.Length || offset > data.Length - length)
+                throw new ArgumentOutOfRangeException ("length");
+            if (length < 8)
+                return;
+            unsafe
+            {
+                fixed (byte* raw_data = &data[offset])
+                {
+                    if (1 == entry.EncryptionMethod)
+                        EncryptV1 (raw_data, length, entry);
+                    else
+                        EncryptV2 (raw_data, length, entry);
                 }
             }
         }
@@ -381,7 +720,38 @@ namespace GameRes.Formats.Qlie
 
                 hash64 = MMX.PAddB (hash64, d) ^ d;
                 hash64 = MMX.PAddW (MMX.PSllD (hash64, 1), d);
+                k = (k + 2) & 0x1F;
+            }
+        }
 
+        unsafe void EncryptV1 (byte* data, int length, QlieEntry entry)
+        {
+            var file_name = entry.Name;
+            uint hash = 0x85F532;
+            uint seed = 0x33F641;
+
+            for (int i = 0; i < file_name.Length; i++)
+            {
+                hash += (uint)(file_name[i] << (i & 7));
+                seed ^= hash;
+            }
+
+            seed += ArcKey ^ (7 * ((uint)length & 0xFFFFFF) + (uint)length
+                              + hash + (hash ^ (uint)length ^ 0x8F32DCu));
+            seed = 9 * (seed & 0xFFFFFF);
+            var table = GenerateTable (0x20, seed);
+            ulong* data64 = (ulong*)data;
+            int qword_length = length / 8;
+            uint k = 2 * (table[0xD] & 0xF);
+            ulong hash64 = table[6] | (ulong)table[7] << 32;
+            for (int i = 0; i < qword_length; ++i)
+            {
+                ulong t = table[k] | (ulong)table[k+1] << 32;
+                hash64 = MMX.PAddD (hash64 ^ t, t);
+                ulong original = data64[i];
+                data64[i] = original ^ hash64;
+                hash64 = MMX.PAddB (hash64, original) ^ original;
+                hash64 = MMX.PAddW (MMX.PSllD (hash64, 1), original);
                 k = (k + 2) & 0x1F;
             }
         }
@@ -401,13 +771,15 @@ namespace GameRes.Formats.Qlie
             seed += ArcKey ^ (13 * ((uint)length & 0xFFFFFF) + (uint)length
                               + hash + (hash ^ (uint)length ^ 0x56E213u));
             seed = 13 * (seed & 0xFFFFFF);
+
             var table = GenerateTable (0x20, seed, 0x8A77F473u); // originally 0x40
-            var key_data = GenerateKeyData (entry.KeyFile);
+            var key_data = GenerateKeyData (PackKeyFile);
 
             ulong* data64 = (ulong*)data;
             int qword_length = length / 8;
             int k = (8 * ((int)table[8] & 0xD)) & 0x7F;
             ulong hash64 = table[6] | (ulong)table[7] << 32;
+
             for (int i = 0; i < qword_length; ++i)
             {
                 int t_index = 2 * (k & 0xF);
@@ -420,7 +792,42 @@ namespace GameRes.Formats.Qlie
 
                 hash64 = MMX.PAddB (hash64, d) ^ d;
                 hash64 = MMX.PAddW (MMX.PSllD (hash64, 1), d);
+                k = (k + 1) & 0x7F;
+            }
+        }
 
+        unsafe void EncryptV2 (byte* data, int length, QlieEntry entry)
+        {
+            var file_name = entry.Name;
+            uint hash = 0x86F7E2;
+            uint seed = 0x4437F1;
+
+            for (int i = 0; i < file_name.Length; i++)
+            {
+                hash += (uint)(file_name[i] << (i & 7));
+                seed ^= hash;
+            }
+
+            seed += ArcKey ^ (13 * ((uint)length & 0xFFFFFF) + (uint)length
+                              + hash + (hash ^ (uint)length ^ 0x56E213u));
+            seed = 13 * (seed & 0xFFFFFF);
+            var table = GenerateTable (0x20, seed, 0x8A77F473u);
+            var key_data = GenerateKeyData (PackKeyFile);
+
+            ulong* data64 = (ulong*)data;
+            int qword_length = length / 8;
+            int k = (8 * ((int)table[8] & 0xD)) & 0x7F;
+            ulong hash64 = table[6] | (ulong)table[7] << 32;
+            for (int i = 0; i < qword_length; ++i)
+            {
+                int t_index = 2 * (k & 0xF);
+                ulong t = table[t_index] | (ulong)table[t_index + 1] << 32;
+                t ^= LittleEndian.ToUInt64 (key_data, 8 * k);
+                hash64 = MMX.PAddD (hash64 ^ t, t);
+                ulong original = data64[i];
+                data64[i] = original ^ hash64;
+                hash64 = MMX.PAddB (hash64, original) ^ original;
+                hash64 = MMX.PAddW (MMX.PSllD (hash64, 1), original);
                 k = (k + 1) & 0x7F;
             }
         }

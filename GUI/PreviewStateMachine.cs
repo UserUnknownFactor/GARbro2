@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows;
@@ -497,19 +498,27 @@ namespace GARbro.GUI
         {
             if (_currentMediaType == MediaType.Video)
             {
-                if (_mainWindow._isAutoCycling || _mainWindow._isAutoPlaying)
+                if (_mainWindow._isAutoPlaying)
                 {
                     if (PlayNextVideo())
                         return;
-                    else if (_mainWindow._isAutoPlaying && !_mainWindow._isAutoCycling)
-                         _mainWindow.SetFileStatus (Localization.Format ("MsgReachedLast", Localization._T("Type_video") ));
+                    else if (!_mainWindow._isAutoCycling)
+                    {
+                        StopVideoPlayback();
+                        _mainWindow.SetFileStatus (Localization.Format ("MsgReachedLast", Localization._T ("Type_video")));
+                        return;
+                    }
                 }
-
+                else if (_mainWindow._isAutoCycling)
+                {
+                    _mainWindow._videoPreviewHandler.Restart();
+                    return;
+                }
                 StopVideoPlayback();
             }
         }
 
-        private bool PlayNextVideo()
+        private bool PlayNextVideo ()
         {
             int nextIndex = _mainWindow.GetNextFileIndex(
                 _mainWindow.CurrentDirectory.SelectedIndex,

@@ -217,6 +217,8 @@ namespace GameRes
         {
             using (var stream = OpenEntry (entry))
             {
+                if (stream == null)
+                    throw new ArgumentException ("ArcFile.OpenEntry mustn't return null");
                 long size;
                 var packed_entry = entry as PackedEntry;
                 if (stream.CanSeek)

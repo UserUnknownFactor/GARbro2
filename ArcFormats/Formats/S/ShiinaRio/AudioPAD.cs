@@ -8,9 +8,9 @@ namespace GameRes.Formats.ShiinaRio
     [Export(typeof(AudioFormat))]
     public class PadAudio : AudioFormat
     {
-        public override string         Tag { get { return "PAD"; } }
+        public override string         Tag { get { return "SR/PAD"; } }
         public override string Description { get { return "ShiinaRio compressed audio format"; } }
-        public override uint     Signature { get { return 0x444150; } } // 'PAD'
+        public override uint     Signature { get { return  0x444150; } } // 'PAD'
         
         public override SoundInput TryOpen (IBinaryStream file)
         {

@@ -36,7 +36,7 @@ namespace GameRes
         {
             if (File.Exists (info.FileName) &&
                 Extensions.Any (ext => string.Equals (ext,
-                    VFS.GetExtension (info.FileName), StringComparison.OrdinalIgnoreCase)))
+                    VFS.GetExtension (info.FileName, true), StringComparison.OrdinalIgnoreCase)))
             {
                 file.Dispose();
                 return new VideoData (info);

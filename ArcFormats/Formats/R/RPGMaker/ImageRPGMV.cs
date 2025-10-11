@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Text;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -51,8 +52,32 @@ namespace GameRes.Formats.RPGMaker
                 key = RpgmvDecryptor.FindKeyFor (file.Name);
                 if (key == null)
                 {
-                    RpgmvDecryptor.LastKey = null;
-                    return null; // not a known format
+                    // this is not reliable so only try as fallback
+                    if (Extensions.Any(ext => ext == VFS.GetExtension (file.Name, true).ToLowerInvariant()))
+                    {
+                        file.Position = 0x10;
+                        var encryptedHeader = file.ReadBytes(16);
+                        key = new byte[16];
+                        for (int i = 0; i < 16; i++)
+                            key[i] = (byte)(encryptedHeader[i] ^ RpgmvDecryptor.defaultPngHeader[i]);
+
+                        using (var testStream = RpgmvDecryptor.DecryptStream(file, key, true))
+                        {
+                            var pngFormat = ImageFormat.Png;
+                            var testInfo = pngFormat.ReadMetaData(testStream);
+                            if (testInfo == null)
+                            {
+                                RpgmvDecryptor.LastKey = null;
+                                return null; // not a known format
+                            }
+                            im_format = new System.Tuple<ImageFormat, ImageMetaData>(pngFormat, testInfo);
+                        }
+                    }
+                    else
+                    {
+                        RpgmvDecryptor.LastKey = null;
+                        return null; // not a known format
+                    }
                 }
             }
 
@@ -221,6 +246,11 @@ namespace GameRes.Formats.RPGMaker
 
         internal static readonly byte[] DefaultHeader = {
             0x52, 0x50, 0x47, 0x4D, 0x56, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
+        internal static readonly byte[] defaultPngHeader = new byte[] {
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,  // PNG signature
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52   // IHDR chunk length and type
         };
 
         internal static byte[] LastKey = null;

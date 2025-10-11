@@ -16,10 +16,12 @@ using System.Threading;
 
 namespace GARbro.GUI
 {
-    public class VideoPreviewControl : Grid
+    public class VideoPreviewControl : Grid, IDisposable
     {
         private  MainWindow _mainWindow;
         private    DateTime _loadStartTime;
+        private readonly object _deleteLock = new object ();
+        private readonly List<string> _pendingDeleteFiles = new List<string> ();
 
         private    MediaElement mediaPlayer;
         private       VideoData currentVideo;
@@ -121,7 +123,21 @@ namespace GARbro.GUI
                 return;
             }
 
-            CleanupVideoAsync();
+            Stop();
+            positionTimer.Stop();
+            mediaPlayer.Source = null;
+
+            currentVideo?.Dispose();
+            currentVideo = null;
+
+            lock (_deleteLock)
+            {
+                _pendingDeleteFiles.AddRange (tempFiles);
+            }
+
+            tempFiles.Clear ();
+
+            Task.Run (() => CleanupPendingFiles());
 
             try
             {
@@ -130,7 +146,7 @@ namespace GARbro.GUI
                 if (!string.IsNullOrEmpty (videoData.TempFile) && File.Exists (videoData.TempFile))
                 {
                     currentVideoFile = videoData.TempFile;
-                    if (currentVideoFile.StartsWith (Path.GetTempPath(), StringComparison.OrdinalIgnoreCase))
+                    if (currentVideoFile.StartsWith (Path.GetTempPath (), StringComparison.OrdinalIgnoreCase))
                         tempFiles.Add (currentVideoFile);
                 }
                 else
@@ -237,36 +253,53 @@ namespace GARbro.GUI
             positionTimer.Stop();
             mediaPlayer.Source = null;
 
-            var videoToDispose = currentVideo;
-            var filesToDelete = new List<string>(tempFiles);
+            lock (_deleteLock)
+            {
+                _pendingDeleteFiles.AddRange (tempFiles);
+            }
 
+            var videoToDispose = currentVideo;
             currentVideo = null;
             tempFiles.Clear();
 
-            if (videoToDispose != null || filesToDelete.Count > 0)
+            if (videoToDispose != null || _pendingDeleteFiles.Count > 0)
             {
                 await Task.Run (() =>
                 {
                     videoToDispose?.Dispose();
+                    CleanupPendingFiles();
+                });
+            }
+        }
+               
 
-                    foreach (var file in filesToDelete)
-                    {
-                        try
-                        {
-                            if (File.Exists (file))
-                                File.Delete (file);
-                        }
-                        catch { }
-                    }
+        private async void CleanupPendingFiles ()
+        {
+            await Task.Delay (300); // give the last video time to unload
+
+            List<string> filesToDelete;
+            lock (_deleteLock)
+            {
+                filesToDelete = new List<string> (_pendingDeleteFiles);
+                _pendingDeleteFiles.Clear ();
+            }
+
+            foreach (var file in filesToDelete)
+            {
+                // This shouldn't fail but if it does we can safely keep them there
+                // since Windows will clean them automatically later...
+                for (int i = 0; i < 3; i++)
+                {
                     try
                     {
-                        // WPF can create temporary cache for buffering there
-                        var wpfFolder = Path.Combine (Path.GetTempPath(), "WPF");
-                        if (Directory.Exists (wpfFolder))
-                            Directory.Delete (wpfFolder, true);
+                        if (File.Exists (file)) { File.Delete (file); break; }
+                        else break;
                     }
-                    catch { }
-                });
+                    catch
+                    {
+                        if (i < 2) Thread.Sleep (300);
+                    }
+                }
             }
         }
 
@@ -319,7 +352,6 @@ namespace GARbro.GUI
         private void MediaPlayer_MediaEnded (object sender, RoutedEventArgs e)
         {
             MediaEnded?.Invoke();
-            CleanupVideoAsync();
         }
 
         private void MediaPlayer_MediaFailed (object sender, ExceptionRoutedEventArgs e)
@@ -345,9 +377,7 @@ namespace GARbro.GUI
         private void PositionTimer_Tick (object sender, EventArgs e)
         {
             if (mediaPlayer.NaturalDuration.HasTimeSpan)
-            {
                 PositionChanged?.Invoke (mediaPlayer.Position, mediaPlayer.NaturalDuration.TimeSpan);
-            }
         }
 
         public void Play ()
@@ -376,6 +406,15 @@ namespace GARbro.GUI
             PlaybackStateChanged?.Invoke (false);
         }
 
+        public void Restart ()
+        {
+            mediaPlayer.Position = TimeSpan.Zero;
+            mediaPlayer.Play();
+            IsPlaying = true;
+            positionTimer.Start();
+            PlaybackStateChanged?.Invoke (true);
+        }
+
         public void Seek (TimeSpan position)
         {
             mediaPlayer.Position = position;
@@ -387,14 +426,39 @@ namespace GARbro.GUI
             lastVolume = (float)volume;
         }
 
-        ~VideoPreviewControl()
+        private bool _disposed = false;
+
+        public void Dispose ()
         {
-            try
-            {
-                MFShutdown();
-            }
-            catch { }
+            Dispose (true);
+            GC.SuppressFinalize (this);
         }
+
+        protected virtual void Dispose (bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Stop();
+                    positionTimer?.Stop();
+                    mediaPlayer.Source = null;
+
+                    foreach (var file in tempFiles)
+                    {
+                        try { if (File.Exists (file)) File.Delete (file); } catch { }
+                    }
+
+                    currentVideo?.Dispose();
+                }
+
+                try { MFShutdown(); } catch { }
+
+                _disposed = true;
+            }
+        }
+
+        ~VideoPreviewControl () { Dispose (false); }
     }
 
     public class VideoPreviewHandler : PreviewHandlerBase
@@ -443,10 +507,17 @@ namespace GARbro.GUI
             }
         }
 
-        public void Play()  => _videoControl.Play();
-        public void Pause() => _videoControl.Pause();
-        public void Stop()  => _videoControl.Stop();
-        public void SetVolume (double volume) => _videoControl.SetVolume (volume);
+        public void Play ()  => _videoControl.Play();
+        public void Pause () => _videoControl.Pause();
+        public void Stop ()  => _videoControl.Stop();
+
+        public void Restart () { 
+            if (_videoControl != null && IsActive) _videoControl.Restart(); 
+        }
+
+        public void SetVolume (double volume) { 
+            _videoControl.SetVolume (volume); 
+        }
 
         public override void Reset ()
         {

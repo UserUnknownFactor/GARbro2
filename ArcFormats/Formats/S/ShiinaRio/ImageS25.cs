@@ -18,9 +18,9 @@ namespace GameRes.Formats.ShiinaRio
     [Export(typeof(ImageFormat))]
     public class S25Format : ImageFormat
     {
-        public override string         Tag { get { return "S25"; } }
+        public override string         Tag { get { return "SR/S25"; } }
         public override string Description { get { return "ShiinaRio image format"; } }
-        public override uint     Signature { get { return 0x00353253; } } // 'S25'
+        public override uint     Signature { get { return  0x00353253; } } // 'S25'
 
         // in current implementation, only the first frame is returned.
         // per-frame access is provided by S25Opener class.

@@ -149,6 +149,7 @@ namespace GARbro.GUI
             _imagePreviewHandler?.Dispose();
             _audioPreviewHandler?.Dispose();
             _videoPreviewHandler?.Dispose();
+            m_video_preview_ctl?.Dispose();
             _textPreviewHandler?.Dispose();
             _modelPreviewHandler?.Dispose();
         }

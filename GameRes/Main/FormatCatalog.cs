@@ -14,6 +14,8 @@ using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace GameRes
 {
@@ -38,12 +40,13 @@ namespace GameRes
         private Dictionary<string, AudioFormat>   m_audio_formats_by_tag;
         private Dictionary<string, ScriptFormat>  m_script_formats_by_tag;
         private Dictionary<string, IResource>     m_all_formats_by_tag;
-#pragma warning restore 649
+        #pragma warning restore 649
 
         private MultiValueDictionary<string, IResource> m_extension_map = new MultiValueDictionary<string, IResource>();
         private MultiValueDictionary<uint, IResource>   m_signature_map = new MultiValueDictionary<uint,   IResource>();
 
         private Dictionary<string, string> m_game_map = new Dictionary<string, string>();
+        private List<FormatLoadError> m_load_errors = new List<FormatLoadError>();
 
         /// <summary> The only instance of this class.</summary>
         public static FormatCatalog       Instance      { get { return m_instance;       } }
@@ -68,6 +71,7 @@ namespace GameRes
         public string     DataDirectory { get { return m_gamedata_dir.Value; } }
 
         public Exception LastError { get; set; }
+        public IReadOnlyList<FormatLoadError> LoadErrors { get { return m_load_errors.AsReadOnly(); } }
 
         public event ParametersRequestEventHandler  ParametersRequest;
 
@@ -78,6 +82,20 @@ namespace GameRes
             AssemblyLocation = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly().Location);
             m_gamedata_dir = new Lazy<string>(() => Path.Combine (AssemblyLocation, "GameData"));
 
+            try
+            {
+                InitializeCatalog();
+            }
+            catch (Exception ex)
+            {
+                LastError = ex;
+                ShowInitializationError(ex);
+                InitializeEmptyCollections();
+            }
+        }
+
+        private void InitializeCatalog()
+        {
             //An aggregate catalog that combines multiple catalogs
             var catalog = new AggregateCatalog();
             //Adds all the parts found in the same assembly as the Program class
@@ -88,13 +106,20 @@ namespace GameRes
             //Create the CompositionContainer with the parts in the catalog
             using (var container = new CompositionContainer (catalog))
             {
-                m_arc_formats   = ImportWithPriorities<ArchiveFormat> (container);
-                m_image_formats = ImportWithPriorities<ImageFormat>   (container);
-                m_video_formats = ImportWithPriorities<VideoFormat>   (container);
-                m_audio_formats = ImportWithPriorities<AudioFormat>   (container);
+                m_arc_formats   = ImportWithPrioritiesSafe<ArchiveFormat> (container);
+                m_image_formats = ImportWithPrioritiesSafe<ImageFormat>   (container);
+                m_video_formats = ImportWithPrioritiesSafe<VideoFormat>   (container);
+                m_audio_formats = ImportWithPrioritiesSafe<AudioFormat>   (container);
 
                 //Fill the imports of this object
-                container.ComposeParts (this);
+                try
+                {
+                    container.ComposeParts (this);
+                }
+                catch (CompositionException ex)
+                {
+                    RecordCompositionErrors(ex);
+                }
 
                 InitializeTagLookupDictionaries();
 
@@ -105,6 +130,82 @@ namespace GameRes
                 AddResourceImpl (m_arc_formats,    container);
 
                 AddAliases (container);
+            }
+
+            if (m_load_errors.Any())
+                ShowLoadErrors();
+        }
+
+        private void InitializeEmptyCollections()
+        {
+            m_arc_formats    = Enumerable.Empty<ArchiveFormat>();
+            m_image_formats  = Enumerable.Empty<ImageFormat>();
+            m_video_formats  = Enumerable.Empty<VideoFormat>();
+            m_audio_formats  = Enumerable.Empty<AudioFormat>();
+            m_script_formats = Enumerable.Empty<ScriptFormat>();
+
+            InitializeTagLookupDictionaries();
+        }
+
+        private void ShowInitializationError(Exception ex)
+        {
+            var errorDialog = new FormatLoadErrorDialog(
+                "Critical Error Initializing FormatCatalog",
+                "Failed to initialize the format catalog.\nThe application will not function correctly.",
+                new List<FormatLoadError> 
+                { 
+                    new FormatLoadError 
+                    { 
+                        FormatType = "FormatCatalog",
+                        ErrorMessage = ex.Message,
+                        StackTrace = ex.ToString()
+                    }
+                }
+            );
+            errorDialog.ShowDialog();
+        }
+
+        private void ShowLoadErrors()
+        {
+            var errorDialog = new FormatLoadErrorDialog(
+                "Format Loading Errors",
+                $"{m_load_errors.Count} format(s) failed to load.\nSome file types may not be supported.",
+                m_load_errors
+            );
+            errorDialog.ShowDialog();
+        }
+
+        private void RecordCompositionErrors(CompositionException ex)
+        {
+            foreach (var error in ex.Errors)
+            {
+                m_load_errors.Add(new FormatLoadError
+                {
+                    FormatType = "Composition",
+                    ErrorMessage = error.Description,
+                    StackTrace = error.Exception?.ToString() ?? "No stack trace available"
+                });
+            }
+        }
+
+        private IEnumerable<Format> ImportWithPrioritiesSafe<Format> (ExportProvider provider)
+        {
+            try
+            {
+                return provider.GetExports<Format, IResourceMetadata>()
+                    .OrderByDescending (f => f.Metadata.Priority)
+                    .Select (f => f.Value)
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                m_load_errors.Add(new FormatLoadError
+                {
+                    FormatType = typeof(Format).Name,
+                    ErrorMessage = $"Failed to import {typeof(Format).Name} format",
+                    StackTrace = ex.ToString()
+                });
+                return Enumerable.Empty<Format>();
             }
         }
 
@@ -128,7 +229,6 @@ namespace GameRes
                 }
             }
 
-            // Populate image formats dictionary
             foreach (var format in m_image_formats)
             {
                 if (!string.IsNullOrEmpty (format.Tag))
@@ -138,7 +238,6 @@ namespace GameRes
                 }
             }
 
-            // Populate video formats dictionary
             foreach (var format in m_video_formats)
             {
                 if (!string.IsNullOrEmpty (format.Tag))
@@ -148,7 +247,6 @@ namespace GameRes
                 }
             }
 
-            // Populate audio formats dictionary
             foreach (var format in m_audio_formats)
             {
                 if (!string.IsNullOrEmpty (format.Tag))
@@ -158,7 +256,6 @@ namespace GameRes
                 }
             }
 
-            // Populate script formats dictionary
             if (m_script_formats != null)
             {
                 foreach (var format in m_script_formats)
@@ -170,6 +267,17 @@ namespace GameRes
                     }
                 }
             }
+        }
+
+        private void RecordFormatError(IResource format, Exception ex)
+        {
+            m_load_errors.Add(new FormatLoadError
+            {
+                FormatType = format?.GetType().Name ?? "Unknown",
+                FormatTag = format?.Tag ?? "Unknown",
+                ErrorMessage = ex.Message,
+                StackTrace = ex.ToString()
+            });
         }
 
         /// <summary>
@@ -266,6 +374,9 @@ namespace GameRes
 
         private void AddResourceImpl (IEnumerable<IResource> formats, ICompositionService container)
         {
+            if (formats == null)
+                return;
+
             foreach (var impl in formats)
             {
                 try
@@ -277,15 +388,12 @@ namespace GameRes
                 catch (Exception ex)
                 {
                     System.Diagnostics.Trace.WriteLine (ex.Message, impl.Tag);
+                    RecordFormatError(impl, ex);
                 }
                 foreach (var ext in impl.Extensions)
-                {
                     m_extension_map.Add (ext.ToUpperInvariant(), impl);
-                }
                 foreach (var signature in impl.Signatures)
-                {
                     m_signature_map.Add (signature, impl);
-                }
             }
         }
 
@@ -523,17 +631,17 @@ namespace GameRes
             { ".aac",  "audio" },
 
             // 3D/Scene files
-            { ".fbx",   "scene" },
-            { ".obj",   "scene" },
-            { ".dae",   "scene" },
-            { ".3ds",   "scene" },
-            { ".blend", "scene" },
+            { ".fbx",   "" },
+            { ".obj",   "" },
+            { ".dae",   "" },
+            { ".3ds",   "" },
+            { ".blend", "" },
 
             // Binary/Executable files
-            { ".dll",   "binary" },
-            { ".exe",   "binary" },
-            { ".so",    "binary" },
-            { ".dylib", "binary" }
+            { ".dll",   "archive" },
+            { ".exe",   "archive" },
+            { ".so",    "archive" },
+            { ".dylib", "archive" }
         };
 
         public string GetTypeFromName (string filename, IEnumerable<string> preferred_formats = null, Dictionary<string, string> custom_map = null, long fileSize = 0)
@@ -999,6 +1107,118 @@ public class IncludeFieldsContractResolver : DefaultContractResolver
         }
 
         return properties;
+    }
+}
+
+public class FormatLoadError
+{
+    public string FormatType { get; set; }
+    public string FormatTag { get; set; }
+    public string ErrorMessage { get; set; }
+    public string StackTrace { get; set; }
+}
+
+public class FormatLoadErrorDialog : Window
+{
+    public FormatLoadErrorDialog (string title, string message, List<FormatLoadError> errors)
+    {
+        Title = title;
+        Width = 800;
+        Height = 600;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+        var grid = new Grid ();
+        grid.RowDefinitions.Add (new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add (new RowDefinition { Height = new GridLength (1, GridUnitType.Star) });
+        grid.RowDefinitions.Add (new RowDefinition { Height = GridLength.Auto });
+
+        // Message label
+        var messageLabel = new TextBlock
+        {
+            Text = message,
+            Margin = new Thickness (10),
+            TextWrapping = TextWrapping.Wrap
+        };
+        Grid.SetRow (messageLabel, 0);
+        grid.Children.Add (messageLabel);
+
+        // Error text box
+        var errorTextBox = new TextBox
+        {
+            IsReadOnly = true,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            FontFamily = new System.Windows.Media.FontFamily ("Consolas"),
+            Margin = new Thickness (10, 0, 10, 10)
+        };
+
+        var errorText = new StringBuilder ();
+        errorText.AppendLine (
+            "=============== Format Loading Errors ({DateTime.Now}) ==============="
+        );
+        errorText.AppendLine ();
+
+        foreach (var error in errors)
+        {
+            errorText.AppendLine (string.Format("Format Type: {0}", error.FormatType));
+            if (!string.IsNullOrEmpty (error.FormatTag))
+                errorText.AppendLine (string.Format("Format Tag: {0}", error.FormatTag));
+            errorText.AppendLine (string.Format("Error: {0}", error.ErrorMessage));
+            errorText.AppendLine ("Stack Trace:");
+            errorText.AppendLine (error.StackTrace);
+            errorText.AppendLine (new string ('-', 80));
+            errorText.AppendLine ();
+        }
+
+        errorTextBox.Text = errorText.ToString ();
+        Grid.SetRow (errorTextBox, 1);
+        grid.Children.Add (errorTextBox);
+
+        // Button panel
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness (10)
+        };
+
+        var copyButton = new Button
+        {
+            Content = "Copy to Clipboard",
+            Width = 120,
+            Height = 30,
+            Margin = new Thickness (0, 0, 10, 0)
+        };
+        copyButton.Click += (s, e) =>
+        {
+            try
+            {
+                Clipboard.SetText (errorTextBox.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show (
+                    string.Format("Failed to copy to clipboard:\n{0}", ex.Message),
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error
+                );
+            }
+        };
+
+        var closeButton = new Button
+        {
+            Content = "Close",
+            Width = 100,
+            Height = 30,
+            IsDefault = true
+        };
+        closeButton.Click += (s, e) => this.Close ();
+
+        buttonPanel.Children.Add (copyButton);
+        buttonPanel.Children.Add (closeButton);
+        Grid.SetRow (buttonPanel, 2);
+        grid.Children.Add (buttonPanel);
+
+        Content = grid;
     }
 }
 

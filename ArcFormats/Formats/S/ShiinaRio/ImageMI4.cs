@@ -8,9 +8,9 @@ namespace GameRes.Formats.ShiinaRio
     [Export(typeof(ImageFormat))]
     public class Mi4Format : ImageFormat
     {
-        public override string         Tag { get { return "MI4"; } }
+        public override string         Tag { get { return "SR/MI4"; } }
         public override string Description { get { return "ShiinaRio image format"; } }
-        public override uint     Signature { get { return 0x3449414D; } } // 'MAI4'
+        public override uint     Signature { get { return  0x3449414D; } } // 'MAI4'
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {

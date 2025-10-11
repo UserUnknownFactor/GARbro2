@@ -53,16 +53,9 @@ namespace GameRes.Formats.MSFormats
 
     internal class MsuArchive : ArcFile
     {
-        // References to nested CAB archives
-        public Dictionary<string, CabArcFile> CabArchives { get; }
-
-        // Cached metadata only
-        public Dictionary<string, byte[]> MetadataCache { get; }
-
-        // Mapping for virtual entries
-        public Dictionary<string, MsuEntry> VirtualFiles { get; }
-
-        // Reference to handlers
+        public Dictionary<string, CabArcFile> CabArchives { get; } // References to nested CAB archives
+        public Dictionary<string, byte[]> MetadataCache { get; } // Cached metadata only
+        public Dictionary<string, MsuEntry> VirtualFiles { get; } // Mapping for virtual entries
         public CabOpener CabHandler { get; }
         public DeltaOpener DeltaHandler { get; }
 
@@ -119,7 +112,6 @@ namespace GameRes.Formats.MSFormats
 
         public override ArcFile TryOpen(ArcView file)
         {
-            // Quick check for MSU-style CAB
             if (file.Name.EndsWith(".cab", StringComparison.OrdinalIgnoreCase))
             {
                 if (!IsMsuStyleCab(file))
@@ -141,7 +133,6 @@ namespace GameRes.Formats.MSFormats
         {
             try
             {
-                // Use CFHeader directly instead of creating a CabArcFile
                 var cabHeader = new CFHeader();
                 using (var stream = file.CreateStream())
                 {
@@ -182,24 +173,20 @@ namespace GameRes.Formats.MSFormats
                 var metadataCache = new Dictionary<string, byte[]>();
                 var virtualFiles = new Dictionary<string, MsuEntry>();
                 var processedCabs = new HashSet<string>();
-        
-                // SHARED delta mappings across all CABs (in case there are nested ones)
+
                 var deltasByComponent = new Dictionary<string, Dictionary<string, MsuEntry>>(StringComparer.OrdinalIgnoreCase);
                 var deltasByFilename = new Dictionary<string, MsuEntry>(StringComparer.OrdinalIgnoreCase);
                 var allManifests = new List<(byte[] data, string type, string component)>();
 
-                // Open main CAB using CAB handler
                 var mainCab = cabHandler.TryOpen(file) as CabArcFile;
                 if (mainCab == null)
                     return null;
 
                 cabArchives[""] = mainCab;
 
-                // Process main CAB contents - pass the shared dictionaries
                 ProcessCabContents(mainCab, "", entries, cabArchives, metadataCache,
                                   virtualFiles, processedCabs, deltasByComponent, deltasByFilename, allManifests);
 
-                // Now process ALL collected manifests with complete delta information
                 var createdVirtualPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var (manifestData, type, component) in allManifests)
                 {
@@ -226,12 +213,12 @@ namespace GameRes.Formats.MSFormats
         }
 
         private void ProcessCabContents(CabArcFile cab, string cabPath,
-    List<Entry> entries, Dictionary<string, CabArcFile> cabArchives,
-    Dictionary<string, byte[]> metadataCache, Dictionary<string, MsuEntry> virtualFiles,
-    HashSet<string> processedCabs,
-    Dictionary<string, Dictionary<string, MsuEntry>> deltasByComponent,
-    Dictionary<string, MsuEntry> deltasByFilename,
-    List<(byte[] data, string type, string component)> allManifests)
+            List<Entry> entries, Dictionary<string, CabArcFile> cabArchives,
+            Dictionary<string, byte[]> metadataCache, Dictionary<string, MsuEntry> virtualFiles,
+            HashSet<string> processedCabs,
+            Dictionary<string, Dictionary<string, MsuEntry>> deltasByComponent,
+            Dictionary<string, MsuEntry> deltasByFilename,
+            List<(byte[] data, string type, string component)> allManifests)
         {
             var cabKey = string.IsNullOrEmpty(cabPath) ? "main" : cabPath;
             if (processedCabs.Contains(cabKey))
@@ -261,11 +248,10 @@ namespace GameRes.Formats.MSFormats
 
                     allManifests.Add((manifestData, "cix", ""));
 
-                    // Add manifest entry itself
                     var mEntry = new MsuEntry
                     {
                         Name = "METADATA" + VFS.DIR_DELIMITER + fileName,
-                        Type = "xml",
+                        Type = "script",
                         Offset = 0,
                         Size = entry.Size,
                         DataSource = MsuEntry.SourceType.Cab,
@@ -295,7 +281,7 @@ namespace GameRes.Formats.MSFormats
                     var mEntry = new MsuEntry
                     {
                         Name = "METADATA" + VFS.DIR_DELIMITER + fileName,
-                        Type = "xml",
+                        Type = "script",
                         Offset = 0,
                         Size = entry.Size,
                         DataSource = MsuEntry.SourceType.Cab,
@@ -318,11 +304,10 @@ namespace GameRes.Formats.MSFormats
                         mumData = ms.ToArray();
                     }
 
-                    // Add MUM as metadata entry
                     var mEntry = new MsuEntry
                     {
                         Name = "METADATA" + VFS.DIR_DELIMITER + fileName,
-                        Type = "xml",
+                        Type = "script",
                         Offset = 0,
                         Size = entry.Size,
                         DataSource = MsuEntry.SourceType.Cab,
@@ -595,7 +580,7 @@ namespace GameRes.Formats.MSFormats
 
 
         private void UpdateVirtualEntrySizesFromDeltas(List<Entry> entries, Dictionary<string, MsuEntry> virtualFiles,
-    Dictionary<string, CabArcFile> cabArchives)
+            Dictionary<string, CabArcFile> cabArchives)
         {
             foreach (var entry in entries.OfType<MsuEntry>().Where(e => e.DataSource == MsuEntry.SourceType.Virtual && e.Size == 0))
             {
@@ -633,9 +618,7 @@ namespace GameRes.Formats.MSFormats
             }
         }
 
-        // Parse Windows .manifest files (assembly manifests)
-
-                private string ResolveRuntimeVariables(string path)
+        private string ResolveRuntimeVariables(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return path;
@@ -663,7 +646,6 @@ namespace GameRes.Formats.MSFormats
 
             return result;
         }
-
 
         // Parse .mum files (Microsoft Update Manifest)
         private void ParseMumFile(byte[] mumData, Dictionary<string, string> deltaSourceFiles)
@@ -845,7 +827,6 @@ namespace GameRes.Formats.MSFormats
         {
             Trace.WriteLine($"OpenCabEntry called for: {entry.Name}");
 
-            // Check cache first
             if (entry.CachedData != null)
             {
                 Trace.WriteLine($"Returning cached data, size: {entry.CachedData.Length}");
@@ -860,7 +841,6 @@ namespace GameRes.Formats.MSFormats
                 return Stream.Null;
             }
 
-            // Make sure we have a valid CabEntry reference
             if (entry.CabEntryRef == null)
             {
                 Trace.WriteLine($"No CabEntry reference for: {entry.Name}");
@@ -1162,13 +1142,9 @@ namespace GameRes.Formats.MSFormats
                     var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
 
                     if (!hashStr.Equals(entry.ExpectedHash, StringComparison.OrdinalIgnoreCase))
-                    {
                         Trace.WriteLine($"Hash mismatch: expected {entry.ExpectedHash}, got {hashStr}");
-                    }
                     else
-                    {
                         Debug.WriteLine($"Hash verified successfully");
-                    }
                 }
             }
 
@@ -1190,10 +1166,10 @@ namespace GameRes.Formats.MSFormats
 
         private string DetectArchitecture(string path)
         {
-            if (path.IndexOf("x86_", StringComparison.OrdinalIgnoreCase) >= 0)   return "x86";
+            if (path.IndexOf("x86_",   StringComparison.OrdinalIgnoreCase) >= 0)   return "x86";
             if (path.IndexOf("amd64_", StringComparison.OrdinalIgnoreCase) >= 0) return "x64";
             if (path.IndexOf("wow64_", StringComparison.OrdinalIgnoreCase) >= 0) return "WOW64";
-            if (path.IndexOf("msil_", StringComparison.OrdinalIgnoreCase) >= 0)  return "MSIL";
+            if (path.IndexOf("msil_",  StringComparison.OrdinalIgnoreCase) >= 0)  return "MSIL";
             return null;
         }
 

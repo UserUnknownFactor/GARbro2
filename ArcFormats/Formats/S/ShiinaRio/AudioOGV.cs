@@ -7,9 +7,9 @@ namespace GameRes.Formats.ShiinaRio
     [Export(typeof(AudioFormat))]
     public class OgvAudio : AudioFormat
     {
-        public override string         Tag { get { return "OGV"; } }
+        public override string         Tag { get { return "SR/OGV"; } }
         public override string Description { get { return "ShiinaRio audio format (Ogg/Vorbis)"; } }
-        public override uint     Signature { get { return 0x0056474f; } } // 'OGV'
+        public override uint     Signature { get { return  0x0056474f; } } // 'OGV'
         
         public override SoundInput TryOpen (IBinaryStream file)
         {

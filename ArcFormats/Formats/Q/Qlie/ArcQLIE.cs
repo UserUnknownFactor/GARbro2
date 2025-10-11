@@ -17,12 +17,6 @@ namespace GameRes.Formats.Qlie
         public byte[] RawName;
 
         public new bool IsEncrypted { get { return EncryptionMethod != 0; } }
-
-        /// <summary>
-        /// Data from a separate key file "key.fkey" that comes with installed game.
-        /// null if not used.
-        /// </summary>
-        public byte[] KeyFile;
     }
 
     internal class QlieArchive : ArcFile
@@ -41,6 +35,12 @@ namespace GameRes.Formats.Qlie
         public byte[] GameKeyData;
     }
 
+    internal class QlieCreateOptions : QlieOptions
+    {
+        public Version PackVersion { get; set; } = new Version (3, 1);
+        public bool CompressFiles { get; set; } = false;
+    }
+
     [Serializable]
     public class QlieScheme : ResourceScheme
     {
@@ -52,9 +52,9 @@ namespace GameRes.Formats.Qlie
     {
         public override string         Tag { get { return "PACK/QLIE"; } }
         public override string Description { get { return "QLIE engine resource archive"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool  IsHierarchic { get { return true; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  true; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public PackOpener ()
         {
@@ -82,38 +82,48 @@ namespace GameRes.Formats.Qlie
             if (file.MaxOffset <= 0x1c)
                 return null;
             long index_offset = file.MaxOffset - 0x1c;
-            if (!file.View.AsciiEqual (index_offset, "FilePackVer")
-                || '.' != file.View.ReadByte (index_offset+0xC))
+            if (!file.View.AsciiEqual (index_offset, "FilePackVer") || 
+                    '.' != file.View.ReadByte (index_offset + 0xC))
                 return null;
             using (var index = new PackIndexReader (this, file, index_offset))
             {
                 byte[] arc_key = null;
                 byte[] key_file = null;
                 bool use_pack_keyfile = false;
+
                 if (index.PackVersion.Major >= 3)
                 {
-                    key_file = FindKeyFile (file);
-                    use_pack_keyfile = key_file != null;
-                    // currently, user is prompted to choose encryption scheme only if there's 'key.fkey' file found.
-                    if (use_pack_keyfile && index.PackVersion.Minor == 0)
-                        arc_key = QueryEncryption (file);
-//                    use_pack_keyfile = null != arc_key;
+                    if (index.PackVersion.Minor == 0)
+                    {
+                        key_file = FindKeyFile (file);
+                        use_pack_keyfile = key_file != null;
+                        if (use_pack_keyfile)
+                            arc_key = QueryEncryption (file);
+                    }
+                    else
+                    {
+                        use_pack_keyfile = true;
+                        key_file = null;
+                    }
                 }
+
                 var enc = QlieEncryption.Create (file, index.PackVersion, arc_key);
                 List<Entry> dir = null;
+
                 if (index.PackVersion.Major > 1)
                 {
                     dir = index.Read (enc, key_file, use_pack_keyfile);
                 }
                 else
                 {
-                    // PackVer1.0 is a total mess -- it could either use
+                    // PackVer1.0 is a total mess - it could either of
                     //  • V1 index layout and V1 encryption
                     //  • V1 index layout and V2 encryption
                     //  • V2 index layout and V2 encryption
                     // all with the same 'FilePackVer1.0' signature
-                    var possibleEncs = new IEncryption[] {
-                        enc, new EncryptionV2 (IndexLayout.WithoutHash), new EncryptionV2()
+                    var possibleEncs = new IEncryption[] { 
+                        enc, new EncryptionV2 (IndexLayout.WithoutHash),
+                        new EncryptionV2() 
                     };
                     foreach (var v1enc in possibleEncs)
                     {
@@ -145,17 +155,63 @@ namespace GameRes.Formats.Qlie
             return new BinMemoryStream (data, entry.Name);
         }
 
+        public override void Create (
+            Stream output, IEnumerable<Entry> list, ResourceOptions options,
+            EntryCallback callback)
+        {
+            var qlie_options = GetOptions<QlieCreateOptions> (options);
+            if (qlie_options == null)
+                qlie_options = this.GetDefaultCreateOptions();
+
+            using (var writer = new QliePackWriter (output, qlie_options.PackVersion))
+            {
+                writer.GameKey = qlie_options.GameKeyData;
+
+                int file_count = 0;
+                int total_count = list.Count();
+
+                foreach (var entry in list)
+                {
+                    if (null != callback)
+                        callback (file_count++, entry, Localization._T ("MsgAddingFile"));
+
+                    using (var file = File.OpenRead (entry.Name))
+                    {
+                        var file_data = new byte[file.Length];
+                        file.Read (file_data, 0, file_data.Length);
+
+                        bool should_compress = qlie_options.CompressFiles && ShouldCompress (entry.Name);
+                        writer.AddEntry (entry.Name, file_data, should_compress);
+                    }
+                }
+
+                writer.Write (qlie_options.GameKeyData);
+            }
+        }
+
+        bool ShouldCompress (string filename)
+        {
+            string ext = Path.GetExtension (filename).ToLowerInvariant();
+            return ext != ".b" && ext != ".png" && ext != ".jpg" && ext != ".jpeg" && 
+                   ext != ".ogg" && ext != ".mp3" && ext != ".mpg";
+        }
+
+        QlieCreateOptions GetDefaultCreateOptions ()
+        {
+            return new QlieCreateOptions {
+                PackVersion = new Version (3, 1),
+                GameKeyData = null,
+                CompressFiles = false
+            };
+        }
+
         internal byte[] ReadEntryBytes (ArcView file, QlieEntry entry, IEncryption enc)
         {
             var data = file.View.ReadBytes (entry.Offset, entry.Size);
             if (entry.IsEncrypted)
-            {
                 enc.DecryptEntry (data, 0, data.Length, entry);
-            }
             if (entry.IsPacked)
-            {
                 data = Decompress (data) ?? data;
-            }
             return data;
         }
 
@@ -244,11 +300,163 @@ namespace GameRes.Formats.Qlie
             return output;
         }
 
+        internal static byte[] Compress (byte[] input)
+        {
+            if (input == null || input.Length == 0)
+                return input;
+
+            const int BlockSize = 8192;
+            const int MaxSubstitutions = 100;
+
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter (ms))
+            {
+                bw.Write (0xFF435031u);
+                bw.Write (1u);
+                bw.Write (input.Length);
+
+                for (int offset = 0; offset < input.Length; offset += BlockSize)
+                {
+                    int len = Math.Min (BlockSize, input.Length - offset);
+                    var data = new List<byte>();
+                    for (int i = 0; i < len; i++)
+                        data.Add (input[offset + i]);
+
+                    var substitutions = new Dictionary<byte, (byte left, byte right)>();
+                    var used = new HashSet<byte>(data);
+
+                    var freq = new int[256, 256];
+                    for (int i = 0; i < data.Count - 1; i++)
+                        freq[data[i], data[i + 1]]++;
+
+                    int nextCode = 255;
+                    int substitutionCount = 0;
+
+                    while (nextCode >= 0 && data.Count > 1 && substitutionCount < MaxSubstitutions)
+                    {
+                        int max = 0;
+                        byte la = 0, ra = 0;
+                        for (int a = 0; a < 256; a++)
+                            for (int b = 0; b < 256; b++)
+                            {
+                                int v = freq[a, b];
+                                if (v > max) { max = v; la = (byte)a; ra = (byte)b; }
+                            }
+
+                        if (max < 3) break;  
+
+                        // Skip if this would create deep nesting
+                        if (nextCode < 250 && (la > 200 || ra > 200))
+                        {
+                            freq[la, ra] = 0;
+                            continue;
+                        }
+
+                        while (nextCode >= 0 && (used.Contains((byte)nextCode) || substitutions.ContainsKey((byte)nextCode)))
+                            nextCode--;
+
+                        if (nextCode < 0) break;
+
+                        byte code = (byte)nextCode;
+                        nextCode--;
+                        substitutionCount++;
+
+                        substitutions[code] = (la, ra);
+                        freq[la, ra] = 0;
+
+                        var next = new List<byte>();
+                        for (int i = 0; i < data.Count; i++)
+                        {
+                            if (i < data.Count - 1 && data[i] == la && data[i + 1] == ra)
+                            {
+                                if (i > 0)
+                                {
+                                    byte ln = data[i - 1];
+                                    if (freq[ln, la] > 0) freq[ln, la]--;
+                                    freq[ln, code]++;
+                                }
+                                if (i + 2 < data.Count)
+                                {
+                                    byte rn = data[i + 2];
+                                    if (freq[ra, rn] > 0) freq[ra, rn]--;
+                                    freq[code, rn]++;
+                                }
+
+                                next.Add (code);
+                                i++;
+                            }
+                            else
+                                next.Add (data[i]);
+                        }
+                        data = next;
+                    }
+
+                    WriteBlockData (bw, data, substitutions);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        private static void WriteBlockData (
+            BinaryWriter bw,
+            IReadOnlyList<byte> compressed,
+            Dictionary<byte, (byte left, byte right)> map)
+        {
+            // Write node table
+            int i = 0;
+            while (i < 256)
+            {
+                int run = Math.Min (128, 256 - i);
+                bw.Write ((byte)(run - 1));
+
+                for (int j = 0; j < run; j++)
+                {
+                    byte idx = (byte)(i + j);
+                    if (map.ContainsKey (idx))
+                    {
+                        var pair = map[idx];
+                        bw.Write (pair.left);
+                        if (pair.left != idx)
+                            bw.Write (pair.right);
+                    }
+                    else
+                    {
+                        bw.Write (idx);
+                    }
+                }
+                i += run;
+            }
+
+            bw.Write ((ushort)compressed.Count);
+            for (int k = 0; k < compressed.Count; k++)
+                bw.Write (compressed[k]);
+        }
+
         public override ResourceOptions GetDefaultOptions ()
         {
             return new QlieOptions {
                 GameKeyData = GetKeyData (Properties.Settings.Default.QLIEScheme)
             };
+        }
+
+        public override ResourceOptions GetOptions (object widget)
+        {
+            var w = widget as GUI.CreateQLIEWidget;
+            if (w != null)
+            {
+                return new QlieCreateOptions {
+                    PackVersion = w.GetVersion(),
+                    GameKeyData = w.GetGameKey(),
+                    CompressFiles = w.CompressFiles
+                };
+            }
+            return GetDefaultOptions();
+        }
+
+        public override object GetCreationWidget ()
+        {
+            return new GUI.CreateQLIEWidget();
         }
 
         public override object GetAccessWidget ()
@@ -315,7 +523,7 @@ namespace GameRes.Formats.Qlie
         {
             if (VFS.IsVirtual)
                 return null;
-            // XXX add button to query dialog like with CatSystem?
+
             var pattern = VFS.CombinePath (VFS.GetDirectoryName (arc_name), @"..\*.exe");
             foreach (var file in VFS.GetFiles (pattern))
             {
@@ -380,49 +588,89 @@ namespace GameRes.Formats.Qlie
             m_index = m_file.CreateStream (m_index_offset);
             m_dir = new List<Entry> (m_count);
         }
-            
+
         byte[]  m_name_buffer = new byte[0x100];
 
         public List<Entry> Read (IEncryption enc, byte[] key_file, bool use_pack_keyfile)
         {
             m_dir.Clear();
             m_index.Position = 0;
-            bool read_pack_keyfile = 3 == m_pack_version.Major && use_pack_keyfile;
+            bool looking_for_pack_keyfile = 3 == m_pack_version.Major && use_pack_keyfile;
+
+            enc.PackKeyFile = key_file;
+
             for (int i = 0; i < m_count; ++i)
             {
                 int name_length = m_index.ReadUInt16();
-                if (name_length > 0x100) // invalid encryption version
+
+                if (name_length > 0x100)
+                {
+                    Debug.WriteLine ($"[PackIndexReader] Name length too long: {name_length}");
                     return null;
+                }
+
                 if (enc.IsUnicode)
                     name_length *= 2;
+
                 if (name_length > m_name_buffer.Length)
                     m_name_buffer = new byte[name_length];
-                if (name_length != m_index.Read (m_name_buffer, 0, name_length))
+
+                int bytesRead = m_index.Read (m_name_buffer, 0, name_length);
+                if (name_length != bytesRead)
+                {
+                    Debug.WriteLine ($"[PackIndexReader] Failed to read name: expected {name_length}, got {bytesRead}");
                     return null;
+                }
+
                 var name = enc.DecryptName (m_name_buffer, name_length);
+                //Debug.WriteLine ($"[PackIndexReader] Decrypted name: {name}");
+
                 var entry = m_fmt.Create<QlieEntry> (name);
                 if (use_pack_keyfile)
-                    entry.RawName = m_name_buffer.Take (name_length).ToArray();
+                    entry.RawName = m_name_buffer.Take (name_length).ToArray ();
 
-                entry.Offset = m_index.ReadInt64();           // [+00]
-                entry.Size   = m_index.ReadUInt32();          // [+08]
+                entry.Offset = m_index.ReadInt64 ();            // [+00]
+                entry.Size = m_index.ReadUInt32 ();             // [+08]
+                entry.Type = GetType (name);
+                //Debug.WriteLine ($"[PackIndexReader] Entry: Offset=0x{entry.Offset:X8}, Size={entry.Size}");
                 if (!entry.CheckPlacement (m_file.MaxOffset))
-                    return null;
-                entry.UnpackedSize = m_index.ReadUInt32();    // [+0C]
-                entry.IsPacked    = 0 != m_index.ReadInt32(); // [+10]
-                entry.EncryptionMethod = m_index.ReadInt32(); // [+14]
-                if (enc.IndexLayout == IndexLayout.WithHash)
-                    entry.Hash = m_index.ReadUInt32();        // [+18]
-                entry.KeyFile = key_file;
-                if (read_pack_keyfile && entry.Name.Contains ("pack_keyfile"))
                 {
-                    // note that 'pack_keyfile' itself is encrypted using 'key.fkey' file contents.
-                    key_file = m_fmt.ReadEntryBytes (m_file, entry, enc);
-                    read_pack_keyfile = false;
+                    Debug.WriteLine ($"[PackIndexReader] Entry placement check failed: Offset=0x{entry.Offset:X8}, Size={entry.Size}, MaxOffset=0x{m_file.MaxOffset:X8}");
+                    return null;
                 }
+
+                entry.UnpackedSize     = m_index.ReadUInt32 (); // [+0C]
+                entry.IsPacked    = 0 != m_index.ReadInt32  (); // [+10]
+                entry.EncryptionMethod = m_index.ReadInt32  (); // [+14]
+                //Debug.WriteLine ($"[PackIndexReader] UnpackedSize={entry.UnpackedSize}, IsPacked={entry.IsPacked}, EncMethod={entry.EncryptionMethod}");
+
+                if (enc.IndexLayout == IndexLayout.WithHash)
+                {
+                    entry.Hash        = m_index.ReadUInt32 ();  // [+18]
+                    //Debug.WriteLine ($"[PackIndexReader] Hash=0x{entry.Hash:X8}");
+                }
+
+                if (looking_for_pack_keyfile &&
+                    (entry.Name.StartsWith ("pack_keyfile") && entry.Name.EndsWith (".key") ||
+                     entry.Name == "pack_keyfile"))
+                {
+                    //Debug.WriteLine ($"[PackIndexReader] Found embedded pack_keyfile: {entry.Name}");
+                    var pack_keyfile = m_fmt.ReadEntryBytes (m_file, entry, enc);
+                    enc.PackKeyFile = pack_keyfile;
+                    looking_for_pack_keyfile = false;
+                }
+
                 m_dir.Add (entry);
             }
+
             return m_dir;
+        }
+
+        internal string GetType (string name)
+        {
+           if (name.EndsWith (".s")) return "script";
+           if (name.EndsWith (".b")) return "archive";
+           return FormatCatalog.Instance.GetTypeFromName (name);
         }
 
         bool m_disposed = false;

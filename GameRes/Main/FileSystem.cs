@@ -1136,7 +1136,7 @@ namespace GameRes
         /// <summary>
         /// Gets just the filename portion of a path.
         /// </summary>
-        public static string GetExtension (string path)
+        public static string GetExtension (string path, bool noDot = false)
         {
             if (string.IsNullOrEmpty (path))
                 return string.Empty;
@@ -1146,7 +1146,7 @@ namespace GameRes
             if (lastDot < 1 || lastDot == fileName.Length - 1)
                 return string.Empty;
 
-            return path.Substring(lastDot);
+            return path.Substring(noDot ? lastDot + 1 : lastDot);
         }
 
         /// <summary>

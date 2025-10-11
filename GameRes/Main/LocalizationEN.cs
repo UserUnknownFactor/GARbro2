@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17464; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17628; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -54,6 +54,11 @@ public static partial class Localization
                 { "ONSCompressionNone", new LocalizationEntry { Singular = "None" } },
                 { "PDDescription", new LocalizationEntry { Singular = "Flying Shine resource archive" } },
                 { "PDScrambleContents", new LocalizationEntry { Singular = "Scramble contents" } },
+                { "QLIEVersionLabel", new LocalizationEntry { Singular = "Archive Version:" } },
+                { "QLIESchemeLabel", new LocalizationEntry { Singular = "Encryption Scheme:" } },
+                { "QLIEKeyLabel", new LocalizationEntry { Singular = "Game Key:" } },
+                { "QLIECompressLabel", new LocalizationEntry { Singular = "Compress files (BPE; very slow)" } },
+                { "QLIEDefaultScheme", new LocalizationEntry { Singular = "(None)" } },
                 { "RPADescription", new LocalizationEntry { Singular = "Ren'Py game engine archive" } },
                 { "RPALabelKey", new LocalizationEntry { Singular = "32-bit key" } },
                 { "SCRDescription", new LocalizationEntry { Singular = "Amaterasu Translations Muv-Luv script file" } },
@@ -78,7 +83,6 @@ public static partial class Localization
                 { "MBLNotice", new LocalizationEntry { Singular = "Archive contains encrypted scripts.\nChoose encryption scheme or enter a passphrase." } },
                 { "ArcTitleOrPassword", new LocalizationEntry { Singular = "Choose title or enter a password" } },
                 { "RPMEncryptedNotice", new LocalizationEntry { Singular = "File resembles RPM resource archive,\nbut encryption key guess failed.\nChoose appropriate encryption scheme." } },
-                { "QLIEDefaultScheme", new LocalizationEntry { Singular = "Use default encryption scheme" } },
                 { "INTChooseExe", new LocalizationEntry { Singular = "Choose game executable file" } },
                 { "INTExeButton", new LocalizationEntry { Singular = "Check EXE" } },
                 { "INTExeFiles", new LocalizationEntry { Singular = "Executable Files" } },
@@ -272,7 +276,7 @@ public static partial class Localization
                 { "Stream", new LocalizationEntry { Singular = "Stream" } },
                 { "VideoInfo", new LocalizationEntry { Singular = "Video: {0}" } },
                 { "VideoCodecInfo", new LocalizationEntry { Singular = "Video: {0} | Codec: {1} | Resolution: {2}x{3} | FPS: {4:F1}" } },
-                { "VideoPlaybackErrorText", new LocalizationEntry { Singular = "Failed to play video with internal player: {0}. Would you like to open it with your default video player?" } },
+                { "VideoPlaybackErrorText", new LocalizationEntry { Singular = "Failed to play video with internal player: {0}\nWould you like to open it with your default video player?" } },
                 { "VideoPlaybackError", new LocalizationEntry { Singular = "Video Playback Error" } },
                 { "MediaFailedToLoad", new LocalizationEntry { Singular = "Media failed to load" } },
                 { "CodecNotFound", new LocalizationEntry { Singular = "Video codec not found" } },

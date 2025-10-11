@@ -45,6 +45,11 @@ ONSCompression→Compression→→→
 ONSCompressionNone→None→→→
 PDDescription→Flying Shine resource archive→→→
 PDScrambleContents→Scramble contents→→→
+QLIEVersionLabel→Archive Version:→→→
+QLIESchemeLabel→Encryption Scheme:→→→
+QLIEKeyLabel→Game Key:→→→
+QLIECompressLabel→Compress files (BPE; very slow)→→→
+QLIEDefaultScheme→(None)→→→
 RPADescription→Ren'Py game engine archive→→→
 RPALabelKey→32-bit key→→→
 SCRDescription→Amaterasu Translations Muv-Luv script file→→→
@@ -74,7 +79,6 @@ ArcTitleOrPassword→Choose title or enter a password→→→
 RPMEncryptedNotice→File resembles RPM resource archive,¶
 but encryption key guess failed.¶
 Choose appropriate encryption scheme.→→→
-QLIEDefaultScheme→Use default encryption scheme→→→
 INTChooseExe→Choose game executable file→→→
 INTExeButton→Check EXE→→→
 INTExeFiles→Executable Files→→→
@@ -281,7 +285,8 @@ ErrorLoadingVideo→Error loading video: {0}→→→
 Stream→Stream→→→
 VideoInfo→Video: {0}→→→
 VideoCodecInfo→Video: {0} | Codec: {1} | Resolution: {2}x{3} | FPS: {4:F1}→→→
-VideoPlaybackErrorText→Failed to play video with internal player: {0}. Would you like to open it with your default video player?→→→
+VideoPlaybackErrorText→Failed to play video with internal player: {0}¶
+Would you like to open it with your default video player?→→→
 VideoPlaybackError→Video Playback Error→→→
 MediaFailedToLoad→Media failed to load→→→
 CodecNotFound→Video codec not found→→→
