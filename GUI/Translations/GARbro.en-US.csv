@@ -7,6 +7,8 @@ AMIDescription→Amaterasu Translations Muv-Luv archive→→→
 AMINoFiles→No files suitable for AMI archive found.→→→
 ArcEncryptedNotice→Archive content is encrypted.¶
 Choose appropriate encryption scheme.→→→
+DCFMergeWithBase→Combine images with their bases→→→
+BaseImage→ [Base: {0}]→→→
 ArcNoEncryption→no encryption→→→
 ArcReset→Reset→→→
 GRPDescription→Age proprietary image format→→→

@@ -17,20 +17,20 @@ namespace GameRes.Compression
     /// </summary>
     public enum CompressionLevel
 	{
-		NoCompression = 0,
-		BestSpeed = 1,
+		NoCompression   = 0,
+		BestSpeed       = 1,
 		BestCompression = 9,
 		Default = 6,
-		Level0 = 0,
-		Level1 = 1,
-		Level2 = 2,
-		Level3 = 3,
-		Level4 = 4,
-		Level5 = 5,
-		Level6 = 6,
-		Level7 = 7,
-		Level8 = 8,
-		Level9 = 9
+		Level0  = 0,
+		Level1  = 1,
+		Level2  = 2,
+		Level3  = 3,
+		Level4  = 4,
+		Level5  = 5,
+		Level6  = 6,
+		Level7  = 7,
+		Level8  = 8,
+		Level9  = 9
 	}
 
     public class ZLibStream : Stream
@@ -85,26 +85,40 @@ namespace GameRes.Compression
 
         private void InitCompress (Stream stream, CompressionLevel level)
         {
-            int flevel = (int)level;
             System.IO.Compression.CompressionLevel sys_level;
-            if (0 == flevel)
+            byte flg_byte;
+
+            switch ((int)level)
             {
-                sys_level = System.IO.Compression.CompressionLevel.NoCompression;
+                case 0:
+                    sys_level = System.IO.Compression.CompressionLevel.NoCompression;
+                    flg_byte = 0x01;  // flevel=0
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    sys_level = System.IO.Compression.CompressionLevel.Optimal;
+                    flg_byte = 0x9C;  // flevel=2
+                    break;
+                case 7:
+                case 8:
+                case 9:
+                    sys_level = System.IO.Compression.CompressionLevel.Optimal;
+                    flg_byte = 0xDA;  // flevel=3
+                    break;
+                case 1:
+                case 2:
+                case 3:
+                default:
+                    sys_level = System.IO.Compression.CompressionLevel.Fastest;
+                    flg_byte = 0x01;  // flevel=0
+                    break;
             }
-            else if (flevel > 5)
-            {
-                sys_level = System.IO.Compression.CompressionLevel.Optimal;
-                flevel = 3;
-            }
-            else
-            {
-                sys_level = System.IO.Compression.CompressionLevel.Fastest;
-                flevel = 1;
-            }
-            int cmf = 0x7800 | flevel << 6;
-            cmf = ((cmf + 30) / 31) * 31;
-            stream.WriteByte ((byte)(cmf >> 8));
-            stream.WriteByte ((byte)cmf);
+
+            // Write zlib header without fancy bit juggling
+            stream.WriteByte ((byte)0x78);      // CMF
+            stream.WriteByte ((byte)flg_byte);  // FLG
+
             m_stream = new DeflateStream (stream, sys_level, true);
             m_adler  = new CheckedStream (m_stream, new Adler32());
             m_writing = true;

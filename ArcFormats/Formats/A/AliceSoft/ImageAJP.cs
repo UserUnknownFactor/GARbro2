@@ -21,23 +21,25 @@ namespace GameRes.Formats.AliceSoft
     {
         public override string         Tag { get { return "AJP"; } }
         public override string Description { get { return "AliceSoft JPEG image format"; } }
-        public override uint     Signature { get { return 0x504A41; } } // 'AJP'
+        public override uint     Signature { get { return  0x504A41; } } // 'AJP\0'
+        public override bool      CanWrite { get { return  true; } }
 
         internal static byte[] Key = {
-            0x5D, 0x91, 0xAE, 0x87, 0x4A, 0x56, 0x41, 0xCD, 0x83, 0xEC, 0x4C, 0x92, 0xB5, 0xCB, 0x16, 0x34
+            0x5D, 0x91, 0xAE, 0x87, 0x4A, 0x56, 0x41, 0xCD,
+            0x83, 0xEC, 0x4C, 0x92, 0xB5, 0xCB, 0x16, 0x34
         };
 
         public override ImageMetaData ReadMetaData (IBinaryStream stream)
         {
             var header = stream.ReadHeader (0x24);
-            int version = header.ToInt32 (4);
+            int version     = header.ToInt32  (4);
             if (version < 0)
                 return null;
             var info = new AjpMetaData
             {
-                Width   = header.ToUInt32 (0xC),
-                Height  = header.ToUInt32 (0x10),
-                BPP     = 32,
+                Width       = header.ToUInt32 (0xC ),
+                Height      = header.ToUInt32 (0x10),
+                BPP         = 32,
                 ImageOffset = header.ToUInt32 (0x14),
                 ImageSize   = header.ToUInt32 (0x18),
                 AlphaOffset = header.ToUInt32 (0x1C),
@@ -193,7 +195,94 @@ namespace GameRes.Formats.AliceSoft
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new System.NotImplementedException ("AjpFormat.Write not implemented");
+            var bitmap = image.Bitmap;
+            if (bitmap.Format != PixelFormats.Bgra32 && bitmap.Format != PixelFormats.Bgr24)
+            {
+                if (bitmap.Format.BitsPerPixel < 24)
+                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgr24, null, 0);
+                else
+                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgra32, null, 0);
+            }
+
+            int stride = (int)image.Width * (bitmap.Format.BitsPerPixel / 8);
+            var pixels = new byte[stride * (int)image.Height];
+            bitmap.CopyPixels (pixels, stride, 0);
+
+            bool hasAlpha = bitmap.Format == PixelFormats.Bgra32;
+
+            byte[] jpegData;
+            using (var ms = new MemoryStream())
+            {
+                var encoder = new JpegBitmapEncoder();
+                encoder.QualityLevel = 90;
+
+                BitmapSource jpegSource;
+                if (hasAlpha)
+                {
+                    // Strip alpha
+                    var rgbPixels = new byte[image.Width * image.Height * 3];
+                    for (int i = 0, j = 0; i < pixels.Length; i += 4, j += 3)
+                    {
+                        rgbPixels[j    ] = pixels[i    ];
+                        rgbPixels[j + 1] = pixels[i + 1];
+                        rgbPixels[j + 2] = pixels[i + 2];
+                    }
+                    jpegSource = BitmapSource.Create ((int)image.Width, (int)image.Height,
+                        96, 96, PixelFormats.Bgr24, null, rgbPixels, (int)image.Width * 3);
+                }
+                else
+                {
+                    jpegSource = BitmapSource.Create ((int)image.Width, (int)image.Height,
+                        96, 96, PixelFormats.Bgr24, null, pixels, stride);
+                }
+
+                encoder.Frames.Add (BitmapFrame.Create (jpegSource));
+                encoder.Save (ms);
+                jpegData = ms.ToArray();
+            }
+
+            for (int i = 0; i < (jpegData.Length > 16 ? 16 : jpegData.Length); i++)
+                jpegData[i] ^= Key[i];
+
+            // Prepare alpha mask if needed
+            byte[] maskData = new byte[0];
+            if (hasAlpha)
+            {
+                var alpha = new byte[image.Width * image.Height];
+                for (int i = 0, j = 3; i < alpha.Length; i++, j += 4)
+                    alpha[i] = pixels[j];
+
+                // Compress alpha with zlib
+                using (var ms = new MemoryStream())
+                {
+                    using (var zlib = new ZLibStream (ms, CompressionMode.Compress, CompressionLevel.Level9))
+                    {
+                        zlib.Write (alpha, 0, alpha.Length);
+                    }
+                    maskData = ms.ToArray();
+                }
+
+                for (int i = 0; i < (maskData.Length > 16 ? 16 : maskData.Length); i++)
+                    maskData[i] ^= Key[i];
+            }
+
+            // Write AJP file
+            using (var writer = new BinaryWriter (file))
+            {
+                writer.Write (0x504A41);   // 'AJP\0'
+                writer.Write ((int)1);     // version
+                writer.Write ((int)0);     // reserved
+                writer.Write ((uint)image.Width);
+                writer.Write ((uint)image.Height);
+                writer.Write ((uint)0x24); // JPEG offset
+                writer.Write ((uint)jpegData.Length);
+                writer.Write ((uint)(0x24 + jpegData.Length)); // mask offset
+                writer.Write ((uint)maskData.Length);
+
+                writer.Write (jpegData);
+                if (maskData.Length > 0)
+                    writer.Write (maskData);
+            }
         }
     }
 }

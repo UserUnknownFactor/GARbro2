@@ -27,7 +27,7 @@ namespace GameRes.Formats.YuRis
 
     public enum YpfCompression
     {
-        Zlib = 0,
+        Zlib   = 0,
         Snappy = 1,
     }
 
@@ -45,20 +45,20 @@ namespace GameRes.Formats.YuRis
 
         public YpfScheme (byte[] swap_table, byte key, uint script_key = 0)
         {
-            SwapTable = swap_table;
-            Key = key;
-            GuessKey = false;
+            SwapTable       = swap_table;
+            Key             = key;
+            GuessKey        = false;
             ExtraHeaderSize = 0;
-            ScriptKey = script_key;
-            CompressType = YpfCompression.Zlib;
+            ScriptKey       = script_key;
+            CompressType    = YpfCompression.Zlib;
         }
 
         public YpfScheme (byte[] swap_table)
         {
-            SwapTable = swap_table;
-            GuessKey = true;
+            SwapTable       = swap_table;
+            GuessKey        = true;
             ExtraHeaderSize = 0;
-            CompressType = YpfCompression.Zlib;
+            CompressType    = YpfCompression.Zlib;
         }
     }
 
@@ -153,7 +153,7 @@ namespace GameRes.Formats.YuRis
     public class YpfOpener : ArchiveFormat
     {
         public override string         Tag { get { return "YPF"; } }
-        public override string Description { get { return Localization._T ("YPFDescription"); } }
+        public override string Description { get { return  Localization._T ("YPFDescription"); } }
         public override uint     Signature { get { return  0x00465059; } }
         public override bool  IsHierarchic { get { return  true; } }
         public override bool      CanWrite { get { return  true; } }
@@ -329,8 +329,12 @@ namespace GameRes.Formats.YuRis
                     byte[] name_buf = encoding.GetBytes (file_name);
                     if (name_buf.Length > 0xff)
                         throw new InvalidFileName (entry.Name, Localization._T ("MsgFileNameTooLong"));
+
+                    sbyte file_type = GetFileType (ypf_options.Version, file_name);
+                    if (file_type < 0)
+                        continue;
+
                     uint hash = Checksum (name_buf);
-                    byte file_type = GetFileType (ypf_options.Version, file_name);
 
                     for (int i = 0; i < name_buf.Length; ++i)
                         name_buf[i] = (byte)(name_buf[i] ^ ypf_options.Key);
@@ -339,7 +343,7 @@ namespace GameRes.Formats.YuRis
                         Name = file_name,
                         IndexName = name_buf,
                         NameHash = hash,
-                        FileType = file_type,
+                        FileType = (byte)file_type,
                         IsPacked = 0 == file_type,
                     });
                     data_offset += (uint)(0x17 + name_buf.Length);
@@ -370,8 +374,9 @@ namespace GameRes.Formats.YuRis
                         if (entry.IsPacked)
                         {
                             var start = output.Position;
-                            using (var zstream = new ZLibStream (checked_stream, CompressionMode.Compress,
-                                                                 CompressionLevel.Level9, true))
+                            using (var zstream = new ZLibStream (
+                                checked_stream, CompressionMode.Compress,
+                                CompressionLevel.Level9, true))
                             {
                                 input.CopyTo (zstream);
                             }
@@ -416,26 +421,39 @@ namespace GameRes.Formats.YuRis
             }
         }
 
-        static byte GetFileType (uint version, string name)
+        // 0x0F7:               0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif, 5-avi, 6-wav, 7-ogg, 8-psd
+        // 0x122, 0x12C, 0x196: 0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif,        5-wav, 6-ogg, 7-psd
+        // 0x1F4:               0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif,        5-wav, 6-ogg, 7-psd, 8-ycg, 9-psb
+        private static readonly Dictionary<string, sbyte> FileTypeMap = new Dictionary<string, sbyte> {
+            { "ybn",  0 },
+            { "bmp",  1 },
+            { "png",  2 },
+            { "jpg",  3 },
+            { "jpeg", 3 },
+            { "gif",  4 },
+            { "wav",  5 },
+            { "ogg",  6 },
+            { "psd",  7 },
+            { "ycg",  8 },
+            { "psb",  9 }
+        };
+
+        static sbyte GetFileType(uint version, string name)
         {
-            // 0x0F7: 0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif, 5-avi, 6-wav, 7-ogg, 8-psd
-            // 0x122, 0x12C, 0x196: 0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif, 5-wav, 6-ogg, 7-psd
-            // 0x1F4:               0-ybn, 1-bmp, 2-png, 3-jpg, 4-gif, 5-wav, 6-ogg, 7-psd, 8-ycg 9-psb
-            string ext = Path.GetExtension (name).TrimStart ('.').ToLower();
-            if ("ybn" == ext) return 0;
-            if ("bmp" == ext) return 1;
-            if ("png" == ext) return 2;
-            if ("jpg" == ext || "jpeg" == ext) return 3;
-            if ("gif" == ext) return 4;
-            if ("avi" == ext && 0xf7 == version) return 5;
-            if ("ycg" == ext) return 8;
-            if ("psb" == ext) return 9;
-            byte type = 0;
-            if ("wav" == ext) type = 5;
-            else if ("ogg" == ext) type = 6;
-            else if ("psd" == ext) type = 7;
-            if (0xf7 == version && 0 != type)
-                ++type;
+            string ext = Path.GetExtension(name).TrimStart('.').ToLowerInvariant();
+
+            if (ext == "avi")
+                return version == 0xF7? (sbyte)5 : (sbyte)-1;
+
+            if (!FileTypeMap.TryGetValue(ext, out sbyte type))
+                return -1;
+
+            if (version == 0xF7 && type >= 5)
+                return (sbyte)(type + 1); // avi shifted them
+
+            if (version < 0x1F4 && type >= 8)
+                return (sbyte)-1;
+
             return type;
         }
 
@@ -508,11 +526,11 @@ namespace GameRes.Formats.YuRis
 
         private class Parser
         {
-            ArcView m_file;
-            uint    m_version;
-            int     m_count;
-            uint    m_dir_size;
-            
+            ArcView  m_file;
+            uint     m_version;
+            int      m_count;
+            uint     m_dir_size;
+
             public Parser (ArcView file, uint version, int count, uint dir_size)
             {
                 m_file     = file;

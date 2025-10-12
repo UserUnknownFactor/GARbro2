@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Windows;
@@ -18,7 +19,8 @@ namespace GameRes.Formats.AliceSoft
     {
         public override string         Tag { get { return "PMS"; } }
         public override string Description { get { return "AliceSoft image format"; } }
-        public override uint     Signature { get { return 0x014D50; } } // 'PM'
+        public override uint     Signature { get { return  0x014D50; } } // 'PM'
+        public override bool      CanWrite { get { return  true; } }
 
         public PmsFormat ()
         {
@@ -29,12 +31,12 @@ namespace GameRes.Formats.AliceSoft
         {
             var header = file.ReadHeader (0x30);
             var info = new PmsMetaData {
-                BPP = header[6],
-                OffsetX = header.ToInt32 (0x10),
-                OffsetY = header.ToInt32 (0x14),
-                Width = header.ToUInt32 (0x18),
-                Height = header.ToUInt32 (0x1C),
-                DataOffset = header.ToUInt32 (0x20),
+                BPP         = header[6],
+                OffsetX     = header.ToInt32  (0x10),
+                OffsetY     = header.ToInt32  (0x14),
+                Width       = header.ToUInt32 (0x18),
+                Height      = header.ToUInt32 (0x1C),
+                DataOffset  = header.ToUInt32 (0x20),
                 AlphaOffset = header.ToUInt32 (0x24),
             };
             if ((info.BPP != 16 && info.BPP != 8) || info.DataOffset < 0x30 || info.DataOffset >= file.Length)
@@ -52,7 +54,235 @@ namespace GameRes.Formats.AliceSoft
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new System.NotImplementedException ("PmsFormat.Write not implemented");
+            if (image.BPP >= 24) WritePms16 (file, image);
+            else
+                throw new NotSupportedException ("PMS8 indexed format writing not implemented");
+        }
+
+        void WritePms16 (Stream file, ImageData image)
+        {
+            var bitmap = image.Bitmap;
+            bool hasAlpha = bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Bgr32;
+
+            // Convert to RGB565 + optional alpha
+            int width = (int)image.Width;
+            int height = (int)image.Height;
+            var rgb565 = new ushort[width * height];
+            byte[] alpha = hasAlpha ? new byte[width * height] : null;
+
+            if (bitmap.Format == PixelFormats.Bgr565)
+            {
+                int stride = width * 2;
+                var pixels = new byte[stride * height];
+                bitmap.CopyPixels (pixels, stride, 0);
+                Buffer.BlockCopy (pixels, 0, rgb565, 0, pixels.Length);
+            }
+            else
+            {
+                int srcBpp = bitmap.Format.BitsPerPixel / 8;
+                int stride = width * srcBpp;
+                var pixels = new byte[stride * height];
+
+                if (bitmap.Format != PixelFormats.Bgra32 && bitmap.Format != PixelFormats.Bgr24)
+                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgr24, null, 0);
+
+                bitmap.CopyPixels (pixels, stride, 0);
+
+                for (int i = 0, j = 0; i < width * height; i++)
+                {
+                    byte b = pixels[j++];
+                    byte g = pixels[j++];
+                    byte r = pixels[j++];
+
+                    rgb565[i] = (ushort)((r & 0xF8) << 8 | (g & 0xFC) << 3 | (b >> 3));
+
+                    if (srcBpp == 4)
+                    {
+                        if (alpha != null)
+                            alpha[i] = pixels[j];
+                        j++;
+                    }
+                }
+            }
+
+            var rgbData = CompressPms16 (rgb565, width, height);
+
+            byte[] alphaData = null;
+            if (alpha != null)
+                alphaData = CompressPms8 (alpha, width, height);
+
+            int dataOffset = 0x30; // Fixed header size
+            int alphaOffset = hasAlpha ? dataOffset + rgbData.Length : 0;
+
+            // Write PMS header
+            using (var writer = new BinaryWriter (file))
+            {
+                writer.Write ((byte)'P');
+                writer.Write ((byte)'M');
+                writer.Write ((ushort)1);    // version
+                writer.Write ((ushort)0x30); // header size
+                writer.Write ((byte)16);     // bpp
+                writer.Write ((byte)0);      // shadow bpp
+                writer.Write ((byte)0);      // sprite flag
+                writer.Write ((byte)0);      // padding
+                writer.Write ((ushort)0);    // bank flag
+                writer.Write ((int)0);       // reserved
+                writer.Write ((int)0);       // x offset
+                writer.Write ((int)0);       // y offset
+                writer.Write ((uint)width);
+                writer.Write ((uint)height);
+                writer.Write ((uint)dataOffset);
+                writer.Write ((uint)alphaOffset);
+                writer.Write ((int)0);       // comment offset
+                writer.Write ((int)0);       // reserved
+
+                writer.Write (rgbData);
+                if (alphaData != null)
+                    writer.Write (alphaData);
+            }
+        }
+
+        byte[] CompressPms16 (ushort[] pixels, int width, int height)
+        {
+            var output = new MemoryStream();
+
+            for (int y = 0; y < height; y++)
+            {
+                int x = 0;
+                while (x < width)
+                {
+                    int pos = y * width + x;
+
+                    // Try copying from previous line
+                    if (y > 0)
+                    {
+                        int matchLen = 0;
+                        while (x + matchLen < width && matchLen < 257 &&
+                               pixels[pos + matchLen] == pixels[pos - width + matchLen])
+                        {
+                            matchLen++;
+                        }
+
+                        if (matchLen >= 2)
+                        {
+                            output.WriteByte (0xFF);
+                            output.WriteByte ((byte)(matchLen - 2));
+                            x += matchLen;
+                            continue;
+                        }
+                    }
+
+                    // Try RLE for repeated pixels
+                    if (x + 1 < width)
+                    {
+                        int runLen = 1;
+                        ushort pixel = pixels[pos];
+
+                        while (x + runLen < width && runLen < 258 &&
+                               pixels[pos + runLen] == pixel)
+                        {
+                            runLen++;
+                        }
+
+                        if (runLen >= 3)
+                        {
+                            output.WriteByte (0xFD);
+                            output.WriteByte ((byte)(runLen - 3));
+                            output.WriteByte ((byte)pixel);
+                            output.WriteByte ((byte)(pixel >> 8));
+                            x += runLen;
+                            continue;
+                        }
+                    }
+
+                    // Write raw pixel
+                    ushort val = pixels[pos];
+                    if ((val & 0xFF) <= 0xF7)
+                    {
+                        output.WriteByte ((byte)val);
+                        output.WriteByte ((byte)(val >> 8));
+                    }
+                    else
+                    {
+                        output.WriteByte (0xF8);
+                        output.WriteByte ((byte)val);
+                        output.WriteByte ((byte)(val >> 8));
+                    }
+                    x++;
+                }
+            }
+
+            return output.ToArray();
+        }
+
+        byte[] CompressPms8 (byte[] pixels, int width, int height)
+        {
+            var output = new MemoryStream();
+
+            for (int y = 0; y < height; y++)
+            {
+                int x = 0;
+                while (x < width)
+                {
+                    int pos = y * width + x;
+
+                    // Try copying from previous line
+                    if (y > 0)
+                    {
+                        int matchLen = 0;
+                        while (x + matchLen < width && matchLen < 258 &&
+                               pixels[pos + matchLen] == pixels[pos - width + matchLen])
+                        {
+                            matchLen++;
+                        }
+
+                        if (matchLen >= 3)
+                        {
+                            output.WriteByte (0xFF);
+                            output.WriteByte ((byte)(matchLen - 3));
+                            x += matchLen;
+                            continue;
+                        }
+                    }
+
+                    // Try RLE
+                    if (x + 1 < width)
+                    {
+                        int runLen = 1;
+                        byte pixel = pixels[pos];
+
+                        while (x + runLen < width && runLen < 259 &&
+                               pixels[pos + runLen] == pixel)
+                        {
+                            runLen++;
+                        }
+
+                        if (runLen >= 4)
+                        {
+                            output.WriteByte (0xFD);
+                            output.WriteByte ((byte)(runLen - 4));
+                            output.WriteByte (pixel);
+                            x += runLen;
+                            continue;
+                        }
+                    }
+
+                    // Write raw pixel
+                    byte val = pixels[pos];
+                    if (val <= 0xF7)
+                    {
+                        output.WriteByte (val);
+                    }
+                    else
+                    {
+                        output.WriteByte (0xF8);
+                        output.WriteByte (val);
+                    }
+                    x++;
+                }
+            }
+
+            return output.ToArray();
         }
     }
 
@@ -65,9 +295,9 @@ namespace GameRes.Formats.AliceSoft
 
         public PmsReader (IBinaryStream input, PmsMetaData info)
         {
-            m_input = input;
-            m_info = info;
-            m_width = (int)m_info.Width;
+            m_input  = input;
+            m_info   = info;
+            m_width  = (int)m_info.Width;
             m_height = (int)m_info.Height;
         }
 
@@ -75,9 +305,10 @@ namespace GameRes.Formats.AliceSoft
         {
             switch (m_info.BPP)
             {
-            case 16:    return UnpackRgb();
-            case 8:     return UnpackIndexed();
-            default:    throw new InvalidFormatException();
+            case 16:  return UnpackRgb();
+            case 8:   return UnpackIndexed();
+            default:
+                throw new InvalidFormatException();
             }
         }
 

@@ -1,6 +1,8 @@
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
 using GameRes.Compression;
 using GameRes.Utility;
 
@@ -18,12 +20,8 @@ namespace GameRes.Formats.AliceSoft
     {
         public override string         Tag { get { return "QNT"; } }
         public override string Description { get { return "AliceSoft System image format"; } }
-        public override uint     Signature { get { return 0x544e51; } } // 'QNT'
-
-        public override void Write (Stream file, ImageData image)
-        {
-            throw new System.NotImplementedException ("QntFormat.Write not implemented");
-        }
+        public override uint     Signature { get { return  0x544e51; } } // 'QNT'
+        public override bool      CanWrite { get { return  true; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream stream)
         {
@@ -33,15 +31,14 @@ namespace GameRes.Formats.AliceSoft
                 return null;
             if (0 == version)
             {
-                return new QntMetaData
-                {
-                    Width = header.ToUInt32 (0x10),
-                    Height = header.ToUInt32 (0x14),
-                    OffsetX = header.ToInt32 (0x08),
-                    OffsetY = header.ToInt32 (0x0C),
-                    BPP = header.ToInt32 (0x18),
-                    RGBSize = header.ToUInt32 (0x20),
-                    AlphaSize = header.ToUInt32 (0x24),
+                return new QntMetaData {
+                    Width      = header.ToUInt32 (0x10),
+                    Height     = header.ToUInt32 (0x14),
+                    OffsetX    = header.ToInt32  (0x08),
+                    OffsetY    = header.ToInt32  (0x0C),
+                    BPP        = header.ToInt32  (0x18),
+                    RGBSize    = header.ToUInt32 (0x20),
+                    AlphaSize  = header.ToUInt32 (0x24),
                     HeaderSize = 0x30,
                 };
             }
@@ -50,15 +47,14 @@ namespace GameRes.Formats.AliceSoft
             uint height = header.ToUInt32 (0x18);
             if (0 == width || 0 == height)
                 return null;
-            return new QntMetaData
-            {
-                Width = width,
-                Height = height,
-                OffsetX = header.ToInt32 (0x0c),
-                OffsetY = header.ToInt32 (0x10),
-                BPP = header.ToInt32 (0x1c),
-                RGBSize = header.ToUInt32 (0x24),
-                AlphaSize = header.ToUInt32 (0x28),
+            return new QntMetaData {
+                Width      = width,
+                Height     = height,
+                OffsetX    = header.ToInt32  (0x0c),
+                OffsetY    = header.ToInt32  (0x10),
+                BPP        = header.ToInt32  (0x1c),
+                RGBSize    = header.ToUInt32 (0x24),
+                AlphaSize  = header.ToUInt32 (0x28),
                 HeaderSize = header_size,
             };
         }
@@ -70,6 +66,112 @@ namespace GameRes.Formats.AliceSoft
             int stride = (int)info.Width * (reader.BPP / 8);
             PixelFormat format = 24 == reader.BPP ? PixelFormats.Bgr24 : PixelFormats.Bgra32;
             return ImageData.Create (info, format, null, reader.Data, stride);
+        }
+
+        public override void Write (Stream file, ImageData image)
+        {
+            var bitmap = image.Bitmap;
+            if (bitmap.Format != PixelFormats.Bgra32)
+                bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgra32, null, 0);
+
+            int width = (int)image.Width;
+            int height = (int)image.Height;
+            int stride = width * 4;
+            var pixels = new byte[stride * height];
+            bitmap.CopyPixels (pixels, stride, 0);
+
+            ApplyDeltaFilter (pixels, width, height);
+
+            int w = (width + 1) & ~1;
+            int h = (height + 1) & ~1;
+            var rgb_data = new byte[w * h * 3];
+            int dst = 0;
+
+            // Interleave in 2x2 blocks
+            for (int c = 0; c < 3; c++) // RGB order
+            for (int y = 0; y < h; y += 2)
+            for (int x = 0; x < w; x += 2)
+            {
+                rgb_data[dst++] = y < height && x < width ? pixels[(y * width + x) * 4 + c] : (byte)0;
+                rgb_data[dst++] = y + 1 < height && x < width ? pixels[((y + 1) * width + x) * 4 + c] : (byte)0;
+                rgb_data[dst++] = y < height && x + 1 < width ? pixels[(y * width + x + 1) * 4 + c] : (byte)0;
+                rgb_data[dst++] = y + 1 < height && x + 1 < width ? pixels[((y + 1) * width + x + 1) * 4 + c] : (byte)0;
+            }
+
+            // Extract and prepare alpha
+            var alpha_data = new byte[w * h];
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                alpha_data[y * w + x] = y < height && x < width ? pixels[(y * width + x) * 4 + 3] : (byte)0;
+            }
+
+            byte[] compressed_rgb, compressed_alpha;
+            using (var ms = new MemoryStream())
+            {
+                using (var z = new ZLibStream (ms, CompressionMode.Compress, CompressionLevel.Level9))
+                    z.Write (rgb_data, 0, rgb_data.Length);
+                compressed_rgb = ms.ToArray();
+            }
+
+            using (var ms = new MemoryStream())
+            {
+                using (var z = new ZLibStream (ms, CompressionMode.Compress, CompressionLevel.Level9))
+                    z.Write (alpha_data, 0, alpha_data.Length);
+                compressed_alpha = ms.ToArray();
+            }
+
+            // Write header
+            using (var writer = new BinaryWriter (file))
+            {
+                writer.Write (0x544E51);   // 'QNT\0'
+                writer.Write ((int)1);     // version
+                writer.Write ((int)0x2C);  // header size
+                writer.Write ((int)0);     // x offset
+                writer.Write ((int)0);     // y offset
+                writer.Write ((uint)width);
+                writer.Write ((uint)height);
+                writer.Write ((int)24);    // bpp
+                writer.Write ((int)1);     // reserved
+                writer.Write ((uint)compressed_rgb.Length);
+                writer.Write ((uint)compressed_alpha.Length);
+
+                writer.Write (compressed_rgb);
+                writer.Write (compressed_alpha);
+            }
+        }
+
+        void ApplyDeltaFilter (byte[] pixels, int width, int height)
+        {
+            // Apply predictive filter (reverse order)
+            for (int y = height - 1; y > 0; y--)
+            {
+                for (int x = width - 1; x > 0; x--)
+                {
+                    for (int c = 0; c < 4; c++)
+                    {
+                        int idx = (y * width + x) * 4 + c;
+                        int up = pixels[((y - 1) * width + x) * 4 + c];
+                        int left = pixels[(y * width + x - 1) * 4 + c];
+                        pixels[idx] = (byte)(((up + left) >> 1) - pixels[idx]);
+                    }
+                }
+                // First pixel of row
+                for (int c = 0; c < 4; c++)
+                {
+                    int idx = y * width * 4 + c;
+                    pixels[idx] = (byte)(pixels[(y - 1) * width * 4 + c] - pixels[idx]);
+                }
+            }
+            // First row
+            for (int x = width - 1; x > 0; x--)
+            {
+                for (int c = 0; c < 4; c++)
+                {
+                    int idx = x * 4 + c;
+                    pixels[idx] = (byte)(pixels[(x - 1) * 4 + c] - pixels[idx]);
+                }
+            }
         }
 
         internal class Reader : IBaseImageReader
@@ -177,5 +279,6 @@ namespace GameRes.Formats.AliceSoft
                 }
             }
         }
+
     }
 }

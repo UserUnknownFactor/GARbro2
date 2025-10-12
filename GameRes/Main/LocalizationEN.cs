@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17628; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17723; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -17,6 +17,8 @@ public static partial class Localization
                 { "AMIDescription", new LocalizationEntry { Singular = "Amaterasu Translations Muv-Luv archive" } },
                 { "AMINoFiles", new LocalizationEntry { Singular = "No files suitable for AMI archive found." } },
                 { "ArcEncryptedNotice", new LocalizationEntry { Singular = "Archive content is encrypted.\nChoose appropriate encryption scheme." } },
+                { "DCFMergeWithBase", new LocalizationEntry { Singular = "Combine images with their bases" } },
+                { "BaseImage", new LocalizationEntry { Singular = " [Base: {0}]" } },
                 { "ArcNoEncryption", new LocalizationEntry { Singular = "no encryption" } },
                 { "ArcReset", new LocalizationEntry { Singular = "Reset" } },
                 { "GRPDescription", new LocalizationEntry { Singular = "Age proprietary image format" } },

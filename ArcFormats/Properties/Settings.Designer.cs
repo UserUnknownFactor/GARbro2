@@ -1039,5 +1039,53 @@ namespace GameRes.Formats.Properties {
             }
         }
 
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public int AFAVersion {
+            get {
+                return ((int)(this["AFAVersion"]));
+            }
+            set {
+                this["AFAVersion"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AFAEncryptAff {
+            get {
+                return ((bool)(this["AFAEncryptAff"]));
+            }
+            set {
+                this["AFAEncryptAff"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6")]
+        public int AFACompressionLevel {
+            get {
+                return ((int)(this["AFACompressionLevel"]));
+            }
+            set {
+                this["AFACompressionLevel"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool DCFMergeWithBase {
+            get {
+                return ((bool)(this["DCFMergeWithBase"]));
+            }
+            set {
+                this["DCFMergeWithBase"] = value;
+            }
+        }
+
     }
 }
