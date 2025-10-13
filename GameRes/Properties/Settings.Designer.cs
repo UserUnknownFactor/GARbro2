@@ -70,5 +70,18 @@ namespace GameRes.Properties {
                 this["JPEG2KQuality"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PNGSaveMetadataToFile {
+            get {
+                return ((bool)(this["PNGSaveMetadataToFile"]));
+            }
+            set {
+                this["PNGSaveMetadataToFile"] = value;
+            }
+        }
+
     }
 }

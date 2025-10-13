@@ -1,18 +1,18 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="GameRes.Formats.Properties" GeneratedClassName="Settings">
-  <Profiles />
+  <Profiles/>
   <Settings>
     <Setting Name="NPAScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="XP3Scheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="YPFKey" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">4294967295</Value>
     </Setting>
     <Setting Name="INTEncryption" Type="GameRes.Formats.CatSystem.IntEncryptionInfo" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="XP3CompressHeader" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -22,6 +22,9 @@
     </Setting>
     <Setting Name="XP3Version" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2</Value>
+    </Setting>
+    <Setting Name="RGSSVersion" Type="byte" Scope="User">
+      <Value Profile="(Default)">3</Value>
     </Setting>
     <Setting Name="XP3RetainStructure" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -33,7 +36,7 @@
       <Value Profile="(Default)">None</Value>
     </Setting>
     <Setting Name="AMIBaseArchive" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="AMIUseBaseArchive" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -60,22 +63,22 @@
       <Value Profile="(Default)">8</Value>
     </Setting>
     <Setting Name="KCAPPassPhrase" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="KCAPScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="WARCScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="LPKScheme" Type="System.String" Scope="User">
       <Value Profile="(Default)">Default</Value>
     </Setting>
     <Setting Name="NOAScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NOAPassPhrase" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="DPKKey1" Type="System.UInt32" Scope="User">
       <Value Profile="(Default)">65432</Value>
@@ -84,37 +87,40 @@
       <Value Profile="(Default)">1139247708</Value>
     </Setting>
     <Setting Name="DPKLastScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="MBLPassPhrase" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="ISFScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
-    <Setting Name="MCGLastKey" Type="System.Byte" Scope="User">
+    <Setting Name="IkuraArchiveType" Type="System.String" Scope="User">
+      <Value Profile="(Default)">DATA</Value>
+    </Setting>
+    <Setting Name="MCGLastKey" Type="byte" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="RCTPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="RCTTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NSAPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NSATitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="RPMScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="QLIEScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="YPFScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="ZIPCompression" Type="System.IO.Compression.CompressionLevel" Scope="User">
       <Value Profile="(Default)">Optimal</Value>
@@ -126,55 +132,58 @@
       <Value Profile="(Default)">932</Value>
     </Setting>
     <Setting Name="SevenZipNamesSrcCP" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+      <Value Profile="(Default)">932</Value>
     </Setting>
     <Setting Name="SevenZipNamesDstCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
     </Setting>
     <Setting Name="AZScriptScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="AGSTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NCARCScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="MEDScriptScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="GALKey" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="MGPKTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="BELLTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
+    </Setting>
+    <Setting Name="BELLDATATitle" Type="System.String" Scope="User">
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NPKScheme" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="TacticsArcPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="TacticsArcTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="GYUTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="PAZTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="EAGLSEncryption" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="FJSYSPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="PCKTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="RCTOverlayFrames" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
@@ -186,7 +195,7 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="ZIPPassword" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="OGGFixCrc" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -201,10 +210,10 @@
       <Value Profile="(Default)">932</Value>
     </Setting>
     <Setting Name="LEAFTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="SJDatTitle" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="AFAEncodingCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
@@ -213,7 +222,7 @@
       <Value Profile="(Default)">DXARC</Value>
     </Setting>
     <Setting Name="DXA_PasswordHistory" Type="System.String" Scope="User">
-      <Value Profile="(Default)"></Value>
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="NexasEncodingCP" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">932</Value>
@@ -222,25 +231,37 @@
       <Value Profile="(Default)">RGBA</Value>
     </Setting>
     <Setting Name="PakUE_Password" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="Password" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"/>
     </Setting>
     <Setting Name="TLGVersion" Type="System.String" Scope="User">
-      <Value Profile="(Default)">TLG6 (Golomb)</Value
+      <Value Profile="(Default)">TLG6 (Golomb)</Value>
     </Setting>
     <Setting Name="CCNOutputFormat" Type="System.String" Scope="User">
-      <Value>RGBMasked</value>
+      <Value Profile="(Default)">RGBMasked</Value>
     </Setting>
     <Setting Name="CCNCompressionEnabled" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">true</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="GALVersion" Type="System.String" Scope="User">
-      <Value>GAL v107</value>
+      <Value Profile="(Default)">GAL v107</Value>
     </Setting>
     <Setting Name="GALCompression" Type="System.String" Scope="User">
-      <Value>zlib</value>
+      <Value Profile="(Default)">zlib</Value>
+    </Setting>
+    <Setting Name="AFAVersion" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
+    <Setting Name="AFAEncryptAff" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="AFACompressionLevel" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">6</Value>
+    </Setting>
+    <Setting Name="DCFMergeWithBase" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>

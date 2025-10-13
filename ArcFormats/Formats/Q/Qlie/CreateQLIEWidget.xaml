@@ -24,15 +24,15 @@
         <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
     
-    <Label Grid.Row="0" Grid.Column="0" Content="{gre:Localize QLIEVersionLabel}" HorizontalAlignment="Right"/>
+    <Label Grid.Row="0" Grid.Column="0" Content="{gre:Localize VersionLabel}" HorizontalAlignment="Right"/>
     <ComboBox Name="VersionCombo" Grid.Row="0" Grid.Column="1" Margin="0,3,0,3" Width="150" HorizontalAlignment="Left"
               ItemsSource="{StaticResource VersionList}"
               SelectedIndex="3"/>
     
-    <Label Grid.Row="1" Grid.Column="0" Content="{gre:Localize QLIESchemeLabel}" HorizontalAlignment="Right"/>
+    <Label Grid.Row="1" Grid.Column="0" Content="{gre:Localize SchemeLabel}" HorizontalAlignment="Right"/>
     <ComboBox Name="SchemeCombo" Grid.Row="1" Grid.Column="1" Margin="0,3,0,3" Width="250" HorizontalAlignment="Left"/>
     
-    <Label Grid.Row="2" Grid.Column="0" Content="{gre:Localize QLIEKeyLabel}" HorizontalAlignment="Right"/>
+    <Label Grid.Row="2" Grid.Column="0" Content="{gre:Localize KeyLabel}" HorizontalAlignment="Right"/>
     <TextBox Name="GameKeyText" Grid.Row="2" Grid.Column="1" Margin="0,3,0,3" Width="250" HorizontalAlignment="Left"/>
     
     <CheckBox Name="CompressCheck" Grid.Row="3" Grid.Column="1" Margin="0,3,0,3"

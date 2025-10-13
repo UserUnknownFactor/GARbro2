@@ -1,5 +1,6 @@
 Original→Singular→Plural1→Plural2→Plural3
 // ArcFormats strings
+AFAEncryptAffLabel→Encrypt AFF→→→
 AMIBaseArchive→Base archive→→→
 AMIBaseTooltip→New archive will also contain entries from the base archive.→→→
 AMIChooseBase→Select base archive→→→
@@ -47,11 +48,12 @@ ONSCompression→Compression→→→
 ONSCompressionNone→None→→→
 PDDescription→Flying Shine resource archive→→→
 PDScrambleContents→Scramble contents→→→
-QLIEVersionLabel→Archive Version:→→→
-QLIESchemeLabel→Encryption Scheme:→→→
-QLIEKeyLabel→Game Key:→→→
+CompressionLevelLabel→Archive Compression:→→→
+VersionLabel→Archive Version:→→→
+SchemeLabel→Encryption Scheme:→→→
+KeyLabel→Game Key:→→→
 QLIECompressLabel→Compress files (BPE; very slow)→→→
-QLIEDefaultScheme→(None)→→→
+DefaultScheme→(None)→→→
 RPADescription→Ren'Py game engine archive→→→
 RPALabelKey→32-bit key→→→
 SCRDescription→Amaterasu Translations Muv-Luv script file→→→
@@ -370,6 +372,7 @@ MsgUnknownFormat→file could not be opened as resource archive→→→
 PackingFileN→Packing {0}→→→
 PackingFiles→Packing file...→Packing files...→→
 PackingTagFailed→Failed to pack files into {0} archive→→→
+PNGSaveMetadataToFile→Save custom metadata to a per-folder .pngmetadata file→→→
 WritingArchive→Writing archive...→→→
 FinalizingArchive→Finalizing archive...→→→
 PackingComplete→Packing complete→→→

@@ -18,7 +18,7 @@ namespace GameRes.Formats.Iso
         public override string         Tag { get { return "ISO"; } }
         public override string Description { get { return "ISO 9660 CD-ROM Image"; } }
         public override uint     Signature { get { return  0; } }
-        public override bool      CanWrite { get { return  true; } }
+        public override bool      CanWrite { get { return  false; } }
 
         private readonly (int sectorSize, int dataOffset)[] ValidSectorSizes = new[]
         {

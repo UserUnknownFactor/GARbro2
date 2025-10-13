@@ -350,7 +350,6 @@ namespace GameRes.Compression
         private byte[] m_frame;
         private int m_frame_pos;
         private int m_frame_mask;
-        private byte[] m_buffer;
         private List<byte> m_output_buffer;
         private byte m_control_byte;
         private int m_control_bit;
@@ -363,7 +362,6 @@ namespace GameRes.Compression
             m_frame = new byte[settings.FrameSize];
             m_frame_mask = settings.FrameSize - 1;
             m_frame_pos = settings.FrameInitPos;
-            m_buffer = new byte[settings.MaxMatchLength];
             m_output_buffer = new List<byte>();
             m_control_byte = 0;
             m_control_bit = 1;
@@ -386,20 +384,30 @@ namespace GameRes.Compression
             int pos = offset;
             int end = offset + count;
 
+            int lookAheadSize = Math.Min (m_settings.MaxMatchLength, end - pos);
+            for (int i = 0; i < lookAheadSize && pos + i < end; i++)
+                m_frame[(m_frame_pos + i) & m_frame_mask] = buffer[pos + i];
+
             while (pos < end)
             {
-                // Try to find a match in the frame
-                var match = FindBestMatch (buffer, pos, Math.Min (m_settings.MaxMatchLength, end - pos));
+                int maxLength = Math.Min (m_settings.MaxMatchLength, end - pos);
+                var match = FindBestMatch (buffer, pos, maxLength);
 
                 if (match.Length >= m_settings.MinMatchLength)
                 {
                     // Write match
                     WriteMatch (match.Offset, match.Length);
 
-                    // Update frame
+                    // Move frame position forward and update with new data
                     for (int i = 0; i < match.Length; i++)
                     {
-                        m_frame[m_frame_pos++ & m_frame_mask] = buffer[pos + i];
+                        m_frame[m_frame_pos & m_frame_mask] = buffer[pos + i];
+                        m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
+
+                        // Update look-ahead if there's more data
+                        int lookAheadPos = pos + i + m_settings.MaxMatchLength;
+                        if (lookAheadPos < end)
+                            m_frame[(m_frame_pos + m_settings.MaxMatchLength - 1) & m_frame_mask] = buffer[lookAheadPos];
                     }
                     pos += match.Length;
                 }
@@ -407,31 +415,52 @@ namespace GameRes.Compression
                 {
                     // Write literal
                     WriteLiteral (buffer[pos]);
-                    m_frame[m_frame_pos++ & m_frame_mask] = buffer[pos];
+
+                    // Update frame
+                    m_frame[m_frame_pos & m_frame_mask] = buffer[pos];
+                    m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
+
+                    // Update look-ahead if there's more data
+                    int lookAheadPos = pos + m_settings.MaxMatchLength;
+                    if (lookAheadPos < end)
+                        m_frame[(m_frame_pos + m_settings.MaxMatchLength - 1) & m_frame_mask] = buffer[lookAheadPos];
+
                     pos++;
                 }
             }
         }
 
-        private (int Offset, int Length) FindBestMatch (byte[] buffer, int pos, int maxLength)
+        private (int Offset, int Length) FindBestMatch (byte[] buffer, int bufferPos, int maxLength)
         {
             int bestOffset = 0;
             int bestLength = 0;
 
-            // Search through the frame for matches
-            for (int i = 0; i < m_settings.FrameSize; i++)
+            int searchLimit = Math.Min (m_settings.FrameSize - m_settings.MaxMatchLength, bufferPos);
+
+            for (int distance = 1; distance <= searchLimit; distance++)
             {
-                int matchLength = 0;
-                while (matchLength < maxLength && 
-                       m_frame[(i + matchLength) & m_frame_mask] == buffer[pos + matchLength])
+                // Calculate frame position for this distance
+                int frameOffset = (m_frame_pos - distance) & m_frame_mask;
+
+                // Quick check first two bytes
+                if (m_frame[frameOffset] != buffer[bufferPos] || 
+                    m_frame[(frameOffset + 1) & m_frame_mask] != buffer[bufferPos + 1])
+                    continue;
+
+                // Count matching bytes
+                int matchLength = 2;
+                while (matchLength < maxLength)
                 {
+                    if (m_frame[(frameOffset + matchLength) & m_frame_mask] != buffer[bufferPos + matchLength])
+                        break;
                     matchLength++;
                 }
 
+                // Keep best match
                 if (matchLength > bestLength)
                 {
                     bestLength = matchLength;
-                    bestOffset = i;
+                    bestOffset = frameOffset;
 
                     if (matchLength == maxLength)
                         break;
@@ -451,6 +480,7 @@ namespace GameRes.Compression
 
         private void WriteMatch (int offset, int length)
         {
+            // Store absolute position in frame and adjusted length
             int adjustedLength = length - m_settings.MinMatchLength;
             m_output_buffer.Add((byte)(offset & 0xFF));
             m_output_buffer.Add((byte)(((offset >> 4) & 0xF0) | (adjustedLength & 0x0F)));
@@ -463,10 +493,7 @@ namespace GameRes.Compression
 
             if (m_control_bit >= 0x100)
             {
-                // Write control byte
                 m_output_buffer[m_control_pos] = m_control_byte;
-
-                // Write buffer to stream
                 m_output.Write (m_output_buffer.ToArray(), 0, m_output_buffer.Count);
 
                 // Reset for next block
@@ -562,7 +589,8 @@ namespace GameRes.Compression
                         int hi = m_input.ReadByte();
                         remaining -= 2;
                         int offset = (hi & 0xf0) << 4 | lo;
-                        for (int count = 3 + (hi & 0xF); count != 0; --count)
+
+                        for (int count = MinMatchLength + (hi & 0xF); count != 0; --count)
                         {
                             if (dst >= m_output.Length)
                                 break;
@@ -650,7 +678,6 @@ namespace GameRes.Compression
             var output_buffer = new List<byte>();
             byte control_byte = 0;
             int control_bit = 1;
-            int control_pos = 0;
 
             output_buffer.Add (0); // Reserve space for control byte
 
@@ -659,17 +686,19 @@ namespace GameRes.Compression
 
             while (pos < end)
             {
-                // Find best match
                 int best_offset = 0;
                 int best_length = 0;
-
                 int max_check = Math.Min (m_max_match, end - pos);
 
-                for (int i = 0; i < m_frame_size; i++)
+                int search_start = (m_frame_pos - m_frame_size + 1) & m_frame_mask;
+
+                for (int i = 0; i < m_frame_size - 1; i++)
                 {
+                    int check_pos = (search_start + i) & m_frame_mask;
                     int match_length = 0;
+
                     while (match_length < max_check && 
-                           m_frame[(i + match_length) & m_frame_mask] == input[pos + match_length])
+                           m_frame[(check_pos + match_length) & m_frame_mask] == input[pos + match_length])
                     {
                         match_length++;
                     }
@@ -677,7 +706,7 @@ namespace GameRes.Compression
                     if (match_length >= m_min_match && match_length > best_length)
                     {
                         best_length = match_length;
-                        best_offset = i;
+                        best_offset = check_pos;
 
                         if (match_length == max_check)
                             break;
@@ -686,9 +715,10 @@ namespace GameRes.Compression
 
                 if (best_length >= m_min_match)
                 {
-                    // Write match (control bit = 0)
+                    // Write match (control bit = 0, so don't set bit)
                     output_buffer.Add((byte)(best_offset & 0xFF));
-                    output_buffer.Add((byte)(((best_offset >> 8) & 0xF0) | ((best_length - m_min_match) & 0x0F)));
+                    output_buffer.Add((byte)(((best_offset >> 4) & 0xF0) | ((best_length - m_min_match) & 0x0F)));
+
                     for (int i = 0; i < best_length; i++)
                     {
                         m_frame[m_frame_pos++ & m_frame_mask] = input[pos + i];
@@ -708,22 +738,21 @@ namespace GameRes.Compression
 
                 if (control_bit >= 0x100)
                 {
-                    // Write control byte
-                    output_buffer[control_pos] = control_byte;
+                    // Write control byte and flush
+                    output_buffer[0] = control_byte;
                     m_output.Write (output_buffer.ToArray());
 
                     output_buffer.Clear();
+                    output_buffer.Add (0); // Reserve space for next control byte
                     control_byte = 0;
                     control_bit = 1;
-                    control_pos = output_buffer.Count;
-                    output_buffer.Add (0); // Reserve space for next control byte
                 }
             }
 
-            // Write final control byte if needed
+            // Write final block if needed
             if (control_bit > 1)
             {
-                output_buffer[control_pos] = control_byte;
+                output_buffer[0] = control_byte;
                 m_output.Write (output_buffer.ToArray());
             }
         }

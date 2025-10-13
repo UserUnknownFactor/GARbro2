@@ -41,8 +41,7 @@ namespace GameRes
 
         LocalResourceSetting EnableExtensions = new LocalResourceSetting {
             Name        = "BMPEnableExtensions",
-            Text        = "BMPExtensionsText",
-            Description = "BMPExtensionsDesc",
+            Text        = Localization._T("BMPExtensionsText")
         };
 
         public override ImageData Read (IBinaryStream file, ImageMetaData info)

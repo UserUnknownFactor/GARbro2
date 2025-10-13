@@ -45,11 +45,15 @@ namespace GameRes.Formats.AliceSoft
 
             if (!file.View.AsciiEqual (8, "AlicArch"))
             {
-                if (file.View.ReadInt32 (8) == 3)
+                if (file.View.ReadInt32 (8) == 3) 
+                {
+                    Comment = "V3";
                     return TryOpenV3 (file);
+                }
                 return null;
             }
 
+            Comment = "V1/2";
             return TryOpenV1or2 (file);
         }
 

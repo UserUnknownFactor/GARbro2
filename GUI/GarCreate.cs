@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+
 using GameRes;
 using GARbro.GUI.Properties;
 
@@ -177,6 +178,9 @@ namespace GARbro.GUI
             var list = new List<Entry>();
             foreach (var entry in files)
             {
+                if (Path.GetFileName (entry.Name).Equals (PngFormat.METADATA_FILENAME, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 if (entry.IsDirectory)
                 {
                     if (VFS.DIR_PARENT != entry.Name)
@@ -206,6 +210,10 @@ namespace GARbro.GUI
                     continue;
                 if (file.Length >= uint.MaxValue)
                     continue;
+
+                if (file.Name.Equals (PngFormat.METADATA_FILENAME, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 string name = Path.Combine (path, file.Name);
                 var e = FormatCatalog.Instance.Create<Entry> (name);
                 e.Size = (uint)file.Length;

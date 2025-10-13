@@ -3,7 +3,9 @@ using GameRes.Utility;
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Text;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace GameRes.Formats.Silky
 {
@@ -15,6 +17,26 @@ namespace GameRes.Formats.Silky
         public uint     Flags;
         public string   BaseFileName;
         public uint     DataOffset;
+
+        public bool IsIncremental => !string.IsNullOrEmpty (BaseFileName);
+
+        public override string GetComment ()
+        {
+            var comment = base.GetComment();
+            if (!string.IsNullOrEmpty (BaseFileName))
+                comment += Localization.Format ("BaseImage", Path.GetFileName (BaseFileName));
+
+            if (InnerWidth != Width || InnerHeight != Height)
+                comment += $" ({InnerWidth}x{InnerHeight} @ {OffsetX},{OffsetY})";
+
+            if (Background != null && LittleEndian.ToInt32 (Background, 0) != 0)
+            {
+                uint bgColor = LittleEndian.ToUInt32 (Background, 0);
+                comment += $" (BG: #{bgColor:X8})";
+            }
+
+            return comment;
+        }
     }
 
     [Export(typeof(ImageFormat))]
@@ -32,7 +54,8 @@ namespace GameRes.Formats.Silky
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
             var info = new AkbMetaData();
-            bool is_incremental = '+' == (file.ReadUInt32() >> 24);
+            uint signature = file.ReadUInt32();
+            bool is_incremental = '+' == (signature >> 24);
             info.Width = file.ReadUInt16();
             info.Height = file.ReadUInt16();
             info.Flags = file.ReadUInt32();
@@ -40,10 +63,14 @@ namespace GameRes.Formats.Silky
             info.Background = file.ReadBytes (4);
             info.OffsetX = file.ReadInt32();
             info.OffsetY = file.ReadInt32();
-            info.InnerWidth = file.ReadInt32() - info.OffsetX;
-            info.InnerHeight = file.ReadInt32() - info.OffsetY;
-            if (info.InnerWidth > info.Width || info.InnerHeight > info.Height)
+            int right = file.ReadInt32();
+            int bottom = file.ReadInt32();
+            info.InnerWidth = right - info.OffsetX;
+            info.InnerHeight = bottom - info.OffsetY;
+            if (info.InnerWidth < 0 || info.InnerHeight < 0 || 
+                info.InnerWidth > info.Width || info.InnerHeight > info.Height)
                 return null;
+
             if (is_incremental)
                 info.BaseFileName = file.ReadCString (0x20);
             info.DataOffset = (uint)file.Position;

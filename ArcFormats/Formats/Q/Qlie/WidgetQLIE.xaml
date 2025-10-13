@@ -6,7 +6,7 @@
             Orientation="Vertical">
             <StackPanel>
                 <Label Target="{Binding ElementName=Scheme}" 
-                       Content="{gre:Localize QLIESchemeLabel}"/>
+                       Content="{gre:Localize SchemeLabel}"/>
                 <ComboBox Name="Scheme" Width="250" HorizontalAlignment="Left"
                           SelectedValue="{Binding Source={x:Static p:Settings.Default}, Path=QLIEScheme, Mode=TwoWay}"/>
             </StackPanel>

@@ -5,12 +5,13 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17723; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17891; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
         return new ConcurrentDictionary<string, LocalizationEntry>(
             new Dictionary<string, LocalizationEntry> {
+                { "AFAEncryptAffLabel", new LocalizationEntry { Singular = "Encrypt AFF" } },
                 { "AMIBaseArchive", new LocalizationEntry { Singular = "Base archive" } },
                 { "AMIBaseTooltip", new LocalizationEntry { Singular = "New archive will also contain entries from the base archive." } },
                 { "AMIChooseBase", new LocalizationEntry { Singular = "Select base archive" } },
@@ -56,11 +57,12 @@ public static partial class Localization
                 { "ONSCompressionNone", new LocalizationEntry { Singular = "None" } },
                 { "PDDescription", new LocalizationEntry { Singular = "Flying Shine resource archive" } },
                 { "PDScrambleContents", new LocalizationEntry { Singular = "Scramble contents" } },
-                { "QLIEVersionLabel", new LocalizationEntry { Singular = "Archive Version:" } },
-                { "QLIESchemeLabel", new LocalizationEntry { Singular = "Encryption Scheme:" } },
-                { "QLIEKeyLabel", new LocalizationEntry { Singular = "Game Key:" } },
+                { "CompressionLevelLabel", new LocalizationEntry { Singular = "Archive Compression:" } },
+                { "VersionLabel", new LocalizationEntry { Singular = "Archive Version:" } },
+                { "SchemeLabel", new LocalizationEntry { Singular = "Encryption Scheme:" } },
+                { "KeyLabel", new LocalizationEntry { Singular = "Game Key:" } },
                 { "QLIECompressLabel", new LocalizationEntry { Singular = "Compress files (BPE; very slow)" } },
-                { "QLIEDefaultScheme", new LocalizationEntry { Singular = "(None)" } },
+                { "DefaultScheme", new LocalizationEntry { Singular = "(None)" } },
                 { "RPADescription", new LocalizationEntry { Singular = "Ren'Py game engine archive" } },
                 { "RPALabelKey", new LocalizationEntry { Singular = "32-bit key" } },
                 { "SCRDescription", new LocalizationEntry { Singular = "Amaterasu Translations Muv-Luv script file" } },
@@ -357,6 +359,7 @@ public static partial class Localization
                 { "PackingFileN", new LocalizationEntry { Singular = "Packing {0}" } },
                 { "PackingFiles", new LocalizationEntry { Singular = "Packing file...", Plural1 = "Packing files..." } },
                 { "PackingTagFailed", new LocalizationEntry { Singular = "Failed to pack files into {0} archive" } },
+                { "PNGSaveMetadataToFile", new LocalizationEntry { Singular = "Save custom metadata to a per-folder .pngmetadata file" } },
                 { "WritingArchive", new LocalizationEntry { Singular = "Writing archive..." } },
                 { "FinalizingArchive", new LocalizationEntry { Singular = "Finalizing archive..." } },
                 { "PackingComplete", new LocalizationEntry { Singular = "Packing complete" } },

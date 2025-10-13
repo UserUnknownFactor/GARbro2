@@ -26,12 +26,12 @@
         <!-- Control Templates for Settings Widgets -->
         <ControlTemplate x:Key="BoundCheckBox" TargetType="CheckBox">
             <CheckBox DataContext="{TemplateBinding DataContext}" IsChecked="{Binding Value}"
-                      Content="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" Margin="2"/>
+                      Content="{Binding Text}" ToolTip="{Binding Description}" Margin="2"/>
         </ControlTemplate>
 
         <ControlTemplate x:Key="BoundSlider" TargetType="Slider">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0" VerticalAlignment="Center">
                     <Slider Orientation="Horizontal" IsSnapToTickEnabled="True" Width="120" x:Name="GaugeSlider"
@@ -47,7 +47,7 @@
 
         <ControlTemplate x:Key="BoundDropDownList" TargetType="ComboBox">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <ComboBox ItemsSource="{Binding Path=Source.ValuesSet}" 
                           SelectedItem="{Binding Value, Mode=TwoWay}" 
@@ -57,12 +57,12 @@
 
         <ControlTemplate x:Key="BoundEncodingSelector" TargetType="ContentControl">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <ComboBox ItemsSource="{Binding EncodingList}" 
                           SelectedItem="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           DisplayMemberPath="EncodingName"
-                          ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}"
+                          ToolTip="{Binding Description}"
                           Margin="0,4,0,0"/>
             </StackPanel>
         </ControlTemplate>
@@ -70,7 +70,7 @@
         <!-- TextBox Template for string/number input -->
         <ControlTemplate x:Key="BoundTextBox" TargetType="ContentControl">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                          Margin="0,4,0,0" Width="200" HorizontalAlignment="Left"/>
@@ -80,7 +80,7 @@
         <!-- NumericUpDown Template for integer input -->
         <ControlTemplate x:Key="BoundNumericBox" TargetType="ContentControl">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <Grid Margin="0,4,0,0" Width="120" HorizontalAlignment="Left">
                     <Grid.ColumnDefinitions>
@@ -107,7 +107,7 @@
         <!-- Enum ComboBox Template -->
         <ControlTemplate x:Key="BoundEnumSelector" TargetType="ComboBox">
             <StackPanel Orientation="Vertical" Margin="2" DataContext="{TemplateBinding DataContext}">
-                <TextBlock Text="{Binding Text, Converter={StaticResource LocalizeConverter}}" ToolTip="{Binding Description, Converter={StaticResource LocalizeConverter}}" 
+                <TextBlock Text="{Binding Text}" ToolTip="{Binding Description}" 
                            Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 <ComboBox ItemsSource="{Binding EnumValues}" 
                           SelectedItem="{Binding Value, Mode=TwoWay}"

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
+
+using Newtonsoft.Json;
 using GameRes.Utility;
 
 namespace GameRes
@@ -32,7 +34,13 @@ namespace GameRes
         public override uint     Signature { get { return  0x474e5089; } }
         public override bool      CanWrite { get { return  true; } }
 
-        // PNG signature and header/footer constants
+        LocalResourceSetting SaveMetadataToFile = new LocalResourceSetting {
+            Name        = "PNGSaveMetadataToFile",
+            Text        = Localization._T("PNGSaveMetadataToFile")
+        };
+
+        public static readonly string METADATA_FILENAME = ".pngmetadata";
+
         public static readonly byte[] PNG_HEADER  = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }; // it is interesting why are these bytes like this
         public static readonly byte[] PNG_FOOTER  = { 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82 }; // length + IEND + CRC
         public const uint PNG_SIGNATURE = 0x474e5089;
@@ -65,6 +73,12 @@ namespace GameRes
 
         // Units constants
         public const byte PNG_UNIT_PIXELS = 0;
+
+        public PngFormat ()
+        {
+            if (this.GetType() == typeof(PngFormat))
+                Settings = new IResourceSetting[] { SaveMetadataToFile };
+        }
 
         public override ImageData Read (IBinaryStream file, ImageMetaData info)
         {
@@ -714,11 +728,26 @@ namespace GameRes
             }
             catch (EndOfStreamException) { }
 
+            if (foundIhdr && SaveMetadataToFile.Get<bool>())
+            {
+                string filePath = file.Name;
+                if (!string.IsNullOrEmpty (filePath))
+                {
+                    var externalMetadata = LoadPngMetadata (filePath);
+                    foreach (var chunk in externalMetadata)
+                    {
+                        if (!meta.CustomChunks.ContainsKey (chunk.Key))
+                            meta.CustomChunks[chunk.Key] = chunk.Value;
+                    }
+                }
+            }
             return foundIhdr ? meta : null;
         }
 
         public override void Write (Stream file, ImageData image)
         {
+            bool saveMetadataToFile = SaveMetadataToFile.Get<bool>();
+
             if (image is AnimatedImageData animatedImage)
             {
                 if (animatedImage.Frames.Count == 0)
@@ -727,12 +756,18 @@ namespace GameRes
                 if (animatedImage.Frames.Count == 1)
                 {
                     WritePNG (file, image);
+                    if (saveMetadataToFile)
+                        HandleMetadataFile (file, image);
                     return;
                 }
                 WriteAPNG (file, animatedImage);
             }
             else
+            {
                 WritePNG (file, image);
+                if (saveMetadataToFile)
+                    HandleMetadataFile (file, image);
+            }
         }
 
         public void Write (Stream file, ImageData image, Dictionary<string, byte[]> customChunks)
@@ -1073,6 +1108,117 @@ namespace GameRes
             }
             catch { /* ignore errors */ }
             return -1L;
+        }
+
+        private void HandleMetadataFile (Stream file, ImageData image)
+        {
+            Dictionary<string, byte[]> customChunks = null;
+
+            if (image is PngImageData pngImage)
+                customChunks = pngImage.CustomChunks;
+
+            if (customChunks == null || customChunks.Count == 0)
+                return;
+
+            string outputPath = null;
+            if (file is FileStream fs)
+                outputPath = fs.Name;
+
+            if (string.IsNullOrEmpty (outputPath))
+                return;
+
+            SaveMetadataToFolderFile (outputPath, customChunks);
+        }
+
+        private void SaveMetadataToFolderFile (string pngPath, Dictionary<string, byte[]> customChunks)
+        {
+            try
+            {
+                string directory = Path.GetDirectoryName (pngPath);
+                string fileName = Path.GetFileName (pngPath);
+                string metadataPath = Path.Combine (directory, METADATA_FILENAME);
+
+                var allMetadata = LoadFolderMetadata (directory);
+
+                var chunks = new Dictionary<string, string>();
+                foreach (var chunk in customChunks)
+                    chunks[chunk.Key] = Convert.ToBase64String (chunk.Value);
+
+                allMetadata[fileName] = chunks;
+
+                CleanupMetadata (allMetadata, directory); // remove meta for missing files
+
+                string json = JsonConvert.SerializeObject (allMetadata, Formatting.Indented);
+                File.WriteAllText (metadataPath, json, Encoding.UTF8);
+
+                //File.SetAttributes (metadataPath, File.GetAttributes (metadataPath) | FileAttributes.Hidden);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine ($"Failed to save PNG metadata: {ex.Message}");
+            }
+        }
+
+        private Dictionary<string, Dictionary<string, string>> LoadFolderMetadata (string directory)
+        {
+            try
+            {
+                string metadataPath = Path.Combine (directory, METADATA_FILENAME);
+
+                if (!File.Exists (metadataPath))
+                    return new Dictionary<string, Dictionary<string, string>>();
+
+                string json = File.ReadAllText (metadataPath, Encoding.UTF8);
+                return JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>> (json) 
+                       ?? new Dictionary<string, Dictionary<string, string>>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine ($"Failed to load folder metadata: {ex.Message}");
+                return new Dictionary<string, Dictionary<string, string>>();
+            }
+        }
+
+        private void CleanupMetadata (Dictionary<string, Dictionary<string, string>> metadata, string directory)
+        {
+            /* Maybe this will be necessary?
+            var toRemove = new List<string>();
+
+            foreach (var fileName in metadata.Keys)
+            {
+                string filePath = Path.Combine (directory, fileName);
+                if (!File.Exists (filePath))
+                    toRemove.Add (fileName);
+            }
+
+            foreach (var key in toRemove)
+                metadata.Remove (key);
+            */
+        }
+
+        public Dictionary<string, byte[]> LoadPngMetadata (string pngPath)
+        {
+            var result = new Dictionary<string, byte[]>();
+
+            try
+            {
+                string directory = Path.GetDirectoryName (pngPath);
+                string fileName = Path.GetFileName (pngPath);
+
+                var allMetadata = LoadFolderMetadata (directory);
+
+                if (allMetadata.TryGetValue (fileName, out var chunks))
+                {
+                    foreach (var chunk in chunks)
+                        result[chunk.Key] = Convert.FromBase64String (chunk.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine ($"Failed to load PNG metadata: {ex.Message}");
+            }
+
+            return result;
         }
     }
 }
