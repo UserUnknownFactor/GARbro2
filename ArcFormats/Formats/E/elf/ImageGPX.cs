@@ -1,10 +1,11 @@
-﻿using GameRes;
-using GameRes.Utility;
-using System;
+﻿using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+
+using GameRes;
+using GameRes.Utility;
 
 namespace Gameres.Formats.Elf
 {
@@ -61,7 +62,66 @@ namespace Gameres.Formats.Elf
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("GpxFormat.Write not implemented");
+            using (var writer = new BinaryWriter (file))
+            {
+                var bitmap = image.Bitmap;
+                BitmapPalette palette = bitmap.Palette;
+
+                if (bitmap.Format != PixelFormats.Indexed8)
+                {
+                    var quantizer = new PaletteQuantizer (236); // Leave room for reserved colors
+                    bitmap = quantizer.Quantize (bitmap);
+                    palette = bitmap.Palette;
+                }
+
+                writer.Write ((ushort)image.OffsetX);
+                writer.Write ((ushort)image.OffsetY);
+                writer.Write ((ushort)bitmap.PixelWidth);
+                writer.Write ((ushort)bitmap.PixelHeight);
+                writer.Write ((ushort)0); // mode 0
+
+                // Write palette (236 colors, skipping first and last 10)
+                for (int i = 0; i < Math.Min (236, palette.Colors.Count); ++i)
+                {
+                    var color = palette.Colors[i];
+                    writer.Write (color.R);
+                    writer.Write (color.G);
+                    writer.Write (color.B);
+                }
+
+                // Pad palette if needed
+                for (int i = palette.Colors.Count; i < 236; ++i)
+                {
+                    writer.Write ((byte)0);
+                    writer.Write ((byte)0);
+                    writer.Write ((byte)0);
+                }
+
+                // Get indexed pixels
+                var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight];
+                bitmap.CopyPixels (pixels, bitmap.PixelWidth, 0);
+
+                // Offset indices to account for reserved colors
+                for (int i = 0; i < pixels.Length; ++i)
+                    pixels[i] = (byte)(pixels[i] + 10);
+
+                // NOTE: Simplified - Compress pixels using RLE
+                CompressGpxPixels (writer, pixels, bitmap.PixelWidth, bitmap.PixelHeight);
+            }
+        }
+
+        private void CompressGpxPixels (BinaryWriter writer, byte[] pixels, int width, int height)
+        {
+            // NOTE: Simplified - raw with bit markers
+            var bitWriter = new BitWriter (writer.BaseStream);
+
+            for (int i = 0; i < pixels.Length; ++i)
+            {
+                bitWriter.WriteBit (1); // literal marker
+                bitWriter.WriteBits (pixels[i], 8);
+            }
+
+            bitWriter.Flush();
         }
 
         internal sealed class GpxReader

@@ -228,13 +228,18 @@ namespace GameRes.Compression
         private byte[] m_frame;
         private int m_frame_pos;
         private int m_frame_mask;
-        private int m_control_byte;
-        private int m_control_bit;
+
+        private byte[] m_input_buffer;
+        private int m_input_pos;
+        private int m_input_size;
+        private const int INPUT_BUFFER_SIZE = 8192;
 
         // State for partial match processing
         private bool m_in_match;
         private int m_match_offset;
         private int m_match_remaining;
+        private int m_control_byte;
+        private int m_control_bit;
 
         public LzssDecompressor (Stream input, LzssSettings settings)
         {
@@ -246,15 +251,31 @@ namespace GameRes.Compression
             m_control_byte = 0;
             m_control_bit = 0x100;
 
+            m_input_buffer = new byte[INPUT_BUFFER_SIZE];
+            m_input_pos = 0;
+            m_input_size = 0;
+
             m_in_match = false;
             m_match_offset = 0;
             m_match_remaining = 0;
 
-            if (settings.FrameFill == 0)
-                return;
+            if (settings.FrameFill != 0)
+            {
+                for (int i = 0; i < m_frame.Length; i++)
+                    m_frame[i] = settings.FrameFill;
+            }
+        }
 
-            for (int i = 0; i < m_frame.Length; i++)
-                m_frame[i] = settings.FrameFill;
+        private int ReadByte ()
+        {
+            if (m_input_pos >= m_input_size)
+            {
+                m_input_size = m_input.Read(m_input_buffer, 0, INPUT_BUFFER_SIZE);
+                m_input_pos = 0;
+                if (m_input_size == 0)
+                    return -1;
+            }
+            return m_input_buffer[m_input_pos++];
         }
 
         public int ReadDecompressed (byte[] buffer, int offset, int count)
@@ -265,13 +286,15 @@ namespace GameRes.Compression
             {
                 if (m_in_match)
                 {
-                    while (m_match_remaining > 0 && written < count)
+                    // Fast path for continuing a match
+                    int copy_count = Math.Min(m_match_remaining, count - written);
+                    for (int i = 0; i < copy_count; i++)
                     {
                         byte b = m_frame[m_match_offset++ & m_frame_mask];
                         m_frame[m_frame_pos++ & m_frame_mask] = b;
                         buffer[offset + written++] = b;
-                        m_match_remaining--;
                     }
+                    m_match_remaining -= copy_count;
 
                     if (m_match_remaining == 0)
                         m_in_match = false;
@@ -283,7 +306,7 @@ namespace GameRes.Compression
                 // Get new control byte if needed
                 if (m_control_bit >= 0x100)
                 {
-                    int b = m_input.ReadByte();
+                    int b = ReadByte();
                     if (b == -1)
                         break;
 
@@ -294,7 +317,7 @@ namespace GameRes.Compression
                 if ((m_control_byte & m_control_bit) != 0)
                 {
                     // Literal byte
-                    int b = m_input.ReadByte();
+                    int b = ReadByte();
                     if (b == -1)
                         break;
 
@@ -304,10 +327,10 @@ namespace GameRes.Compression
                 else
                 {
                     // Match
-                    int lo = m_input.ReadByte();
+                    int lo = ReadByte();
                     if (lo == -1)
                         break;
-                    int hi = m_input.ReadByte();
+                    int hi = ReadByte();
                     if (hi == -1)
                         break;
 
@@ -315,13 +338,14 @@ namespace GameRes.Compression
                     int match_length = (hi & 0x0F) + m_settings.MinMatchLength;
 
                     // Process as much of the match as we can
-                    while (match_length > 0 && written < count)
+                    int copy_count = Math.Min(match_length, count - written);
+                    for (int i = 0; i < copy_count; i++)
                     {
                         byte b = m_frame[m_match_offset++ & m_frame_mask];
                         m_frame[m_frame_pos++ & m_frame_mask] = b;
                         buffer[offset + written++] = b;
-                        match_length--;
                     }
+                    match_length -= copy_count;
 
                     // Save state if match is incomplete
                     if (match_length > 0)
@@ -337,10 +361,12 @@ namespace GameRes.Compression
             return written;
         }
 
-        public void Dispose()
+        #region IDisposable Members
+        public void Dispose ()
         {
             // Nothing to dispose as we don't own the stream
         }
+        #endregion
     }
 
     public class LzssCompressor : IDisposable
@@ -487,7 +513,7 @@ namespace GameRes.Compression
             AdvanceControlBit();
         }
 
-        private void AdvanceControlBit()
+        private void AdvanceControlBit ()
         {
             m_control_bit <<= 1;
 
@@ -505,7 +531,7 @@ namespace GameRes.Compression
             }
         }
 
-        public void Flush()
+        public void Flush ()
         {
             if (m_control_bit > 1)
             {
@@ -521,10 +547,12 @@ namespace GameRes.Compression
             m_output.Flush();
         }
 
-        public void Dispose()
+        #region IDisposable Members
+        public void Dispose ()
         {
             Flush();
         }
+        #endregion
     }
 
     public class LzssReader : IDisposable

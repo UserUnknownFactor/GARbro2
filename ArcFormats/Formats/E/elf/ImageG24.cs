@@ -11,7 +11,8 @@ namespace GameRes.Formats.Elf
     {
         public override string         Tag { get { return "G24"; } }
         public override string Description { get { return "Ai5 engine RGB image format"; } }
-        public override uint     Signature { get { return 0; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public G24Format ()
         {
@@ -55,7 +56,41 @@ namespace GameRes.Formats.Elf
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new System.NotImplementedException ("G24Format.Write not implemented");
+            using (var writer = new BinaryWriter (file))
+            {
+                var bitmap = image.Bitmap;
+                if (bitmap.Format != PixelFormats.Bgr24 && 
+                    bitmap.Format != PixelFormats.Bgr32 && 
+                    bitmap.Format != PixelFormats.Bgra32 &&
+                    bitmap.Format != PixelFormats.Bgr555)
+                {
+                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgr24, null, 0);
+                }
+
+                writer.Write ((short)image.OffsetX);
+                writer.Write ((short)image.OffsetY);
+                writer.Write ((short)bitmap.PixelWidth);
+                writer.Write ((short)bitmap.PixelHeight);
+
+                int bpp = bitmap.Format.BitsPerPixel / 8;
+                int stride = (bitmap.PixelWidth * bpp + 3) & -4;
+                var pixels = new byte[stride * bitmap.PixelHeight];
+                bitmap.CopyPixels (pixels, stride, 0);
+
+                // Flip vertically
+                var flipped = new byte[pixels.Length];
+                for (int y = 0; y < bitmap.PixelHeight; ++y)
+                {
+                    int src = y * stride;
+                    int dst = (bitmap.PixelHeight - 1 - y) * stride;
+                    System.Buffer.BlockCopy (pixels, src, flipped, dst, stride);
+                }
+
+                using (var lzss = new LzssWriter (file))
+                {
+                    lzss.Pack (flipped, 0, flipped.Length);
+                }
+            }
         }
     }
 
@@ -65,6 +100,7 @@ namespace GameRes.Formats.Elf
         public override string         Tag { get { return "MSK/G16"; } }
         public override string Description { get { return "Ai5 engine image mask"; } }
         public override uint     Signature { get { return 0; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream input)
         {
@@ -95,7 +131,24 @@ namespace GameRes.Formats.Elf
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new System.NotImplementedException ("Msk16Format.Write not implemented");
+            using (var writer = new BinaryWriter (file))
+            {
+                var bitmap = image.Bitmap;
+                if (bitmap.Format != PixelFormats.Gray8)
+                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Gray8, null, 0);
+
+                writer.Write ((short)bitmap.PixelWidth);
+                writer.Write ((short)bitmap.PixelHeight);
+
+                var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight];
+                bitmap.CopyPixels (pixels, bitmap.PixelWidth, 0);
+
+                // Convert from 0xFF scale to 8 scale
+                for (int i = 0; i < pixels.Length; ++i)
+                    pixels[i] = (byte)(pixels[i] * 8 / 0xFF);
+
+                writer.Write (pixels);
+            }
         }
     }
 }

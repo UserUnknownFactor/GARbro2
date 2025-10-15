@@ -4,6 +4,8 @@ using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
 using GameRes.Compression;
 using GameRes.Utility;
 
@@ -19,7 +21,8 @@ namespace GameRes.Formats.Elf
     {
         public override string         Tag { get { return "GCC"; } }
         public override string Description { get { return "AI5WIN engine image format"; } }
-        public override uint     Signature { get { return 0x6d343252; } } // 'R24m'
+        public override uint     Signature { get { return  0x6d343252; } } // 'R24m'
+        public override bool      CanWrite { get { return  false; } }
 
         public GccFormat ()
         {
@@ -32,11 +35,11 @@ namespace GameRes.Formats.Elf
             var header = stream.ReadHeader (12);
             return new GccMetaData
             {
-                Width = header.ToUInt16 (8),
-                Height = header.ToUInt16 (10),
-                BPP = 'm' == header[3] ? 32 : 24,
-                OffsetX = header.ToInt16 (4),
-                OffsetY = header.ToInt16 (6),
+                Width     = header.ToUInt16 (8),
+                Height    = header.ToUInt16 (10),
+                BPP       = 'm' == header[3] ? 32 : 24,
+                OffsetX   = header.ToInt16 (4),
+                OffsetY   = header.ToInt16 (6),
                 Signature = header.ToUInt32 (0),
             };
         }
@@ -51,7 +54,119 @@ namespace GameRes.Formats.Elf
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("GccFormat.Write not implemented");
+            using (var writer = new BinaryWriter (file))
+            {
+                var bitmap = image.Bitmap;
+                bool has_alpha = bitmap.Format == PixelFormats.Bgra32 || bitmap.Format == PixelFormats.Pbgra32;
+
+                if (bitmap.Format != PixelFormats.Bgr24 && bitmap.Format != PixelFormats.Bgra32)
+                    bitmap = new FormatConvertedBitmap (bitmap, has_alpha ? PixelFormats.Bgra32 : PixelFormats.Bgr24, null, 0);
+
+                uint signature = has_alpha ? 0x6D343247u : 0x6E343247u; // G24m or G24n
+                writer.Write (signature);
+                writer.Write ((short)image.OffsetX);
+                writer.Write ((short)image.OffsetY);
+                writer.Write ((ushort)bitmap.PixelWidth);
+                writer.Write ((ushort)bitmap.PixelHeight);
+
+                if (has_alpha)
+                {
+                    writer.Write (0); // placeholder for compressed data size
+                    writer.Write ((ushort)bitmap.PixelWidth);  // alpha width
+                    writer.Write ((ushort)bitmap.PixelHeight); // alpha height
+                    writer.Write (0); // placeholder for alpha offset
+                }
+
+                int pixel_bytes = bitmap.Format.BitsPerPixel / 8;
+                int stride = bitmap.PixelWidth * pixel_bytes;
+                var pixels = new byte[stride * bitmap.PixelHeight];
+                bitmap.CopyPixels (pixels, stride, 0);
+
+                // Separate RGB and alpha if needed
+                var rgb_data = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 3];
+                byte[] alpha_data = null;
+
+                if (has_alpha)
+                {
+                    alpha_data = new byte[bitmap.PixelWidth * bitmap.PixelHeight];
+                    for (int i = 0, src = 0; i < rgb_data.Length; i += 3, src += 4)
+                    {
+                        rgb_data[i] = pixels[src];
+                        rgb_data[i + 1] = pixels[src + 1];
+                        rgb_data[i + 2] = pixels[src + 2];
+                        alpha_data[i / 3] = pixels[src + 3];
+                    }
+                }
+                else
+                    Buffer.BlockCopy (pixels, 0, rgb_data, 0, rgb_data.Length);
+
+                FlipRgbVertically (rgb_data, bitmap.PixelWidth, bitmap.PixelHeight);
+
+                long data_start = file.Position;
+                using (var lzss = new LzssWriter (file))
+                {
+                    lzss.Pack (rgb_data, 0, rgb_data.Length);
+                }
+
+                if (has_alpha)
+                {
+                    long alpha_offset = file.Position - data_start;
+
+                    // NOTE: simplified compress alpha (just RLE)
+                    WriteCompressedAlpha (file, alpha_data);
+
+                    // Update header with actual offsets
+                    long end_pos = file.Position;
+                    file.Position = 0x0C;
+                    writer.Write ((uint)(end_pos - data_start));
+                    file.Position = 0x1C;
+                    writer.Write ((uint)alpha_offset);
+                    file.Position = end_pos;
+                }
+            }
+        }
+
+        private void FlipRgbVertically (byte[] data, int width, int height)
+        {
+            int stride = width * 3;
+            var temp = new byte[stride];
+            for (int y = 0; y < height / 2; ++y)
+            {
+                int top = y * stride;
+                int bottom = (height - 1 - y) * stride;
+                Buffer.BlockCopy (data, top, temp, 0, stride);
+                Buffer.BlockCopy (data, bottom, data, top, stride);
+                Buffer.BlockCopy (temp, 0, data, bottom, stride);
+            }
+        }
+
+        private void WriteCompressedAlpha (Stream output, byte[] alpha)
+        {
+            using (var writer = new BinaryWriter (output))
+            {
+                int i = 0;
+                while (i < alpha.Length)
+                {
+                    byte value = alpha[i];
+                    int count = 1;
+
+                    while (i + count < alpha.Length && alpha[i + count] == value && count < 127)
+                        count++;
+
+                    if (count > 1)
+                    {
+                        writer.Write ((byte)(0x80 | count));
+                        writer.Write (value);
+                    }
+                    else
+                    {
+                        writer.Write ((byte)1);
+                        writer.Write (value);
+                    }
+
+                    i += count;
+                }
+            }
         }
 
         internal class Reader
@@ -61,8 +176,8 @@ namespace GameRes.Formats.Elf
             byte[]          m_output;
             int             m_width;
             int             m_height;
-            int             m_alpha_w;
-            int             m_alpha_h;
+            int             m_alpha_width;
+            int             m_alpha_height;
 
             public PixelFormat Format { get; private set; }
             public byte[]        Data { get { return m_output; } }
@@ -80,40 +195,40 @@ namespace GameRes.Formats.Elf
             {
                 switch (m_info.Signature)
                 {
-                case 0x6E343247: UnpackNormal (LzssUnpack); break;  // G24n
-                case 0x6D343247: UnpackMasked (LzssUnpack); break;  // G24m
-                case 0x6E343252: UnpackNormal (AltUnpack); break;   // R24n
-                case 0x6D343252: UnpackMasked (AltUnpack); break;   // R24m
-                default: throw new NotSupportedException();
+                case 0x6E343247: UnpackNormal (DecompressLzss); break;         // G24n
+                case 0x6D343247: UnpackMasked (DecompressLzss); break;         // G24m
+                case 0x6E343252: UnpackNormal (DecompressAlternative); break;  // R24n
+                case 0x6D343252: UnpackMasked (DecompressAlternative); break;  // R24m
+                default:
+                    throw new NotSupportedException();
                 }
             }
 
-            private void UnpackNormal (Action<int> unpacker)
+            private void UnpackNormal (Action<int> decompressor)
             {
-                unpacker (0x14);
-                FlipPixels (m_width*3);
+                decompressor (0x14);
+                FlipPixelsVertically (m_width*3);
                 Format = PixelFormats.Bgr24;
             }
 
-            private void UnpackMasked (Action<int> unpacker)
+            private void UnpackMasked (Action<int> decompressor)
             {
-                unpacker (0x20);
-                var alpha = UnpackAlpha();
-                if (m_alpha_w < (m_info.OffsetX + m_width) || m_alpha_h < (m_info.OffsetY + m_height))
+                decompressor (0x20);
+                var alpha = DecompressAlphaChannel();
+                if (m_alpha_width < (m_info.OffsetX + m_width) || m_alpha_height < (m_info.OffsetY + m_height))
                 {
-                    FlipPixels (m_width*3);
+                    FlipPixelsVertically (m_width*3);
                     Format = PixelFormats.Bgr24;
                 }
                 else
                 {
-                    Convert24To32 (alpha);
+                    MergeAlphaChannel (alpha);
                     Format = PixelFormats.Bgra32;
                 }
             }
 
-            private void FlipPixels (int stride)
+            private void FlipPixelsVertically (int stride)
             {
-                // flip pixels vertically
                 var pixels = new byte[m_output.Length];
                 int dst = 0;
                 for (int src = stride * (m_height-1); src >= 0; src -= stride)
@@ -124,13 +239,13 @@ namespace GameRes.Formats.Elf
                 m_output = pixels;
             }
 
-            private void Convert24To32 (byte[] alpha)
+            private void MergeAlphaChannel (byte[] alpha)
             {
-                Debug.Assert (m_alpha_w >= (m_info.OffsetX + m_width) && m_alpha_h >= (m_info.OffsetY + m_height));
+                Debug.Assert (m_alpha_width >= (m_info.OffsetX + m_width) && m_alpha_height >= (m_info.OffsetY + m_height));
                 int src_stride = m_width * 3; 
                 var pixels = new byte[m_width * m_height * 4];
                 int dst = 0;
-                int alpha_row = m_alpha_w * (m_alpha_h - m_info.OffsetY - 1);
+                int alpha_row = m_alpha_width * (m_alpha_height - m_info.OffsetY - 1);
                 for (int row = m_width * (m_height-1); row >= 0; row -= m_width)
                 {
                     int src = row*3;
@@ -141,12 +256,12 @@ namespace GameRes.Formats.Elf
                         pixels[dst++] = m_output[src++];
                         pixels[dst++] = alpha[alpha_row + m_info.OffsetX + x];
                     }
-                    alpha_row -= m_alpha_w;
+                    alpha_row -= m_alpha_width;
                 }
                 m_output = pixels;
             }
 
-            void LzssUnpack (int offset)
+            void DecompressLzss (int offset)
             {
                 int out_length = m_width * m_height * 3;
                 using (var input = new MemoryStream (m_input, offset, m_input.Length-offset))
@@ -157,283 +272,288 @@ namespace GameRes.Formats.Elf
                 }
             }
 
-            int m_index;
-            int m_current;
-            int m_mask;
+            int m_bit_index;
+            int m_current_byte;
+            int m_bit_mask;
 
-            void ResetBitInput (int idx)
+            void InitBitReader (int start_index)
             {
-                m_index = idx;
-                m_mask = 0x80;
+                m_bit_index = start_index;
+                m_bit_mask = 0x80;
             }
 
-            bool NextBit ()
+            bool ReadNextBit ()
             {
-                m_mask <<= 1;
-                if (0x100 == m_mask)
+                m_bit_mask <<= 1;
+                if (0x100 == m_bit_mask)
                 {
-                    m_current = m_input[m_index++];
-                    m_mask = 1;
+                    m_current_byte = m_input[m_bit_index++];
+                    m_bit_mask = 1;
                 }
-                return 0 != (m_current & m_mask);
+                return 0 != (m_current_byte & m_bit_mask);
             }
 
-            byte[] UnpackAlpha () // sub_444FF0
+            byte[] DecompressAlphaChannel ()
             {
-                m_alpha_w = LittleEndian.ToUInt16 (m_input, 0x18);
-                m_alpha_h = LittleEndian.ToUInt16 (m_input, 0x1A);
-                int total = m_alpha_w * m_alpha_h;
-                var alpha = new byte[total];
-                int offset = 0x20 + LittleEndian.ToInt32 (m_input, 0x0C);
-                ResetBitInput (offset);
-                int src = offset + LittleEndian.ToInt32 (m_input, 0x1C);
-                int dst = 0;
-                while (dst < total)
+                m_alpha_width    = LittleEndian.ToUInt16 (m_input, 0x18);
+                m_alpha_height   = LittleEndian.ToUInt16 (m_input, 0x1A);
+                int total_pixels = m_alpha_width * m_alpha_height;
+                var alpha = new byte[total_pixels];
+                int bit_offset = 0x20 + LittleEndian.ToInt32 (m_input, 0x0C);
+                InitBitReader (bit_offset);
+                int data_offset = bit_offset + LittleEndian.ToInt32 (m_input, 0x1C);
+                int output_pos = 0;
+                while (output_pos < total_pixels)
                 {
-                    if (NextBit())
+                    if (ReadNextBit())
                     {
-                        int count = ReadCount();
-                        byte v = m_input[src++];
-                        for (int i = 0; i < count; ++ i)
+                        int run_length = ReadRunLength();
+                        byte value = m_input[data_offset++];
+                        for (int i = 0; i < run_length; ++ i)
                         {
-                            alpha[dst++] = v;
+                            alpha[output_pos++] = value;
                         }
                     }
                     else
                     {
-                        alpha[dst++] = m_input[src++];
+                        alpha[output_pos++] = m_input[data_offset++];
                     }
                 }
                 return alpha;
             }
 
-            int ReadCount () // sub_444F60
+            int ReadRunLength () // sub_444F60
             {
-                int result = 1;
-                int bit_count = 0;
-                while (!NextBit())
-                    ++bit_count;
-                while (bit_count != 0)
+                int length = 1;
+                int zero_bits = 0;
+                while (!ReadNextBit())
+                    ++zero_bits;
+                while (zero_bits != 0)
                 {
-                    --bit_count;
-                    result <<= 1;
-                    if (NextBit())
-                        result |= 1;
+                    --zero_bits;
+                    length <<= 1;
+                    if (ReadNextBit())
+                        length |= 1;
                 }
-                return result;
+                return length;
             }
 
-            int m_dst;
+            int m_output_pos;
 
-            private void AltUnpack (int offset) // sub_445620
+            private void DecompressAlternative (int offset) // sub_445620
             {
-                byte[] chunk = new byte[0x10001];
+                byte[] work_buffer = new byte[0x10001];
 
-                int src = offset + LittleEndian.ToInt32 (m_input, 0x10); // within m_input
-                ResetBitInput (offset);
-                int total = 3 * m_width * m_height;
-                m_output = new byte[total];
-                m_dst = 0;
-                int dst = 0;
-                while (dst < total)
+                int data_ptr = offset + LittleEndian.ToInt32 (m_input, 0x10); // within m_input
+                InitBitReader (offset);
+                int total_size = 3 * m_width * m_height;
+                m_output = new byte[total_size];
+                m_output_pos = 0;
+                int processed = 0;
+                while (processed < total_size)
                 {
-                    int chunk_size = Math.Min (total - dst, 0xffff);
-                    if (NextBit())
+                    int block_size = Math.Min (total_size - processed, 0xffff);
+                    if (ReadNextBit())
                     {
-                        src = ReadCompressedChunk (src, chunk, chunk_size + 2);
-                        DecodeChunk (chunk, chunk_size);
+                        data_ptr = DecompressBlock (data_ptr, work_buffer, block_size + 2);
+                        DecodeHuffman (work_buffer, block_size);
                     }
                     else
-                    {
-                        src = ReadRawChunk (src, chunk_size);
-                    }
-                    dst += chunk_size;
-                }
-                return;
-            }
-
-            ushort[] v15 = new ushort[0x100];
-            ushort[] v16 = new ushort[0x100];
-            ushort[] v17 = new ushort[0x10000];
-
-            void DecodeChunk (byte[] chunk, int chunk_size) // sub_444E40
-            {
-                for (int i = 0; i < v15.Length; ++i)
-                    v15[i] = 0;
-                for (int i = 0; i < chunk_size; ++i)
-                    ++v15[chunk[2+i]];
-                ushort v7 = 0;
-                for (int r = 0; r < 0x100; ++r)
-                {
-                    v16[r] = v7;
-                    v7 += v15[r];
-                    v15[r] = 0;
-                }
-                for (int v9 = 0; v9 < chunk_size; ++v9)
-                {
-                    int v10 = chunk[2+v9];
-                    int r = v15[v10] + v16[v10];
-                    v17[r] = (ushort)v9;
-                    v15[v10]++;
-                }
-                int a3 = LittleEndian.ToUInt16 (chunk, 0);
-                int v12 = v17[a3];
-                for (int i = 0; i < chunk_size; ++i)
-                {
-                    m_output[m_dst++] = chunk[2+v12];
-                    v12 = v17[v12];
+                        data_ptr = CopyRawBlock (data_ptr, block_size);
+                    processed += block_size;
                 }
             }
 
-            int ReadCompressedChunk (int src, byte[] chunk, int chunk_size) // sub_4450E0
-            {
-                byte[] v33 = new byte[0x10];
-                byte[] v35 = new byte[0x10];
+            ushort[] frequency_table = new ushort[0x100];
+            ushort[] cumulative_freq = new ushort[0x100];
+            ushort[] symbol_lookup = new ushort[0x10000];
 
-                for (byte v6 = 0; v6 < 0x10; ++v6)
+            void DecodeHuffman (byte[] buffer, int size) // sub_444E40
+            {
+                // Build frequency table
+                for (int i = 0; i < frequency_table.Length; ++i)
+                    frequency_table[i] = 0;
+                for (int i = 0; i < size; ++i)
+                    ++frequency_table[buffer[2+i]];
+
+                // Build cumulative frequency table
+                ushort cumulative = 0;
+                for (int i = 0; i < 0x100; ++i)
                 {
-                    v33[v6] = v6;
-                    v35[v6] = v6;
+                    cumulative_freq[i] = cumulative;
+                    cumulative += frequency_table[i];
+                    frequency_table[i] = 0;
                 }
-                int v31 = 0;
-                sbyte v5 = -1;
-                while ( v31 < chunk_size )
+
+                // Build symbol lookup table
+                for (int i = 0; i < size; ++i)
                 {
-                    int v16;
-                    int v26;
-                    if (!NextBit())
+                    int symbol = buffer[2+i];
+                    int index = frequency_table[symbol] + cumulative_freq[symbol];
+                    symbol_lookup[index] = (ushort)i;
+                    frequency_table[symbol]++;
+                }
+
+                // Decode using lookup table
+                int start_index = LittleEndian.ToUInt16 (buffer, 0);
+                int current_index = symbol_lookup[start_index];
+                for (int i = 0; i < size; ++i)
+                {
+                    m_output[m_output_pos++] = buffer[2+current_index];
+                    current_index = symbol_lookup[current_index];
+                }
+            }
+
+            int DecompressBlock (int input_ptr, byte[] output_buffer, int buffer_size) // sub_4450E0
+            {
+                byte[] lru_buffer1 = new byte[0x10];
+                byte[] lru_buffer2 = new byte[0x10];
+
+                // Initialize LRU buffers
+                for (byte i = 0; i < 0x10; ++i)
+                {
+                    lru_buffer1[i] = i;
+                    lru_buffer2[i] = i;
+                }
+
+                int output_pos = 0;
+                sbyte previous_byte = -1;
+
+                while (output_pos < buffer_size)
+                {
+                    int current_byte;
+                    int lru_index;
+
+                    if (!ReadNextBit())
                     {
-                        if (NextBit())
+                        if (ReadNextBit())
                         {
-                            v26 = ReadCount();
-                            v16 = v35[v26];
-                            chunk[v31++] = (byte)v16;
+                            lru_index = ReadRunLength();
+                            current_byte = lru_buffer2[lru_index];
+                            output_buffer[output_pos++] = (byte)current_byte;
                         }
                         else
                         {
-                            if (NextBit())
+                            if (ReadNextBit())
                             {
-                                int v27 = ReadCount();
-                                if (NextBit())
-                                    v16 = (v5 - v27) & 0xff;
+                                int delta = ReadRunLength();
+                                if (ReadNextBit())
+                                    current_byte = (previous_byte - delta) & 0xff;
                                 else
-                                    v16 = (v5 + v27) & 0xff;
+                                    current_byte = (previous_byte + delta) & 0xff;
                             }
                             else
                             {
-                                v16 = m_input[src++];
+                                current_byte = m_input[input_ptr++];
                             }
-                            chunk[v31++] = (byte)v16;
-                            v26 = 0;
-                            while (v35[v26] != v16)
-                            {
-                                ++v26;
-                                if (v26 >= 0x10)
-                                {
-                                    v26 = 0xff;
-                                    break;
-                                }
-                            }
+                            output_buffer[output_pos++] = (byte)current_byte;
+                            lru_index = FindInLRU (lru_buffer2, current_byte);
                         }
                     }
                     else
                     {
-                        int v17;
-                        int count = ReadCount();
-                        if (NextBit())
+                        int run_index;
+                        int run_length = ReadRunLength();
+
+                        if (ReadNextBit())
                         {
-                            v17 = 0;
-                            v16 = v33[0];
+                            run_index = 0;
+                            current_byte = lru_buffer1[0];
                         }
-                        else if (NextBit())
+                        else if (ReadNextBit())
                         {
-                            v17 = ReadCount();
-                            v16 = v33[v17];
+                            run_index = ReadRunLength();
+                            current_byte = lru_buffer1[run_index];
                         }
                         else
                         {
-                            if (NextBit())
+                            if (ReadNextBit())
                             {
-                                int v20 = ReadCount();
-                                if (NextBit())
-                                    v16 = (v5 - v20) & 0xff;
+                                int delta = ReadRunLength();
+                                if (ReadNextBit())
+                                    current_byte = (previous_byte - delta) & 0xff;
                                 else
-                                    v16 = (v5 + v20) & 0xff;
+                                    current_byte = (previous_byte + delta) & 0xff;
                             }
                             else
                             {
-                                v16 = m_input[src++];
+                                current_byte = m_input[input_ptr++];
                             }
-                            v17 = 0;
-                            while (v33[v17] != v16)
-                            {
-                                ++v17;
-                                if (v17 >= 0x10)
-                                {
-                                    v17 = 0xff;
-                                    break;
-                                }
-                            }
+                            run_index = FindInLRU (lru_buffer1, current_byte);
                         }
-                        if (v17 != 0)
-                        {
-                            for (int i = v17 & 0xF; i != 0; --i)
-                                v33[i] = v33[i-1];
-                            v33[0] = (byte)v16;
-                        }
-                        for (int n = 0; n < count; ++n)
-                            chunk[v31++] = (byte)v16;
 
-                        v26 = 0;
-                        while (v35[v26] != v16)
+                        // Update LRU buffer 1
+                        if (run_index != 0)
                         {
-                            ++v26;
-                            if (v26 >= 0x10)
-                            {
-                                v26 = 0xff;
-                                break;
-                            }
+                            UpdateLRU (lru_buffer1, run_index, current_byte);
                         }
+
+                        // Write run
+                        for (int n = 0; n < run_length; ++n)
+                            output_buffer[output_pos++] = (byte)current_byte;
+
+                        lru_index = FindInLRU (lru_buffer2, current_byte);
                     }
-                    if (0 != (byte)v26)
+
+                    // Update LRU buffer 2
+                    if (0 != (byte)lru_index)
                     {
-                        for (int k = v26 & 0xF; k != 0; --k)
-                            v35[k] = v35[k-1];
-                        v35[0] = (byte)v16;
+                        UpdateLRU (lru_buffer2, lru_index, current_byte);
                     }
-                    v5 = (sbyte)v16;
+                    previous_byte = (sbyte)current_byte;
                 }
-                return src;
+                return input_ptr;
             }
 
-            int ReadRawChunk (int src, int chunk_size) // sub_445400
+            int FindInLRU (byte[] lru_buffer, int value)
             {
-                int n = 0;
-                while (n < chunk_size)
+                int index = 0;
+                while (lru_buffer[index] != value)
                 {
-                    if (!NextBit())
+                    ++index;
+                    if (index >= 0x10)
+                        return 0xff;
+                }
+                return index;
+            }
+
+            void UpdateLRU (byte[] lru_buffer, int index, int value)
+            {
+                for (int i = index & 0xF; i != 0; --i)
+                    lru_buffer[i] = lru_buffer[i-1];
+                lru_buffer[0] = (byte)value;
+            }
+
+            int CopyRawBlock (int input_ptr, int block_size) // sub_445400
+            {
+                int bytes_copied = 0;
+                while (bytes_copied < block_size)
+                {
+                    if (!ReadNextBit())
                     {
-                        m_output[m_dst++] = m_input[src++];
-                        m_output[m_dst++] = m_input[src++];
-                        m_output[m_dst++] = m_input[src++];
-                        n += 3;
+                        // Copy RGB triplet
+                        m_output[m_output_pos++] = m_input[input_ptr++];
+                        m_output[m_output_pos++] = m_input[input_ptr++];
+                        m_output[m_output_pos++] = m_input[input_ptr++];
+                        bytes_copied += 3;
                     }
                     else
                     {
-                        int count = ReadCount();
-                        byte b = m_input[src++];
-                        byte g = m_input[src++];
-                        byte r = m_input[src++];
-                        for (int i = 0; i < count; ++i)
+                        // RLE encoded RGB triplet
+                        int run_length = ReadRunLength();
+                        byte b = m_input[input_ptr++];
+                        byte g = m_input[input_ptr++];
+                        byte r = m_input[input_ptr++];
+                        for (int i = 0; i < run_length; ++i)
                         {
-                            m_output[m_dst++] = b;
-                            m_output[m_dst++] = g;
-                            m_output[m_dst++] = r;
+                            m_output[m_output_pos++] = b;
+                            m_output[m_output_pos++] = g;
+                            m_output[m_output_pos++] = r;
                         }
-                        n += 3 * count;
+                        bytes_copied += 3 * run_length;
                     }
                 }
-                return src;
+                return input_ptr;
             }
         }
     }

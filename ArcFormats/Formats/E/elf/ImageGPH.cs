@@ -7,10 +7,10 @@ using GameRes.Utility;
 
 namespace GameRes.Formats.Elf
 {
-    internal class GphMetaData :ImageMetaData
+    internal class GphMetaData : ImageMetaData
     {
-        public int  DataOffset;
-        public int  DataSize;
+        public int  FrameOffset;
+        public int  FrameLength;
         public int  Flags;
     }
 
@@ -18,8 +18,9 @@ namespace GameRes.Formats.Elf
     public class GphFormat : ImageFormat
     {
         public override string         Tag { get { return "GPH"; } }
-        public override string Description { get { return "Elf GPH image format"; } }
-        public override uint     Signature { get { return 0x1D485047; } } // 'GPH\x1D'
+        public override string Description { get { return "Elf 4-bit indexed image format"; } }
+        public override uint     Signature { get { return  0x1D485047; } } // 'GPH\x1D'
+        public override bool      CanWrite { get { return  false; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream input)
         {
@@ -28,11 +29,13 @@ namespace GameRes.Formats.Elf
             int frame_offset = input.ReadInt32();
             if (0 == frame_count || frame_offset > input.Length)
                 return null;
+
             input.Position = frame_offset;
             int frame_length = input.ReadInt32();
             int flags = input.ReadUInt16();
             if (0 == (flags & 4))
                 input.Seek (0x20, SeekOrigin.Current);
+
             int left = input.ReadInt16();
             int top = input.ReadInt16();
             int right = input.ReadInt16() + 1;
@@ -46,8 +49,8 @@ namespace GameRes.Formats.Elf
                 OffsetX = left,
                 OffsetY = top,
                 BPP = 4,
-                DataOffset = frame_offset+4,
-                DataSize = frame_length,
+                FrameOffset = frame_offset+4,
+                FrameLength = frame_length,
                 Flags = flags,
             };
         }
@@ -94,7 +97,7 @@ namespace GameRes.Formats.Elf
 
         public void Unpack ()
         {
-            m_input.Position = m_info.DataOffset+2;
+            m_input.Position = m_info.FrameOffset+2;
             if (0 == (m_info.Flags & 4))
                 ReadPalette();
             else

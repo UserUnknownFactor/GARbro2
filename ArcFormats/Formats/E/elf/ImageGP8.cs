@@ -13,6 +13,7 @@ namespace GameRes.Formats.Elf
         public override string         Tag { get { return "GP8"; } }
         public override string Description { get { return "Ai5 engine indexed image format"; } }
         public override uint     Signature { get { return 0; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
