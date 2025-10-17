@@ -47,6 +47,20 @@ namespace GARbro.GUI.Preview
             }
         }
 
+        private bool IsTextConverterImplemented (ScriptFormat format)
+        {
+            var formatType = format.GetType();
+
+            var convertFromMethod = formatType.GetMethod ("ConvertFrom", 
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var baseConvertFromMethod = typeof(GenericScriptFormat).GetMethod ("ConvertFrom",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            bool isOverridden = convertFromMethod != null && 
+                convertFromMethod.DeclaringType != typeof(GenericScriptFormat);
+            return isOverridden;
+        }
+
         private TextLoadResult LoadTextCore (Entry entry, Encoding preferredEncoding, CancellationToken cancellationToken)
         {
             Stream stream = null;
@@ -71,8 +85,13 @@ namespace GARbro.GUI.Preview
                 cancellationToken.ThrowIfCancellationRequested();
 
                 ScriptFormat format = ScriptFormat.FindFormat (binaryStream);
-                if (format != null)
-                    return LoadScriptFile (entry, stream, format, preferredEncoding, cancellationToken);
+                if (format != null) {
+                    // NOTE: shouldn't dispose for simplified derivatives of GenericScriptFormat
+                    // other formats should create a new stream by themselves in ConvertFrom
+                    bool hasCustomConverter = IsTextConverterImplemented (format);
+                    shouldDisposeStream = hasCustomConverter;
+                    return LoadScriptFile (entry, binaryStream, format, preferredEncoding, hasCustomConverter, cancellationToken);
+                }
                 else
                 { 
                     var result =  LoadPlainTextOrBinary (entry, stream, preferredEncoding, cancellationToken);
@@ -126,62 +145,43 @@ namespace GARbro.GUI.Preview
             return found_eol || read < 80;
         }
 
-        private TextLoadResult LoadScriptFile (Entry entry, Stream stream, ScriptFormat format,
-    Encoding preferredEncoding, CancellationToken cancellationToken)
+        private TextLoadResult LoadScriptFile (Entry entry, IBinaryStream binaryStream, ScriptFormat format,
+            Encoding preferredEncoding, bool hasCustomConverter, CancellationToken cancellationToken)
         {
-            stream.Position = 0;
-            ScriptData scriptData = null;
-            Encoding detectedEncoding = null;
-
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (preferredEncoding != null)
+            binaryStream.Position = 0;
+
+            Encoding encodingToUse;
+
+            if (hasCustomConverter)
+                encodingToUse = Encoding.UTF8; // custom converters must output UTF8
+            else
             {
-                try
+                if (preferredEncoding != null)
+                    encodingToUse = preferredEncoding;
+                else
                 {
-                    scriptData = format.Read (entry.Name, stream, preferredEncoding);
-                    if (scriptData != null)
-                        detectedEncoding = preferredEncoding;
-                }
-                catch
-                {
-                    stream.Position = 0;
-                    scriptData = null;
+                    encodingToUse = ScriptFormat.DetectEncoding (binaryStream.AsStream, Math.Min (binaryStream.AsStream.Length, 20000));
+                    binaryStream.Position = 0;
                 }
             }
 
-            if (scriptData == null)
-            {
-                scriptData = format.Read (entry.Name, stream);
-                detectedEncoding = scriptData?.Encoding;
-            }
-
-            if (scriptData == null)
-            {
-                return new TextLoadResult { Error = Localization._T ("FailedToReadScript") };
-            }
+            var displayStream = format.ConvertFrom (binaryStream);
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var displayStream = new MemoryStream();
-            scriptData.Serialize (displayStream);
-            displayStream.Position = 0;
-
-            string scriptInfo = string.Format ("{0} - {1}",
-                format.Description,
-                scriptData.GetNewLineInfo());
-
-            return new TextLoadResult
-            {
-                ContentStream = displayStream,
-                Encoding = detectedEncoding,
-                StatusText = scriptInfo,
-                IsScript = true
+            return new TextLoadResult {
+                ContentStream  = displayStream,
+                Encoding       = encodingToUse,
+                StatusText     = format.Description,
+                IsScript       = true,
+                KeepStreamOpen = !hasCustomConverter
             };
         }
 
         private TextLoadResult LoadPlainTextOrBinary (Entry entry, Stream stream, Encoding preferredEncoding,
-    CancellationToken cancellationToken)
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -209,8 +209,7 @@ namespace GARbro.GUI.Preview
                 encodingToUse = detectedEncoding;
 
             stream.Position = 0;
-            return new TextLoadResult
-            {
+            return new TextLoadResult {
                 ContentStream = stream,
                 Encoding = encodingToUse,
                 KeepStreamOpen = true,
@@ -234,12 +233,10 @@ namespace GARbro.GUI.Preview
                 int replacementCount = 0;
                 foreach (char c in charBuffer)
                 {
-                    if (c == '\uFFFD') // Unicode replacement character
+                    if (c == '\uFFFD' || c == '\uFFFF') // Unicode Replacement or Non-character characters
                         replacementCount++;
                 }
-
-                // Allow up to 1% replacement characters
-                return replacementCount < (charBuffer.Length / 100);
+                return replacementCount == 0;
             }
             catch
             {

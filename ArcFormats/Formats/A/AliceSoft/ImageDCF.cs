@@ -97,7 +97,8 @@ namespace GameRes.Formats.AliceSoft
 
             if (!string.IsNullOrEmpty (meta.BaseName))
                 pngImage.CustomChunks["dCFb"] = Encoding.UTF8.GetBytes (meta.BaseName);
-            pngImage.CustomChunks["dCFp"] = new byte[] { meta.IsPcf ? (byte)1 : (byte)0 };
+            if (meta.IsPcf)
+                pngImage.CustomChunks["dCFp"] = new byte[] {  (byte)1 };
 
             return pngImage;
         }

@@ -56,6 +56,8 @@ namespace GameRes.Formats.Qlie
         public override bool  IsHierarchic { get { return  false; } }
         public override bool      CanWrite { get { return  true; } }
 
+        internal static readonly string METADATA_FILE = ".abmpmetadata";
+
         public AbmpOpener ()
         {
             Extensions = new string[] { "b" };
@@ -78,10 +80,9 @@ namespace GameRes.Formats.Qlie
                     var json = JsonConvert.SerializeObject (metadata, Formatting.Indented);
                     var jsonBytes = Encoding.UTF8.GetBytes (json);
 
-                    var metadataEntry = new AbmpMetadataEntry
-                    {
-                        Name = "metadata.json",
-                        Type = "",
+                    var metadataEntry = new AbmpMetadataEntry {
+                        Name = METADATA_FILE,
+                        Type = "script",
                         Offset = 0,
                         Size = (uint)jsonBytes.Length,
                         JsonContent = jsonBytes
@@ -100,18 +101,20 @@ namespace GameRes.Formats.Qlie
 
             if (0xFF435031 != arc.File.View.ReadUInt32 (entry.Offset))
                 return base.OpenEntry (arc, entry);
+
             var data = arc.File.View.ReadBytes (entry.Offset, entry.Size);
             data = PackOpener.Decompress (data) ?? data;
             return new BinMemoryStream (data, entry.Name);
         }
 
-        public override void Create (Stream output, IEnumerable<Entry> list, ResourceOptions options = null, 
-                                     EntryCallback callback = null)
+        public override void Create (
+            Stream output, IEnumerable<Entry> list, ResourceOptions options = null, 
+            EntryCallback callback = null)
         {
             var abmp_options = GetOptions<AbmpOptions> (options);
             int version = abmp_options.Version;
 
-            var filteredList = list.Where (e => e.Name != "metadata.json").ToList();
+            var filteredList = list.Where (e => !e.Name.EndsWith(METADATA_FILE)).ToList();
 
             using (var writer = new BinaryWriter (output, Encoding.ASCII, true))
             {
@@ -160,8 +163,9 @@ namespace GameRes.Formats.Qlie
             }
         }
 
-        void WriteAbimageSection (BinaryWriter writer, List<Entry> images, int version, 
-                                 EntryCallback callback, ref int current)
+        void WriteAbimageSection (
+            BinaryWriter writer, List<Entry> images, int version, 
+            EntryCallback callback, ref int current)
         {
             writer.Write (Encoding.ASCII.GetBytes ("abimage10"));
             writer.Write ((byte)0);
@@ -689,9 +693,8 @@ namespace GameRes.Formats.Qlie
             var json = JsonConvert.SerializeObject (metadata, Formatting.Indented);
             var jsonBytes = Encoding.UTF8.GetBytes (json);
 
-            var metadataEntry = new AbmpMetadataEntry
-            {
-                Name = "metadata.json",
+            var metadataEntry = new AbmpMetadataEntry {
+                Name = METADATA_FILE,
                 Type = "",
                 Offset = 0,
                 Size = (uint)jsonBytes.Length,
@@ -714,7 +717,7 @@ namespace GameRes.Formats.Qlie
                                      EntryCallback callback = null)
         {
             // Filter out metadata.json
-            var filteredList = list.Where (e => e.Name != "metadata.json").ToList();
+            var filteredList = list.Where (e => !e.Name.EndsWith(METADATA_FILE)).ToList();
 
             using (var writer = new BinaryWriter (output, Encoding.ASCII, true))
             {

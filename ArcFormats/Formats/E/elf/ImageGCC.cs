@@ -103,9 +103,9 @@ namespace GameRes.Formats.Elf
                 FlipRgbVertically (rgb_data, bitmap.PixelWidth, bitmap.PixelHeight);
 
                 long data_start = file.Position;
-                using (var lzss = new LzssWriter (file))
+                using (var lzss = new LzssStream (file, LzssMode.Compress, true))
                 {
-                    lzss.Pack (rgb_data, 0, rgb_data.Length);
+                    lzss.Write (rgb_data, 0, rgb_data.Length);
                 }
 
                 if (has_alpha)

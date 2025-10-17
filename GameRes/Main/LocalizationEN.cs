@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17891; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17943; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -40,6 +40,7 @@ public static partial class Localization
                 { "MsgEncNotImplemented", new LocalizationEntry { Singular = "Encryption method not implemented" } },
                 { "MsgExtensionTooLong", new LocalizationEntry { Singular = "File name extension too long." } },
                 { "MsgFileNameTooLong", new LocalizationEntry { Singular = "File name is too long" } },
+                { "MsgFileAlreadyExists", new LocalizationEntry { Singular = "File already exists" } },
                 { "MsgIllegalCharacters", new LocalizationEntry { Singular = "File name contains illegal characters" } },
                 { "MsgInvalidImageFormat", new LocalizationEntry { Singular = "{0}: image format not recognized." } },
                 { "MsgInvalidVersion", new LocalizationEntry { Singular = "Invalid archive version specified." } },

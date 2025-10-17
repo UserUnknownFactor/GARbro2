@@ -191,7 +191,7 @@ namespace GameRes.Formats
             aes.IV = iv;
             aes.Mode = CipherMode.CBC;
             aes.Padding = PaddingMode.PKCS7;
-            
+
             return mode == CryptoStreamMode.Write 
                 ? aes.CreateEncryptor() 
                 : aes.CreateDecryptor();
@@ -238,7 +238,7 @@ namespace GameRes.Formats
             tripleDes.IV = iv;
             tripleDes.Mode = CipherMode.CBC;
             tripleDes.Padding = PaddingMode.PKCS7;
-            
+
             return mode == CryptoStreamMode.Write 
                 ? tripleDes.CreateEncryptor() 
                 : tripleDes.CreateDecryptor();
@@ -272,7 +272,7 @@ namespace GameRes.Formats
             des.IV = iv;
             des.Mode = CipherMode.CBC;
             des.Padding = PaddingMode.PKCS7;
-            
+
             return mode == CryptoStreamMode.Write 
                 ? des.CreateEncryptor() 
                 : des.CreateDecryptor();
@@ -306,7 +306,7 @@ namespace GameRes.Formats
             rc2.IV = iv;
             rc2.Mode = CipherMode.CBC;
             rc2.Padding = PaddingMode.PKCS7;
-            
+
             return mode == CryptoStreamMode.Write 
                 ? rc2.CreateEncryptor() 
                 : rc2.CreateDecryptor();
@@ -569,7 +569,7 @@ namespace GameRes.Formats
         {
             long position = BaseStream.Position;
             int read = BaseStream.Read(buffer, offset, count);
-            
+
             for (int i = 0; i < read; ++i)
             {
                 byte key = (byte)(m_initialKey + (position + i) * m_increment);

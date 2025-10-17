@@ -26,6 +26,8 @@ namespace GameRes.Formats.Tad
 
         public override ArcFile TryOpen(ArcView file)
         {
+            if (!file.Name.HasExtension (".tad"))
+                return null;
             long pos = 0;
             var numFilesBytes = new List<byte>();
             while (pos < file.MaxOffset)

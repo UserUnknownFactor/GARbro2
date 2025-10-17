@@ -86,9 +86,9 @@ namespace GameRes.Formats.Elf
                     System.Buffer.BlockCopy (pixels, src, flipped, dst, stride);
                 }
 
-                using (var lzss = new LzssWriter (file))
+                using (var lzss = new LzssStream (file, LzssMode.Compress, true))
                 {
-                    lzss.Pack (flipped, 0, flipped.Length);
+                    lzss.Write (flipped, 0, flipped.Length);
                 }
             }
         }

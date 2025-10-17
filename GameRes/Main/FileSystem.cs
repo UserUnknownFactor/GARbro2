@@ -553,8 +553,12 @@ namespace GameRes
 
         public override string CombinePath (params string[] paths)
         {
+            if (paths == null || paths.Length == 0)
+                return string.Empty;
+
             // Flat archives don't have subdirectories
-            return paths?.LastOrDefault() ?? string.Empty;
+            var lastPath = paths.LastOrDefault() ?? string.Empty;
+            return Path.GetFileName (lastPath);
         }
 
         public override string GetDirectoryName (string path)
@@ -616,7 +620,37 @@ namespace GameRes
                 if (paths[0].EndsWith (PathDelimiter))
                     return paths[0] + paths[1];
             }
-            return string.Join (PathDelimiter, paths);
+            var combined = string.Join (PathDelimiter, paths);
+            if (combined.Contains ("..") || combined.Contains (PathDelimiter + ".") || combined.StartsWith ("."))
+                return NormalizeArchivePath (combined);
+            return combined;
+        }
+
+        public static string NormalizeArchivePath (string path)
+        {
+            if (string.IsNullOrEmpty (path))
+                return string.Empty;
+
+            var parts = path.Split (new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            var resolved = new List<string>();
+
+            foreach (var part in parts)
+            {
+                if (part == ".")
+                    continue;
+                else if (part == "..")
+                {
+                    if (resolved.Count > 0)
+                        resolved.RemoveAt (resolved.Count - 1);
+                }
+                else
+                    resolved.Add (part);
+            }
+
+            if (resolved.Count == 0)
+                return string.Empty;
+
+            return string.Join (PathDelimiter, resolved);
         }
 
         private string NormalizePath (string path)

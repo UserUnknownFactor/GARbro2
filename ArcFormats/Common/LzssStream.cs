@@ -270,7 +270,7 @@ namespace GameRes.Compression
         {
             if (m_input_pos >= m_input_size)
             {
-                m_input_size = m_input.Read(m_input_buffer, 0, INPUT_BUFFER_SIZE);
+                m_input_size = m_input.Read (m_input_buffer, 0, INPUT_BUFFER_SIZE);
                 m_input_pos = 0;
                 if (m_input_size == 0)
                     return -1;
@@ -287,7 +287,7 @@ namespace GameRes.Compression
                 if (m_in_match)
                 {
                     // Fast path for continuing a match
-                    int copy_count = Math.Min(m_match_remaining, count - written);
+                    int copy_count = Math.Min (m_match_remaining, count - written);
                     for (int i = 0; i < copy_count; i++)
                     {
                         byte b = m_frame[m_match_offset++ & m_frame_mask];
@@ -338,7 +338,7 @@ namespace GameRes.Compression
                     int match_length = (hi & 0x0F) + m_settings.MinMatchLength;
 
                     // Process as much of the match as we can
-                    int copy_count = Math.Min(match_length, count - written);
+                    int copy_count = Math.Min (match_length, count - written);
                     for (int i = 0; i < copy_count; i++)
                     {
                         byte b = m_frame[m_match_offset++ & m_frame_mask];
@@ -365,192 +365,6 @@ namespace GameRes.Compression
         public void Dispose ()
         {
             // Nothing to dispose as we don't own the stream
-        }
-        #endregion
-    }
-
-    public class LzssCompressor : IDisposable
-    {
-        private Stream m_output;
-        private LzssSettings m_settings;
-        private byte[] m_frame;
-        private int m_frame_pos;
-        private int m_frame_mask;
-        private List<byte> m_output_buffer;
-        private byte m_control_byte;
-        private int m_control_bit;
-        private int m_control_pos;
-
-        public LzssCompressor (Stream output, LzssSettings settings)
-        {
-            m_output = output;
-            m_settings = settings;
-            m_frame = new byte[settings.FrameSize];
-            m_frame_mask = settings.FrameSize - 1;
-            m_frame_pos = settings.FrameInitPos;
-            m_output_buffer = new List<byte>();
-            m_control_byte = 0;
-            m_control_bit = 1;
-            m_control_pos = 0;
-
-            if (settings.FrameFill != 0)
-            {
-                for (int i = 0; i < m_frame.Length; i++)
-                {
-                    m_frame[i] = settings.FrameFill;
-                }
-            }
-
-            // Reserve space for first control byte
-            m_output_buffer.Add (0);
-        }
-
-        public void WriteCompressed (byte[] buffer, int offset, int count)
-        {
-            int pos = offset;
-            int end = offset + count;
-
-            int lookAheadSize = Math.Min (m_settings.MaxMatchLength, end - pos);
-            for (int i = 0; i < lookAheadSize && pos + i < end; i++)
-                m_frame[(m_frame_pos + i) & m_frame_mask] = buffer[pos + i];
-
-            while (pos < end)
-            {
-                int maxLength = Math.Min (m_settings.MaxMatchLength, end - pos);
-                var match = FindBestMatch (buffer, pos, maxLength);
-
-                if (match.Length >= m_settings.MinMatchLength)
-                {
-                    // Write match
-                    WriteMatch (match.Offset, match.Length);
-
-                    // Move frame position forward and update with new data
-                    for (int i = 0; i < match.Length; i++)
-                    {
-                        m_frame[m_frame_pos & m_frame_mask] = buffer[pos + i];
-                        m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
-
-                        // Update look-ahead if there's more data
-                        int lookAheadPos = pos + i + m_settings.MaxMatchLength;
-                        if (lookAheadPos < end)
-                            m_frame[(m_frame_pos + m_settings.MaxMatchLength - 1) & m_frame_mask] = buffer[lookAheadPos];
-                    }
-                    pos += match.Length;
-                }
-                else
-                {
-                    // Write literal
-                    WriteLiteral (buffer[pos]);
-
-                    // Update frame
-                    m_frame[m_frame_pos & m_frame_mask] = buffer[pos];
-                    m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
-
-                    // Update look-ahead if there's more data
-                    int lookAheadPos = pos + m_settings.MaxMatchLength;
-                    if (lookAheadPos < end)
-                        m_frame[(m_frame_pos + m_settings.MaxMatchLength - 1) & m_frame_mask] = buffer[lookAheadPos];
-
-                    pos++;
-                }
-            }
-        }
-
-        private (int Offset, int Length) FindBestMatch (byte[] buffer, int bufferPos, int maxLength)
-        {
-            int bestOffset = 0;
-            int bestLength = 0;
-
-            int searchLimit = Math.Min (m_settings.FrameSize - m_settings.MaxMatchLength, bufferPos);
-
-            for (int distance = 1; distance <= searchLimit; distance++)
-            {
-                // Calculate frame position for this distance
-                int frameOffset = (m_frame_pos - distance) & m_frame_mask;
-
-                // Quick check first two bytes
-                if (m_frame[frameOffset] != buffer[bufferPos] || 
-                    m_frame[(frameOffset + 1) & m_frame_mask] != buffer[bufferPos + 1])
-                    continue;
-
-                // Count matching bytes
-                int matchLength = 2;
-                while (matchLength < maxLength)
-                {
-                    if (m_frame[(frameOffset + matchLength) & m_frame_mask] != buffer[bufferPos + matchLength])
-                        break;
-                    matchLength++;
-                }
-
-                // Keep best match
-                if (matchLength > bestLength)
-                {
-                    bestLength = matchLength;
-                    bestOffset = frameOffset;
-
-                    if (matchLength == maxLength)
-                        break;
-                }
-            }
-
-            return (bestOffset, bestLength);
-        }
-
-        private void WriteLiteral (byte value)
-        {
-            // Set control bit for literal
-            m_control_byte |= (byte)m_control_bit;
-            m_output_buffer.Add (value);
-            AdvanceControlBit();
-        }
-
-        private void WriteMatch (int offset, int length)
-        {
-            // Store absolute position in frame and adjusted length
-            int adjustedLength = length - m_settings.MinMatchLength;
-            m_output_buffer.Add((byte)(offset & 0xFF));
-            m_output_buffer.Add((byte)(((offset >> 4) & 0xF0) | (adjustedLength & 0x0F)));
-            AdvanceControlBit();
-        }
-
-        private void AdvanceControlBit ()
-        {
-            m_control_bit <<= 1;
-
-            if (m_control_bit >= 0x100)
-            {
-                m_output_buffer[m_control_pos] = m_control_byte;
-                m_output.Write (m_output_buffer.ToArray(), 0, m_output_buffer.Count);
-
-                // Reset for next block
-                m_output_buffer.Clear();
-                m_control_byte = 0;
-                m_control_bit = 1;
-                m_control_pos = m_output_buffer.Count;
-                m_output_buffer.Add (0); // Reserve space for next control byte
-            }
-        }
-
-        public void Flush ()
-        {
-            if (m_control_bit > 1)
-            {
-                // Write final control byte
-                m_output_buffer[m_control_pos] = m_control_byte;
-                m_output.Write (m_output_buffer.ToArray(), 0, m_output_buffer.Count);
-                m_output_buffer.Clear();
-
-                m_control_byte = 0;
-                m_control_bit = 1;
-            }
-
-            m_output.Flush();
-        }
-
-        #region IDisposable Members
-        public void Dispose ()
-        {
-            Flush();
         }
         #endregion
     }
@@ -656,152 +470,231 @@ namespace GameRes.Compression
         #endregion
     }
 
-    public class LzssWriter : IDisposable
+    public class LzssCompressor : IDisposable
     {
-        BinaryWriter    m_output;
-        byte[]          m_frame;
-        int             m_frame_size;
-        int             m_frame_pos;
-        int             m_frame_mask;
-        byte            m_frame_fill;
-        int             m_min_match;
-        int             m_max_match;
+        private Stream m_output;
+        private LzssSettings m_settings;
+        private byte[] m_frame;
+        private int m_frame_mask;
+        private int m_frame_pos;
+        private List<byte> m_output_buffer;
 
-        public BinaryWriter Output { get { return m_output; } }
-        public int       FrameSize { get; set; }
-        public byte      FrameFill { get; set; }
-        public int    FrameInitPos { get; set; }
-        public int  MinMatchLength { get; set; }
-        public int  MaxMatchLength { get; set; }
+        private byte m_control_byte;
+        private int m_control_pos;
+        public int m_control_bit;
 
-        public LzssWriter (Stream output)
+        private int m_last_match_pos = -1;
+
+        public LzssCompressor (Stream output, LzssSettings settings)
         {
-            m_output = new BinaryWriter (output, System.Text.Encoding.ASCII, true);
+            m_output = output;
+            m_settings = settings;
+            m_frame = new byte[settings.FrameSize];
+            m_frame_mask = settings.FrameSize - 1;
+            m_frame_pos = settings.FrameInitPos;
+            m_output_buffer = new List<byte>();
+            m_control_byte = 0;
+            m_control_bit = 1;
+            m_control_pos = 0;
 
-            FrameSize      = 0x1000;
-            FrameFill      = 0;
-            FrameInitPos   = 0xFEE;
-            MinMatchLength = 3;
-            MaxMatchLength = 18;
-        }
-
-        public void Pack (byte[] input, int offset, int count)
-        {
-            m_frame_size = FrameSize;
-            m_frame_mask = FrameSize - 1;
-            m_frame_pos = FrameInitPos;
-            m_frame_fill = FrameFill;
-            m_min_match = MinMatchLength;
-            m_max_match = MaxMatchLength;
-
-            m_frame = new byte[m_frame_size];
-            if (m_frame_fill != 0)
+            // Initialize frame buffer with fill character
+            if (settings.FrameFill != 0)
             {
                 for (int i = 0; i < m_frame.Length; i++)
-                {
-                    m_frame[i] = m_frame_fill;
-                }
+                    m_frame[i] = settings.FrameFill;
             }
 
-            var output_buffer = new List<byte>();
-            byte control_byte = 0;
-            int control_bit = 1;
+            // Reserve space for first control byte
+            m_output_buffer.Add (0);
+        }
 
-            output_buffer.Add (0); // Reserve space for control byte
-
+        public void WriteCompressed (byte[] buffer, int offset, int count)
+        {
             int pos = offset;
             int end = offset + count;
 
             while (pos < end)
             {
-                int best_offset = 0;
-                int best_length = 0;
-                int max_check = Math.Min (m_max_match, end - pos);
+                int remaining = end - pos;
+                int maxLength = Math.Min (m_settings.MaxMatchLength, remaining);
 
-                int search_start = (m_frame_pos - m_frame_size + 1) & m_frame_mask;
+                // Find the best match in the frame buffer
+                var match = FindBestMatch (buffer, pos, maxLength);
 
-                for (int i = 0; i < m_frame_size - 1; i++)
+                if (match.Length >= m_settings.MinMatchLength)
                 {
-                    int check_pos = (search_start + i) & m_frame_mask;
-                    int match_length = 0;
+                    // Write match (control bit = 0, so don't set the bit)
+                    WriteMatch (match.Offset, match.Length);
+                    m_last_match_pos = match.Offset;  // Remember for next search
 
-                    while (match_length < max_check && 
-                           m_frame[(check_pos + match_length) & m_frame_mask] == input[pos + match_length])
+                    // Update frame buffer with matched bytes
+                    for (int i = 0; i < match.Length; i++)
                     {
-                        match_length++;
+                        m_frame[m_frame_pos] = buffer[pos + i];
+                        m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
                     }
-
-                    if (match_length >= m_min_match && match_length > best_length)
-                    {
-                        best_length = match_length;
-                        best_offset = check_pos;
-
-                        if (match_length == max_check)
-                            break;
-                    }
-                }
-
-                if (best_length >= m_min_match)
-                {
-                    // Write match (control bit = 0, so don't set bit)
-                    output_buffer.Add((byte)(best_offset & 0xFF));
-                    output_buffer.Add((byte)(((best_offset >> 4) & 0xF0) | ((best_length - m_min_match) & 0x0F)));
-
-                    for (int i = 0; i < best_length; i++)
-                    {
-                        m_frame[m_frame_pos++ & m_frame_mask] = input[pos + i];
-                    }
-                    pos += best_length;
+                    pos += match.Length;
                 }
                 else
                 {
                     // Write literal (control bit = 1)
-                    control_byte |= (byte)control_bit;
-                    output_buffer.Add (input[pos]);
-                    m_frame[m_frame_pos++ & m_frame_mask] = input[pos];
+                    WriteLiteral (buffer[pos]);
+                    m_last_match_pos = -1;
+
+                    // Update frame buffer with literal byte
+                    m_frame[m_frame_pos] = buffer[pos];
+                    m_frame_pos = (m_frame_pos + 1) & m_frame_mask;
                     pos++;
                 }
+            }
+        }
 
-                control_bit <<= 1;
+        private (int Offset, int Length) FindBestMatch (byte[] buffer, int pos, int maxLength)
+        {
+            int bestOffset = 0;
+            int bestLength = 0;
 
-                if (control_bit >= 0x100)
+            // Search the entire frame buffer for the best match
+            // We search all positions in the circular buffer
+            byte firstByte = buffer[pos];
+            byte secondByte = (maxLength > 1 && pos + 1 < buffer.Length) ? buffer[pos + 1] : (byte)0;
+            bool checkSecond = (maxLength > 1);
+
+            // First, check near the last match position (often matches are clustered)
+            if (m_last_match_pos >= 0)
+            {
+                for (int delta = -16; delta <= 16; delta++)
                 {
-                    // Write control byte and flush
-                    output_buffer[0] = control_byte;
-                    m_output.Write (output_buffer.ToArray());
+                    int searchPos = (m_last_match_pos + delta) & m_frame_mask;
+                    // Don't search at the current write position
+                    if (searchPos == m_frame_pos)
+                        continue;
 
-                    output_buffer.Clear();
-                    output_buffer.Add (0); // Reserve space for next control byte
-                    control_byte = 0;
-                    control_bit = 1;
+                    if (m_frame[searchPos] != firstByte)
+                        continue;
+                    if (checkSecond && m_frame[(searchPos + 1) & m_frame_mask] != secondByte)
+                        continue;
+
+                    int matchLength = GetMatchLength (buffer, pos, searchPos, maxLength);
+                    if (matchLength >= m_settings.MinMatchLength && matchLength > bestLength)
+                    {
+                        bestLength = matchLength;
+                        bestOffset = searchPos;
+                        if (matchLength == maxLength)
+                            return (bestOffset, bestLength);
+                    }
                 }
             }
 
-            // Write final block if needed
-            if (control_bit > 1)
+            // Then do full search with early exit optimization
+            // Search backwards from current position (most recent data first)
+            for (int dist = 1; dist < m_settings.FrameSize; dist++)
             {
-                output_buffer[0] = control_byte;
-                m_output.Write (output_buffer.ToArray());
+                int searchPos = (m_frame_pos - dist) & m_frame_mask;
+
+                if (m_frame[searchPos] != firstByte)
+                    continue;
+                if (checkSecond && m_frame[(searchPos + 1) & m_frame_mask] != secondByte)  
+                    continue;
+
+                int matchLength = GetMatchLength (buffer, pos, searchPos, maxLength);
+                if (matchLength >= m_settings.MinMatchLength && matchLength > bestLength)
+                {
+                    bestLength = matchLength;
+                    bestOffset = searchPos;
+                    if (matchLength == maxLength)
+                        break;
+                }
             }
+
+            return (bestOffset, bestLength);
+        }
+
+        private int GetMatchLength (byte[] buffer, int bufferPos, int framePos, int maxLength)
+        {
+            int matchLength = 0;
+            // Compare bytes starting from searchPos in frame with bytes at pos in buffer
+            while (matchLength < maxLength)
+            {
+                int frameIndex = (framePos + matchLength) & m_frame_mask;
+                // Stop if we've wrapped around to the current write position
+                if (frameIndex == m_frame_pos)
+                    break;
+                if (m_frame[frameIndex] != buffer[bufferPos + matchLength])
+                    break;
+                matchLength++;
+            }
+            return matchLength;
+        }
+
+        private void WriteLiteral (byte value)
+        {
+            // Set control bit to 1 for literal
+            m_control_byte |= (byte)m_control_bit;
+            m_output_buffer.Add (value);
+            AdvanceControlBit();
+        }
+
+        private void WriteMatch (int offset, int length)
+        {
+            // Control bit is 0 for match (don't set the bit)
+            // Match encoding per LZSS standard:
+            // - byte 0: low 8 bits of offset
+            // - byte 1: high 4 bits of offset (bits 7-4) | (length - MinMatchLength) (bits 3-0)
+            int adjustedLength = length - m_settings.MinMatchLength;
+            // Ensure offset is within valid range (12-bit value, 0-4095)
+            offset = offset & m_frame_mask;
+
+            // Pack the offset and length into two bytes
+            byte low = (byte)(offset & 0xFF);
+            byte high = (byte)(((offset >> 4) & 0xF0) | (adjustedLength & 0x0F));
+
+            m_output_buffer.Add (low);
+            m_output_buffer.Add (high);
+
+            // Don't set control bit (it remains 0 for match)
+            AdvanceControlBit();
+        }
+
+        private void AdvanceControlBit ()
+        {
+            m_control_bit <<= 1;
+
+            if (m_control_bit >= 0x100)
+            {
+                // Write the control byte and buffered data
+                m_output_buffer[m_control_pos] = m_control_byte;
+                m_output.Write (m_output_buffer.ToArray(), 0, m_output_buffer.Count);
+
+                // Reset for next block
+                m_output_buffer.Clear();
+                m_control_byte = 0;
+                m_control_bit = 1;
+                m_control_pos = m_output_buffer.Count;
+                m_output_buffer.Add (0); // Reserve space for next control byte
+            }
+        }
+
+        public void Flush ()
+        {
+            if (m_control_bit > 1)
+            {
+                // Write final control byte and any remaining data
+                m_output_buffer[m_control_pos] = m_control_byte;
+                m_output.Write (m_output_buffer.ToArray(), 0, m_output_buffer.Count);
+                m_output_buffer.Clear();
+
+                m_control_byte = 0;
+                m_control_bit = 1;
+            }
+
+            m_output.Flush();
         }
 
         #region IDisposable Members
-        bool disposed = false;
-
         public void Dispose ()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
-        }
-
-        protected virtual void Dispose (bool disposing)
-        {
-            if (!disposed)
-            {
-                if (disposing)
-                    m_output.Dispose();
-                disposed = true;
-            }
+            Flush();
         }
         #endregion
     }

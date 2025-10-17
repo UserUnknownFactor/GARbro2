@@ -53,7 +53,11 @@ namespace GameRes
         public ScriptType Type { get; set; }
         public Encoding Encoding { get; set; }
         public string NewLineFormat { get; set; }
-        public IList<ScriptLine> TextLines { get { return m_text; } }
+        public IList<ScriptLine> TextLines
+        {
+            get { return m_text; }
+            set { m_text = (List<ScriptLine>)value; }
+        }
         public Dictionary<string, object> Metadata { get; private set; }
 
         protected List<ScriptLine> m_text;
@@ -86,7 +90,7 @@ namespace GameRes
             m_text = new List<ScriptLine>(lines);
             Type = type;
             Encoding = Encoding.UTF8;
-            NewLineFormat = Environment.NewLine; // Default to system newline
+            NewLineFormat = "\n";
             Metadata = new Dictionary<string, object>();
             RawText = string.Join (NewLineFormat, m_text.Select (l => l.Text));
         }
@@ -152,7 +156,8 @@ namespace GameRes
             }
         }
 
-        public virtual void Serialize (Stream output)
+        // Helper for text formats and formats that only share TextLines
+        public void Serialize (Stream output)
         {
             using (var writer = new StreamWriter (output, Encoding, 1024, true))
             {
@@ -163,24 +168,19 @@ namespace GameRes
                         writer.Write (m_text[i].Text);
 
                         // Don't add newline after the last line unless original had it
-                        if (i < m_text.Count - 1)
-                            writer.Write (NewLineFormat);
-                        else if (RawText.EndsWith (NewLineFormat) || RawText.EndsWith ("\n"))
-                            writer.Write (NewLineFormat);
+                        if (!string.IsNullOrEmpty (NewLineFormat)) 
+                        {
+                            if (i < m_text.Count - 1)
+                                writer.Write (NewLineFormat);
+                            else if (!string.IsNullOrEmpty (RawText) && (RawText.EndsWith (NewLineFormat) || RawText.EndsWith ("\n")))
+                                writer.Write (NewLineFormat);
+                        }
+                        else if (i < m_text.Count - 1)
+                            writer.Write ('\n');
                     }
                 }
                 else
                     writer.Write (RawText);
-            }
-        }
-
-        public virtual void Deserialize (Stream input)
-        {
-            using (var reader = new StreamReader (input, Encoding, true, 1024, true))
-            {
-                RawText = reader.ReadToEnd();
-                DetectNewLineFormat (RawText);
-                ParsePlainText (RawText);
             }
         }
 
@@ -334,11 +334,13 @@ namespace GameRes
             return Extensions != null && Extensions.Contains (ext);
         }
 
+        // Formats that override it must return a new Stream here.
         public override Stream ConvertFrom (IBinaryStream file)
         {
             return file.AsStream;
         }
 
+        // Formats that override it must return a new Stream here.
         public override Stream ConvertBack (IBinaryStream file)
         {
             return file.AsStream;
@@ -477,6 +479,17 @@ namespace GameRes
 
             return validScriptData;
         }
+
+        public override Stream ConvertFrom (IBinaryStream file)
+        {
+            var scriptData = Read(file.Name, file.AsStream);
+            var outputStream = new MemoryStream();
+            var writer = new StreamWriter(outputStream, scriptData.Encoding, 1024, true);
+            writer.Write(scriptData.RawText);
+            writer.Flush();
+            outputStream.Position = 0;
+            return outputStream;
+        }
     }
 
     [Export(typeof(ScriptFormat))]
@@ -546,6 +559,17 @@ namespace GameRes
             };
 
             return scriptData;
+        }
+
+        public override Stream ConvertFrom (IBinaryStream file)
+        {
+            var scriptData = Read(file.Name, file.AsStream);
+            var outputStream = new MemoryStream();
+            var writer = new StreamWriter(outputStream, scriptData.Encoding, 1024, true);
+            writer.Write(scriptData.RawText);
+            writer.Flush();
+            outputStream.Position = 0;
+            return outputStream;
         }
     }
 

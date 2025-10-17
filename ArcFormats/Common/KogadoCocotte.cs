@@ -16,7 +16,7 @@ namespace GameRes.Formats.Kogado
         // Encode
         BOOL Encode( DWORD dwCompressionLevel, BYTE *pDestBuffer, const BYTE *pSrcBuffer, DWORD dwDestLength, DWORD dwSrcLength, DWORD *pdwWritten, HPA_Callback callback, LPVOID pCallbackArg )
         {
-            // BWTEncode でサイズが 2 増えるので + 2 する
+            // Add + 2 because BWTEncode increases size by 2
             BYTE buffer[ RANGECODER_BLOCKSIZE + 2 ];
             DWORD dwSrcCursor = 0, dwDestCursor = 0;
             DWORD written;
@@ -29,11 +29,11 @@ namespace GameRes.Formats.Kogado
                     if ( !callback( pCallbackArg, dwSrcCursor, dwSrcLength ) )
                         return FALSE;
                 }
-                if ( dwDestLength - dwDestCursor <= 4 )	// バッファが足りない
+                if ( dwDestLength - dwDestCursor <= 4 )	// Buffer is insufficient
                     return FALSE;
                 write_src_size = min( RANGECODER_BLOCKSIZE, dwSrcLength - dwSrcCursor );
                 m_cBWTEncode.Encode( buffer, pSrcBuffer, write_src_size );
-                // BWTEncode でサイズが 2 増えるので + 2 する
+                // Add + 2 because BWTEncode increases size by 2
                 m_cMTFEncode.Encode( buffer, buffer, write_src_size + 2 );
                 switch ( dwCompressionLevel ) {
                 case CMPL_STORE:
@@ -44,7 +44,7 @@ namespace GameRes.Formats.Kogado
                 case CMPL_MAXIMUM:
                     if ( !m_cRangeCoder.Encode( pDestBuffer + 4, buffer, dwDestLength - dwDestCursor - 4, write_src_size + 2, &written ) )
                         return FALSE;
-                    // オーバーしたら STORE にする
+                    // If overflows, use STORE instead
                     if ( written >= write_src_size + 2 ) {
                         m_cRangeCoder.InitQSModel();
                         goto loc_store_encode;
@@ -54,7 +54,7 @@ namespace GameRes.Formats.Kogado
                     return FALSE;
                 }
                 written += 4;
-                // 書きすぎ
+                // Wrote too much
                 if ( written > 0xffff || written > dwDestLength - dwDestCursor )
                     return FALSE;
                 reinterpret_cast< unsigned short * >( pDestBuffer )[0] = static_cast< unsigned short >( written );
@@ -427,10 +427,10 @@ namespace GameRes.Formats.Kogado
         public uint help;      /* bytes_to_follow resp. intermediate value */
         public byte buffer;    /* buffer for input/output */
         /* the following is used only when encoding */
-//        public uint bytecount; /* counter for outputed bytes  */
+        //public uint bytecount; /* counter for output bytes  */
     }
 
-    // とりあえずこれで可逆性を概ね確認 (数タイトルの song.txt で確認)
+    // For now, verified reversibility with this (confirmed with song.txt from several titles)
     internal class BWTEncode
     {
         public const ulong BWT_SORTTABLESIZE = 0x00010000;
@@ -440,18 +440,18 @@ namespace GameRes.Formats.Kogado
 
         void Encode( BYTE *dest, const BYTE *src, int size )
         {
-            int top = 0;	// 初期値は不要だが、警告回避のため
+            int top = 0;  // Initial value not needed, but set to avoid warnings
             BYTE *ptr;
             int count[256] = { 0, };
             int count_sum[256+1];
             BYTE *sort_buffer = new BYTE[size*2];
             LPBYTE *sort_table = new LPBYTE[BWT_SORTTABLESIZE];
 
-            // 作業領域にコピー
+            // Copy to work area
             memcpy( sort_buffer, src, size );
             memcpy( sort_buffer + size, sort_buffer, size );
 
-            // 分布数え上げソート
+            // Distribution counting sort
             for ( int i = 0; i < size; i ++ )
                 count[ sort_buffer[i] ]++;
             count_sum[0] = 0;
@@ -465,7 +465,7 @@ namespace GameRes.Formats.Kogado
                 sort_table[ -- count[*ptr] ] = ptr;
             }
 
-            // 2 段階ソート
+            // Two-stage sort
             for ( int i = 1; i < 256; i ++ ) {
                 int j, k;
                 int high = count_sum[i+1];
@@ -480,10 +480,10 @@ namespace GameRes.Formats.Kogado
                 if ( high - k > 1 )
                     this->MergeSort( sort_table, k, high - 1, size );
             }
-            // 0 は全てソート
+            // Sort all 0s
             if ( count_sum[1] > 1 )
                 this->MergeSort( sort_table, 0, count_sum[1] - 1, size );
-            // ソート不要部分
+            // Part that doesn't need sorting
             for ( int i = 0; i < size; i ++ ) {
                 ptr = sort_table[i];
                 if ( ptr == sort_buffer )
@@ -491,7 +491,7 @@ namespace GameRes.Formats.Kogado
                 if ( *(ptr - 1) > *ptr )
                     sort_table[ count_sum[*(ptr - 1)] ++ ] = ptr - 1;
             }
-            // 出力
+            // Output
             for ( int i = 0; i < size; i ++ ) {
                 ptr = sort_table[i];
                 if ( ptr == sort_buffer )
@@ -499,7 +499,7 @@ namespace GameRes.Formats.Kogado
                 dest[i+2] = *(ptr + size - 1);
             }
             *reinterpret_cast< unsigned short * >( dest ) = static_cast< unsigned short >( top );
-            // 解放
+            // Release
             delete[] sort_buffer;
             delete[] sort_table;
         }
@@ -513,7 +513,7 @@ namespace GameRes.Formats.Kogado
 
             int pos = 2;
             size -= 2;
-            // 分布数え上げソート
+            // Distribution counting sort
             for (int i = 0; i < size; i++)
                 count[ src[pos+i] ]++;
             for (short i = 1; i < 256; i++)
@@ -522,7 +522,7 @@ namespace GameRes.Formats.Kogado
             {
                 sort_table[--count[src[pos+i]]] = i;
             }
-            // 出力
+            // Output
             int ptr = sort_table[top]; 
             for (int i = 0; i < size; i++)
             {
@@ -585,7 +585,7 @@ namespace GameRes.Formats.Kogado
                 m_MTFTable[i] = (byte)i;
         }
 
-        // MTF は当然、destsize == srcsize
+        // MTF naturally has destsize == srcsize
         public void Encode (byte[] dest, byte[] src, int size)
         {
             for (int i = 0; i < size; i++)
@@ -604,7 +604,7 @@ namespace GameRes.Formats.Kogado
             }
         }
 
-        // MTF は当然、destsize == srcsize
+        // MTF naturally has destsize == srcsize
         public void Decode (byte[] dest, byte[] src, int size)
         {
             for ( int i = 0; i < size; i++ )
@@ -624,7 +624,7 @@ namespace GameRes.Formats.Kogado
     /*
     Quasistatic probability model
 
-    // 若干改変 by juicy.gt at 2008/03/27 00:00
+    // Slightly modified by juicy.gt at 2008/03/27 00:00
 
     (c) Michael Schindler
     1997, 1998, 2000
@@ -668,7 +668,7 @@ namespace GameRes.Formats.Kogado
         public int m_incr;          /* increment per update */
         public int m_searchshift;   /* shift for lt_freq before using as index */
         public ushort[] m_cf;       /* array of cumulative frequencies */
-        public ushort[] m_newf;     /* array for collecting ststistics */
+        public ushort[] m_newf;     /* array for collecting statistics */
         public ushort[] m_search;   /* structure for searching on decompression */
 
         public const int TBLSHIFT = 7;

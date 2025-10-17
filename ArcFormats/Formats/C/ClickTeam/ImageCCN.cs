@@ -72,7 +72,7 @@ namespace GameRes.Formats.Clickteam
 
         public CcnImageFormat()
         {
-            Extensions = new string[] { "ccnimg", "dat" };
+            Extensions = new string[] { "ccnimg" };
             Settings   = new IResourceSetting[] { CCNOutputFormat, /*CCNCompressionEnabled*/ };
         }
 

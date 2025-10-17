@@ -86,26 +86,55 @@ namespace GameRes.Formats.Elf
             }
         }
 
-        public override void Create (Stream output, IEnumerable<Entry> list, ResourceOptions options,
-                                     EntryCallback callback)
+        public override void Create (
+            Stream output, IEnumerable<Entry> list, ResourceOptions options,
+            EntryCallback callback)
         {
-            var pak_options    = GetOptions<PakOptions> (options);
-            var encoding       = Encoding.ASCII;
-            var file_table     = list.ToArray();
-            bool is_cg         = pak_options.IsCgArchive;
-            string output_name = is_cg ? "cg.bin" : "voice.bin";
+            var pak_options = GetOptions<PakOptions> (options);
+            var encoding = Encoding.ASCII;
+            bool is_cg = pak_options.IsCgArchive;
 
+            string bin_name = output is FileStream fs ? fs.Name : (is_cg ? "cg.bin" : "voice.bin");
+            string pak_name = Path.ChangeExtension (bin_name, ".pak");
+
+            var original_map = GetFileMap (pak_name);
+            if (original_map == null || original_map.Count == 0)
+                throw new InvalidOperationException ("Cannot find avking.map");
+
+            var new_files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in list)
+            {
+                var filename = VFS.GetFileName (entry.Name);
+                new_files[filename] = entry.Name;
+            }
+
+            var file_table = new List<Tuple<Entry, string>>();
+            foreach (var original_path in original_map)
+            {
+                var filename = Path.GetFileName (original_path);
+                if (!new_files.TryGetValue (filename, out string new_file_path))
+                {
+                    throw new FileNotFoundException ($"Required file '{filename}' (map: '{original_path}') not found");
+                }
+
+                var entry = FormatCatalog.Instance.Create<Entry>(original_path);
+                entry.Name = original_path;
+                file_table.Add (Tuple.Create (entry, new_file_path));
+            }
+
+            // Write all files to BIN
             long current_offset = 0;
             int n = 1;
-            var offsets = new List<long>();
-            foreach (var entry in file_table)
+            foreach (var item in file_table)
             {
+                var entry = item.Item1;
+                var file_path = item.Item2;
+
                 if (null != callback)
                     callback (n++, entry, Localization._T ("MsgAddingFile"));
 
-                offsets.Add (current_offset);
                 entry.Offset = current_offset;
-                using (var input = File.OpenRead (entry.Name))
+                using (var input = File.OpenRead (file_path))
                 {
                     var size = input.Length;
                     entry.Size = (uint)size;
@@ -114,121 +143,29 @@ namespace GameRes.Formats.Elf
                 }
             }
 
-            // Write index file
-            string pak_name = Path.ChangeExtension (output_name, ".pak");
+            // Write PAK index file
             using (var pak = File.Create (pak_name))
             using (var pak_writer = new BinaryWriter (pak))
             {
                 pak_writer.Write (0x00646568u); // 'hed\0'
-                pak_writer.Write (file_table.Length);
+                pak_writer.Write (file_table.Count);
 
-                for (int i = 0; i < file_table.Length; ++i)
+                for (int i = 0; i < file_table.Count; ++i)
                 {
-                    pak_writer.Write ((uint)file_table[i].Offset);
-                    pak_writer.Write (file_table[i].Size);
-                    
-                    if (!is_cg) // Voice format needs padding
+                    var entry = file_table[i].Item1;
+                    pak_writer.Write((uint)entry.Offset);
+                    pak_writer.Write (entry.Size);
+
+                    if (!is_cg)
                     {
                         pak_writer.Write (0L);
                         pak_writer.Write (0L);
                     }
                 }
             }
-
-            UpdateMapFile (output_name, file_table, is_cg);
 
             if (null != callback)
                 callback (n++, null, Localization._T ("MsgWritingIndex"));
-        }
-
-        private void UpdateMapFile (string arc_name, Entry[] entries, bool is_cg)
-        {
-            return;
-            /*string dir_name = VFS.GetDirectoryName (arc_name);
-            string map_name = "avking.map";
-            string map_path = null;
-
-            // Look for existing map file in parent directories
-            string search_dir = dir_name;
-            while (!string.IsNullOrEmpty (search_dir))
-            {
-                string test_path = Path.Combine (search_dir, map_name);
-                if (File.Exists (test_path))
-                {
-                    map_path = test_path;
-                    break;
-                }
-                search_dir = Path.GetDirectoryName (search_dir);
-            }
-
-            if (null == map_path)
-                map_path = Path.Combine (dir_name ?? ".", map_name);
-
-            var existing_sections = new Dictionary<string, List<string>>();
-            if (File.Exists (map_path))
-            {
-                using (var input = new StreamReader (map_path, Encoding.ASCII))
-                {
-                    string current_section = null;
-                    var current_files = new List<string>();
-                    string line;
-                    
-                    while ((line = input.ReadLine()) != null)
-                    {
-                        var match = FilesTypeRe.Match (line);
-                        if (match.Success)
-                        {
-                            if (current_section != null && current_files.Count > 0)
-                                existing_sections[current_section] = current_files;
-                            
-                            current_section = match.Groups[1].Value;
-                            current_files = new List<string>();
-                            int count = int.Parse (match.Groups[2].Value);
-                            
-                            for (int i = 0; i < count; ++i)
-                            {
-                                line = input.ReadLine();
-                                if (line != null)
-                                    current_files.Add (line.TrimEnd ('\0'));
-                            }
-                        }
-                    }
-                    
-                    if (current_section != null && current_files.Count > 0)
-                        existing_sections[current_section] = current_files;
-                }
-            }
-
-            var new_files = entries.Select (e => e.Name).ToList();
-            
-            if (is_cg)
-            {
-                bool has_bg = new_files.Any (f => f.Contains ("/bg/") || f.Contains ("\\bg\\"));
-                bool has_chr = new_files.Any (f => f.Contains ("/chr/") || f.Contains ("\\chr\\"));
-                
-                if (has_bg)
-                    existing_sections["BG"] = new_files.Where (f => f.Contains ("/bg/") || f.Contains ("\\bg\\")).ToList();
-                if (has_chr)
-                    existing_sections["CHR"] = new_files.Where (f => f.Contains ("/chr/") || f.Contains ("\\chr\\")).ToList();
-                if (!has_bg && !has_chr)
-                    existing_sections["BG"] = new_files; // Default to BG
-            }
-            else
-            {
-                existing_sections["VOICE"] = new_files;
-            }
-
-            using (var output = new StreamWriter (map_path, false, Encoding.ASCII))
-            {
-                foreach (var section in existing_sections)
-                {
-                    output.WriteLine ("//{0} FILES = {1}", section.Key, section.Value.Count);
-                    foreach (var file in section.Value)
-                    {
-                        output.WriteLine (file);
-                    }
-                }
-            }*/
         }
 
         List<Entry> ReadCgPak (ArcView pak, ArcView bin, List<string> file_map)

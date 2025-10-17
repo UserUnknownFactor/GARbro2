@@ -94,9 +94,9 @@ namespace GameRes.Formats.Elf
                     flipped[i + 3] -= flipped[i - 1];
                 }
 
-                using (var lzss = new LzssWriter (file))
+                using (var lzss = new LzssStream (file, LzssMode.Compress, true))
                 {
-                    lzss.Pack (flipped, 0, flipped.Length);
+                    lzss.Write (flipped, 0, flipped.Length);
                 }
             }
         }

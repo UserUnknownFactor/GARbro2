@@ -90,13 +90,15 @@ namespace GameRes.Formats.Qlie
                 byte[] arc_key = null;
                 byte[] key_file = null;
                 bool use_pack_keyfile = false;
+                if (index == null)
+                    return null;
 
                 if (index.PackVersion.Major >= 3)
                 {
+                    key_file = FindKeyFile (file);
+                    use_pack_keyfile = key_file != null;
                     if (index.PackVersion.Minor == 0)
                     {
-                        key_file = FindKeyFile (file);
-                        use_pack_keyfile = key_file != null;
                         if (use_pack_keyfile)
                             arc_key = QueryEncryption (file);
                     }
@@ -141,6 +143,8 @@ namespace GameRes.Formats.Qlie
                 }
                 if (null == dir)
                     return null;
+
+                Comment = $"V{index.PackVersion.Major}.{index.PackVersion.Minor}";
                 return new QlieArchive (file, this, dir, enc);
             }
         }
@@ -205,6 +209,7 @@ namespace GameRes.Formats.Qlie
             };
         }
 
+        #region Binary Parsing
         internal byte[] ReadEntryBytes (ArcView file, QlieEntry entry, IEncryption enc)
         {
             var data = file.View.ReadBytes (entry.Offset, entry.Size);
@@ -432,6 +437,7 @@ namespace GameRes.Formats.Qlie
             for (int k = 0; k < compressed.Count; k++)
                 bw.Write (compressed[k]);
         }
+        #endregion
 
         public override ResourceOptions GetDefaultOptions ()
         {
@@ -470,8 +476,10 @@ namespace GameRes.Formats.Qlie
             byte[] key = null;
             if (!string.IsNullOrEmpty (title) && KnownKeys.ContainsKey (title))
                 return KnownKeys[title];
+
             if (null == key)
                 key = GuessKeyData (file.Name);
+
             if (null == key)
             {
                 var options = Query<QlieOptions> (Localization._T ("ArcEncryptedNotice"));
@@ -493,72 +501,167 @@ namespace GameRes.Formats.Qlie
         /// </summary>
         static byte[] FindKeyFile (ArcView arc_file)
         {
-            // QLIE archives with key could be opened at the physical file system level only
-            if (VFS.IsVirtual)
-                return null;
-            var dir_name = Path.GetDirectoryName (arc_file.Name);
+            var dir_name = VFS.GetDirectoryName (arc_file.Name);
+
             foreach (var path in KeyLocations)
             {
-                var name = Path.Combine (dir_name, path, "key.fkey");
-                if (File.Exists (name))
+                var name = VFS.CombinePath (dir_name, path, "key.fkey");
+                var keyData = TryReadFile (name);
+                if (keyData != null)
                 {
-                    Trace.WriteLine ("reading key from "+name, "[QLIE]");
-                    return File.ReadAllBytes (name);
+                    Trace.WriteLine ("reading key from " + name, "[QLIE]");
+                    return keyData;
                 }
             }
+
             var pattern = VFS.CombinePath (dir_name, @"..\*.exe");
-            foreach (var exe_file in VFS.GetFiles (pattern))
+            try
             {
-                using (var exe = new ExeFile.ResourceAccessor (exe_file.Name))
+                foreach (var exe_file in VFS.GetFiles (pattern))
                 {
-                    var reskey = exe.GetResource ("RESKEY", "#10");
+                    var reskey = WithExeFile (exe_file, exe => exe.GetResource ("RESKEY", "#10"));
                     if (reskey != null)
                         return reskey;
                 }
             }
+            catch { /* ignore errors */ }
+
             return null;
         }
 
+        /// <summary>
+        /// Try to extract key data from EXE files (looks for TFORM1 resource).
+        /// </summary>
         byte[] GuessKeyData (string arc_name)
         {
-            if (VFS.IsVirtual)
-                return null;
+            var dir_name = VFS.GetDirectoryName (arc_name);
+            var pattern = VFS.CombinePath (dir_name, @"..\*.exe");
 
-            var pattern = VFS.CombinePath (VFS.GetDirectoryName (arc_name), @"..\*.exe");
-            foreach (var file in VFS.GetFiles (pattern))
+            try
             {
-                try
+                foreach (var file in VFS.GetFiles (pattern))
                 {
-                    var key = GetKeyDataFromExe (file.Name);
-                    if (key != null)
-                        return key;
+                    try
+                    {
+                        var key = GetKeyDataFromExe (file);
+                        if (key != null)
+                            return key;
+                    }
+                    catch { /* ignore errors */ }
                 }
-                catch { /* ignore errors */ }
             }
+            catch { /* ignore errors */ }
+
             return null;
+        }
+
+        #region Helper Methods
+        public static byte[] GetKeyDataFromExe (Entry exe_entry)
+        {
+            return WithExeFile (exe_entry, exe => {
+                var tform = exe.GetResource ("TFORM1", "#10");
+                if (null == tform || !tform.AsciiEqual (0, "TPF0"))
+                    return null;
+
+                using (var input = new BinMemoryStream (tform))
+                {
+                    var deserializer = new DelphiDeserializer (input);
+                    var form = deserializer.Deserialize ();
+                    var image = form.Contents.FirstOrDefault (n => n.Name == "IconKeyImage");
+                    if (null == image)
+                        return null;
+
+                    var icon = image.Props["Picture.Data"] as byte[];
+                    if (null == icon || icon.Length < 0x106 || !icon.AsciiEqual (0, "\x05TIcon"))
+                        return null;
+
+                    return new CowArray<byte> (icon, 6, 0x100).ToArray ();
+                }
+            });
         }
 
         public static byte[] GetKeyDataFromExe (string filename)
         {
-            using (var exe = new ExeFile.ResourceAccessor (filename))
+            var entry = VFS.IsVirtual ? VFS.FindFile (filename) : new Entry { Name = filename };
+            return GetKeyDataFromExe (entry);
+        }
+
+        /// <summary>
+        /// Execute a function with an ExeFile.ResourceAccessor, handling virtual filesystems transparently.
+        /// </summary>
+        static T WithExeFile<T> (Entry exe_entry, Func<ExeFile.ResourceAccessor, T> action)
+        {
+            if (!VFS.IsVirtual)
             {
-                var tform = exe.GetResource ("TFORM1", "#10");
-                if (null == tform || !tform.AsciiEqual (0, "TPF0"))
-                    return null;
-                using (var input = new BinMemoryStream (tform))
+                // Direct access on physical filesystem
+                using (var exe = new ExeFile.ResourceAccessor (exe_entry.Name))
                 {
-                    var deserializer = new DelphiDeserializer (input);
-                    var form = deserializer.Deserialize();
-                    var image = form.Contents.FirstOrDefault (n => n.Name == "IconKeyImage");
-                    if (null == image)
-                        return null;
-                    var icon = image.Props["Picture.Data"] as byte[];
-                    if (null == icon || icon.Length < 0x106 || !icon.AsciiEqual (0, "\x05TIcon"))
-                        return null;
-                    return new CowArray<byte> (icon, 6, 0x100).ToArray();
+                    return action (exe);
                 }
             }
+
+            // Extract to temp file for virtual filesystem
+            string tempFile = Path.GetTempFileName () + ".exe";
+            try
+            {
+                using (var input = VFS.OpenStream (exe_entry))
+                using (var output = File.Create (tempFile))
+                {
+                    input.CopyTo (output);
+                }
+
+                using (var exe = new ExeFile.ResourceAccessor (tempFile))
+                {
+                    return action (exe);
+                }
+            }
+            catch
+            {
+                return default (T);
+            }
+            finally
+            {
+                try { File.Delete (tempFile); } catch { }
+            }
         }
+
+        static byte[] TryReadFile (string filename)
+        {
+            try
+            {
+                if (VFS.FileExists (filename))
+                {
+                    using (var stream = VFS.OpenStream (filename))
+                    using (var ms = new MemoryStream ())
+                    {
+                        stream.CopyTo (ms);
+                        return ms.ToArray ();
+                    }
+                }
+            }
+            catch { /* ignore */ }
+
+            if (VFS.IsVirtual)
+            {
+                try
+                {
+                    var entry = VFS.FindFileInHierarchy (filename);
+                    if (entry != null)
+                    {
+                        using (var stream = VFS.OpenStreamInHierarchy (entry))
+                        using (var ms = new MemoryStream ())
+                        {
+                            stream.CopyTo (ms);
+                            return ms.ToArray ();
+                        }
+                    }
+                }
+                catch { /* ignore */ }
+            }
+
+            return null;
+        }
+        #endregion
     }
 
     internal sealed class PackIndexReader : IDisposable

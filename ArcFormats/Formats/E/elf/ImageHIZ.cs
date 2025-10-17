@@ -100,7 +100,6 @@ namespace GameRes.Formats.Elf
             };
         }
 
-
         public override ImageData Read (IBinaryStream stream, ImageMetaData info)
         {
             var meta = (HizMetaData)info;
@@ -114,8 +113,9 @@ namespace GameRes.Formats.Elf
                     var channel = new byte[info.Width * info.Height];
                     for (int p = 0; p < 4; ++p)
                     {
-                        if (channel.Length != lzss.Read (channel, 0, channel.Length))
-                            throw new InvalidFormatException ("Unexpected end of file");
+                        var n_read = lzss.Read (channel, 0, channel.Length);
+                        if (channel.Length != n_read)
+                            throw new InvalidFormatException ($"Unexpected end of file {channel.Length} != {n_read}");
                         int src = 0;
                         for (int i = p; i < pixels.Length; i += 4)
                             pixels[i] = channel[src++];
@@ -124,8 +124,9 @@ namespace GameRes.Formats.Elf
             }
             else
             {
-                if (pixels.Length != stream.Read (pixels, 0, pixels.Length))
-                    throw new InvalidFormatException ("Unexpected end of file");
+                var n_read = stream.Read (pixels, 0, pixels.Length);
+                if (pixels.Length != n_read)
+                    throw new InvalidFormatException ($"Unexpected end of file {pixels.Length} != {n_read}");
             }
 
             return ImageData.Create (info, PixelFormats.Bgra32, null, pixels);
@@ -133,102 +134,59 @@ namespace GameRes.Formats.Elf
 
         public override void Write (Stream file, ImageData image)
         {
+            var bitmap = image.Bitmap;
+            if (bitmap.Format != PixelFormats.Bgra32)
+                bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgra32, null, 0);
+
+            uint width  = (uint)bitmap.PixelWidth;
+            uint height = (uint)bitmap.PixelHeight;
+            uint unpacked_size = width * height * 4;
+
+            var pixels = new byte[unpacked_size];
+            bitmap.CopyPixels (pixels, (int)width * 4, 0);
+
+            bool compress = unpacked_size > 256;
+
+            byte[] compressed_data;
+            using (var output_stream = new MemoryStream())
+            {
+                if (compress)
+                {
+                    using (var lzss = new LzssStream (output_stream, LzssMode.Compress, true))
+                    {
+                        for (int ch = 0; ch < 4; ++ch)
+                        {
+                            var channel = new byte[width * height];
+                            for (int i = 0, src = ch; i < channel.Length; ++i, src += 4)
+                                channel[i] = pixels[src];
+                            lzss.Write (channel, 0, channel.Length);
+                        }
+                    }
+                }
+                else
+                    output_stream.Write (pixels, 0, pixels.Length);
+
+                compressed_data = output_stream.ToArray();
+            }
+
+            uint checksum = 0;// ? Crc32.Compute (compressed_data, 0, compressed_data.Length);
             using (var writer = new BinaryWriter (file))
             {
-                var bitmap = image.Bitmap;
-                if (bitmap.Format != PixelFormats.Bgra32)
-                    bitmap = new FormatConvertedBitmap (bitmap, PixelFormats.Bgra32, null, 0);
-
-                uint width  = (uint)bitmap.PixelWidth;
-                uint height = (uint)bitmap.PixelHeight;
-                uint unpacked_size = width * height * 4;
-
-                var pixels = new byte[unpacked_size];
-                bitmap.CopyPixels (pixels, (int)width * 4, 0);
-
-                bool compress = unpacked_size > 256;
-
-                writer.Write (HIZ_SIGNATURE); // 'hiz'
+                writer.Write (HIZ_SIGNATURE);
                 writer.Write (HIZ_VERSION);
                 writer.Write (width  ^ WIDTH_XOR);
                 writer.Write (height ^ HEIGHT_XOR);
                 writer.Write ((compress ? 1u : 0u) ^ PACKED_XOR);
                 writer.Write (unpacked_size ^ UNPACKED_XOR);
 
-                // Padding to 0x4C
-                writer.Write (new byte[0x4C - 0x18]);
-                if (compress)
-                {
-                    using (var lzss = new LzssWriter (file))
-                    {
-                        var channel = new byte[width * height];
-                        for (int ch = 0; ch < 4; ++ch)
-                        {
-                            // Extract channel
-                            for (int i = 0, src = ch; i < channel.Length; ++i, src += 4)
-                                channel[i] = pixels[src];
-                            lzss.Pack (channel, 0, channel.Length);
-                        }
-                    }
-                }
-                else
-                    writer.Write (pixels);
-            }
-        }
-    }
+                writer.Write (checksum);
+                writer.Write (width);
+                writer.Write (height);
+                writer.Write (0u);
 
-    [Export(typeof(ImageFormat))]
-    public class HipFormat : HizFormat
-    {
-        public override string         Tag { get { return "HIP"; } }
-        public override string Description { get { return "elf composite image format"; } }
-        public override uint     Signature { get { return  0x00706968; } } // 'hip'
-        public override bool      CanWrite { get { return  false; } }
-
-        public override ImageMetaData ReadMetaData (IBinaryStream stream)
-        {
-            var header = stream.ReadHeader (0x18);
-            int index_offset = 0xC;
-            uint first_offset = header.ToUInt32 (index_offset);
-            if (0 == first_offset)
-            {
-                index_offset += 4;
-                first_offset = header.ToUInt32 (index_offset);
-                if (0 == first_offset)
-                    return null;
-            }
-            index_offset += 4;
-
-            long first_length;
-            uint second_offset = header.ToUInt32 (index_offset);
-            if (0 == second_offset)
-                first_length = stream.Length - first_offset;
-            else if (second_offset < first_offset)
-                return null;
-            else
-                first_length = second_offset - first_offset;
-
-            using (var reg = new StreamRegion (stream.AsStream, first_offset, first_length, true))
-            using (var hiz = new BinaryStream (reg, stream.Name))
-            {
-                var info = base.ReadMetaData (hiz);
-                if (info != null)
-                    (info as HizMetaData).DataOffset += first_offset;
-                return info;
-            }
-        }
-
-        public override void Write (Stream file, ImageData image)
-        {
-            using (var writer = new BinaryWriter (file))
-            {
-                writer.Write (0x00706968);   // 'hip'
-                writer.Write (new byte[8]);  // padding
-                writer.Write (0x18);         // first image offset
-                writer.Write (0);            // no second image
-
-                base.Write (file, image);    // write HIZ data
-                // TODO: there is more data after the image
+                long currentPos = writer.BaseStream.Position;
+                writer.Write (new byte[0x4C - currentPos]); // filler
+                writer.Write (compressed_data);
             }
         }
     }

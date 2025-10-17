@@ -30,6 +30,7 @@ MsgCreationKeyRequired→Encryption key required for archive creation.→→→
 MsgEncNotImplemented→Encryption method not implemented→→→
 MsgExtensionTooLong→File name extension too long.→→→
 MsgFileNameTooLong→File name is too long→→→
+MsgFileAlreadyExists→File already exists→→→
 MsgIllegalCharacters→File name contains illegal characters→→→
 MsgInvalidImageFormat→{0}: image format not recognized.→→→
 MsgInvalidVersion→Invalid archive version specified.→→→

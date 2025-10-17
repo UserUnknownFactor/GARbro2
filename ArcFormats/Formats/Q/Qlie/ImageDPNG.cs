@@ -62,20 +62,19 @@ namespace GameRes.Formats.Qlie
             var bitmap = new WriteableBitmap ((int)info.Width, (int)info.Height,
                 ImageData.DefaultDpiX, ImageData.DefaultDpiY, PixelFormats.Pbgra32, null);
 
-            stream.Position = 0x14;
+            long next_tile = 0x14;
             for (int i = 0; i < meta.TileCount; ++i)
             {
+                stream.Position = next_tile;
                 int x      = stream.ReadInt32();
                 int y      = stream.ReadInt32();
                 int width  = stream.ReadInt32();
                 int height = stream.ReadInt32();
                 uint size  = stream.ReadUInt32();
                 stream.Seek (8, SeekOrigin.Current); // skip unknown fields
+                next_tile = stream.Position + size;
 
-                if (size == 0 || size > stream.Length - stream.Position)
-                    continue;
-
-                if (x < 0 || y < 0 || x + width > info.Width || y + height > info.Height)
+                if (size == 0)
                     continue;
 
                 using (var png = new StreamRegion (stream.AsStream, stream.Position, size, true))
@@ -88,14 +87,10 @@ namespace GameRes.Formats.Qlie
                         int stride = frame.PixelWidth * 4;
                         var pixels = new byte[stride * frame.PixelHeight];
                         frame.CopyPixels (pixels, stride, 0);
-                        var rect = new Int32Rect (
-                            0, 0, Math.Min (frame.PixelWidth, width),
-                            Math.Min (frame.PixelHeight, height)
-                        );
+                        var rect = new Int32Rect (0, 0, frame.PixelWidth, frame.PixelHeight);
                         bitmap.WritePixels (rect, pixels, stride, x, y);
                     }
                 }
-                stream.Position += size;
             }
 
             bitmap.Freeze();
