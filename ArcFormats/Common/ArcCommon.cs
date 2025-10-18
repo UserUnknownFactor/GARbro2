@@ -496,27 +496,16 @@ namespace GameRes.Formats
     /// </summary>
     /// <remarks>
     /// This format is used as a fallback when no specific format can be identified.
+    /// It must be in ArcFormats to properly receive lowest priority.
     /// </remarks>
     [Export(typeof(ScriptFormat))]
+    [ExportMetadata("Priority", -100)]
     public class DataFileFormat : GenericScriptFormat
     {
-        /// <inheritdoc/>
         public override string        Type { get { return ""; } }
-        
-        /// <summary>
-        /// Gets the format tag identifier.
-        /// </summary>
-        public override string         Tag { get { return "DAT/GENERIC"; } }
-        
-        /// <summary>
-        /// Gets the format description.
-        /// </summary>
-        public override string Description { get { return "Unidentified data file"; } }
-        
-        /// <summary>
-        /// Gets the format signature. Returns 0 as this is a generic format.
-        /// </summary>
-        public override uint     Signature { get { return 0; } }
+        public override string         Tag { get { return "DATA/GENERIC"; } }
+        public override string Description { get { return  Localization._T("MsgUnidentifiedData"); } }
+        public override uint     Signature { get { return  0; } }
     }
 
     /// <summary>

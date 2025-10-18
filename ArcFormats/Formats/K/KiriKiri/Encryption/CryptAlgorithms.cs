@@ -329,6 +329,20 @@ namespace GameRes.Formats.KiriKiri
             m_key = (byte)key;
         }
 
+        public static byte GuessKey(uint signature, uint known_signature = 0x474e5089) // png
+        {
+            uint key = signature ^ known_signature;
+
+            byte b0 = (byte)(key & 0xFF);
+            byte b1 = (byte)((key >> 8) & 0xFF);
+            byte b2 = (byte)((key >> 16) & 0xFF);
+            byte b3 = (byte)((key >> 24) & 0xFF);
+
+            if (b0 == b1 && b1 == b2 && b2 == b3)
+                return b0;
+            return (byte)0;
+        }
+
         public override string ToString ()
         {
             return string.Format ("{0}(0x{1:X02})", base.ToString(), m_key);
@@ -342,12 +356,64 @@ namespace GameRes.Formats.KiriKiri
         public override void Decrypt (Xp3Entry entry, long offset, byte[] values, int pos, int count)
         {
             for (int i = 0; i < count; ++i)
-            {
                 values[pos + i] ^= m_key;
-            }
         }
 
         public override void Encrypt (Xp3Entry entry, long offset, byte[] values, int pos, int count)
+        {
+            Decrypt (entry, offset, values, pos, count);
+        }
+    }
+
+    [Serializable]
+    public class XorHashCrypt : ICrypt
+    {
+        private byte m_key;
+
+        public byte Key
+        {
+            get { return m_key; }
+            set { m_key = value; }
+        }
+
+        public XorHashCrypt(uint key)
+        {
+            m_key = (byte)key;
+        }
+
+        public static byte GuessKey(uint signature, byte hash, uint known_signature = 0x474e5089) // png
+        {
+            uint hash_mask = (uint)hash | ((uint)hash << 8) | ((uint)hash << 16) | ((uint)hash << 24);
+            uint key = signature ^ hash_mask ^ known_signature;
+
+            byte b0 = (byte)(key & 0xFF);
+            byte b1 = (byte)((key >> 8) & 0xFF);
+            byte b2 = (byte)((key >> 16) & 0xFF);
+            byte b3 = (byte)((key >> 24) & 0xFF);
+
+            if (b0 == b1 && b1 == b2 && b2 == b3)
+                return b0;
+            return 0;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0}(0x{1:X02})", base.ToString(), m_key);
+        }
+
+        public override byte Decrypt(Xp3Entry entry, long offset, byte value)
+        {
+            return (byte)(value ^ m_key ^ entry.Hash);
+        }
+
+        public override void Decrypt(Xp3Entry entry, long offset, byte[] values, int pos, int count)
+        {
+            byte hashKey = (byte)entry.Hash;
+            for (int i = 0; i < count; ++i)
+                values[pos + i] ^= (byte)(m_key ^ hashKey);
+        }
+
+        public override void Encrypt(Xp3Entry entry, long offset, byte[] values, int pos, int count)
         {
             Decrypt (entry, offset, values, pos, count);
         }
@@ -692,10 +758,11 @@ namespace GameRes.Formats.KiriKiri
 
         public override void Decrypt (Xp3Entry entry, long offset, byte[] values, int pos, int count)
         {
-            byte key = (byte)~(entry.Hash + 1);
+            byte key = (byte)(entry.Hash + 1);
             for (int i = 0; i < count; ++i)
             {
                 values[pos + i] ^= key;
+                values[pos + i] = (byte)~values[pos + i];
             }
         }
 

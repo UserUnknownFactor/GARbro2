@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17943; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 17997; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -48,6 +48,7 @@ public static partial class Localization
                 { "MsgTooManyFiles", new LocalizationEntry { Singular = "Number of files exceeds archive limit." } },
                 { "MsgUpdatingIndex", new LocalizationEntry { Singular = "Updating index..." } },
                 { "MsgWritingIndex", new LocalizationEntry { Singular = "Writing index..." } },
+                { "MsgUnidentifiedData", new LocalizationEntry { Singular = "Unidentified data file" } },
                 { "NPACompressContents", new LocalizationEntry { Singular = "Compress contents" } },
                 { "NPADescription", new LocalizationEntry { Singular = "Nitro+ resource archive" } },
                 { "NPAKeys", new LocalizationEntry { Singular = "Encryption keys\n(required even if contents is not encrypted)" } },

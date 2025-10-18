@@ -301,12 +301,7 @@ namespace GameRes.Formats.NScripter
     *  Copyright (c) 2001-2010 Ogapee. All rights reserved.
     *  (original ONScripter, of which this is a fork).
     *
-    *  ogapee@aqua.dti2.ne.jp
-    *
     *  Copyright (c) 2007-2010 "Uncle" Mion Sonozaki
-    *
-    *  UncleMion@gmail.com
-    *
     */
     /* LZSS encoder-decoder  (c) Haruhiko Okumura */
 
@@ -489,7 +484,7 @@ namespace GameRes.Formats.NScripter
 
         public uint EncodeLZSS ()
         {
-            byte[] comp_buffer = new byte[LZSS.N*2];
+            byte[] comp_buffer = new byte[LZSS.N * 2];
 
             int i;
             for (i = LZSS.N - LZSS.F; i < LZSS.N * 2; i++)

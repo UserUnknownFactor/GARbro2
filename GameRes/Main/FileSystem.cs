@@ -1177,7 +1177,7 @@ namespace GameRes
 
             string fileName = GetFileName (path);
             int lastDot = path.LastIndexOf('.');
-            if (lastDot < 1 || lastDot == fileName.Length - 1)
+            if (lastDot < 1 || lastDot == path.Length - 1)
                 return string.Empty;
 
             return path.Substring(noDot ? lastDot + 1 : lastDot);

@@ -33,6 +33,7 @@ namespace GameRes
         private IEnumerable<ScriptFormat>     m_script_formats;
         [ImportMany(typeof(ISettingsManager))]
         private IEnumerable<ISettingsManager> m_settings_managers;
+        private Dictionary<IResource, int> m_format_priorities = new Dictionary<IResource, int> ();
 
         private Dictionary<string, ArchiveFormat> m_arc_formats_by_tag;
         private Dictionary<string, ImageFormat>   m_image_formats_by_tag;
@@ -188,21 +189,27 @@ namespace GameRes
             }
         }
 
-        private IEnumerable<Format> ImportWithPrioritiesSafe<Format> (ExportProvider provider)
+        private IEnumerable<Format> ImportWithPrioritiesSafe<Format> (ExportProvider provider) where Format : IResource
         {
             try
             {
-                return provider.GetExports<Format, IResourceMetadata>()
+                var exports = provider.GetExports<Format, IResourceMetadata> ()
                     .OrderByDescending (f => f.Metadata.Priority)
-                    .Select (f => f.Value)
-                    .ToArray();
+                    .ToArray ();
+
+                var formats = new List<Format> ();
+                foreach (var export in exports)
+                {
+                    m_format_priorities[export.Value] = export.Metadata.Priority;
+                    formats.Add (export.Value);
+                }
+                return formats;
             }
             catch (Exception ex)
             {
-                m_load_errors.Add(new FormatLoadError
-                {
-                    FormatType = typeof(Format).Name,
-                    ErrorMessage = $"Failed to import {typeof(Format).Name} format",
+                m_load_errors.Add (new FormatLoadError {
+                    FormatType = typeof (Format).Name,
+                    ErrorMessage = $"Failed to import {typeof (Format).Name} format",
                     StackTrace = ex.ToString()
                 });
                 return Enumerable.Empty<Format>();
@@ -503,6 +510,7 @@ namespace GameRes
             var ext = new Lazy<string> (() => VFS.GetExtension (filename).TrimStart ('.').ToLowerInvariant(), false);
             var tried = Enumerable.Empty<ResourceType>();
             IEnumerable<string> preferred = null;
+
             if (VFS.IsVirtual)
             {
                 var arc_fs = VFS.Top as ArchiveFileSystem;
@@ -526,33 +534,45 @@ namespace GameRes
                 var range = LookupSignature<ResourceType> (signature);
                 if (tried.Any())
                     range = range.Except (tried);
-                // check formats that match filename extension first
-                if (range.Skip (1).Any()) // if range.Count() > 1
-                    range = range.OrderByDescending (f => f.Extensions.Any (e => e == ext.Value));
+
+                IOrderedEnumerable<ResourceType> orderedRange = null;
+
+                orderedRange = range.OrderByDescending (f => {
+                    m_format_priorities.TryGetValue (f, out int priority);
+                    return priority;
+                });
+
+                if (range.Skip (1).Any())
+                {
+                    orderedRange = orderedRange.ThenByDescending (f =>
+                        f.Extensions?.Any (e => e == ext.Value) ?? false);
+                }
 
                 if (preferred != null && preferred.Any())
-                    range = range.OrderByDescending (f => preferred.Contains (f.Tag));
-
-               if (fileSize > ArchivePreferenceThreshold)
-               {
-                   range = range.OrderByDescending (f => 
-                   {
-                       if (f is ArchiveFormat)     return 4;
-                       else if (f is AudioFormat)  return 3;
-                       else if (f is VideoFormat)  return 2;
-                       else if (f is ImageFormat)  return 0;
-                       else                        return 1;
-                   });
-               }
-
-                foreach (var impl in range)
                 {
-                    yield return impl;
+                    orderedRange = orderedRange.ThenByDescending (f =>
+                        preferred.Contains (f.Tag));
                 }
+
+                if (fileSize > ArchivePreferenceThreshold)
+                {
+                    orderedRange = orderedRange.ThenByDescending (f =>{
+                        if (f is ArchiveFormat) return 4;
+                        else if (f is AudioFormat) return 3;
+                        else if (f is VideoFormat) return 2;
+                        else if (f is ImageFormat) return 0;
+                        else return 1;
+                    });
+                }
+
+                //var test = orderedRange.ToList();
+                foreach (var impl in orderedRange)
+                    yield return impl;
+
                 if (0 == signature)
                     break;
                 signature = 0;
-                tried = range;
+                tried = orderedRange;
             }
         }
 
@@ -658,8 +678,9 @@ namespace GameRes
                 {
                     formats = formats.OrderByDescending (f => 
                     {
-                        if (f is ArchiveFormat) return 3;
-                        if (f is AudioFormat)   return 2;
+                        if (f is ArchiveFormat) return 4;
+                        if (f is AudioFormat)   return 3;
+                        if (f is VideoFormat)   return 2;
                         if (f is ImageFormat)   return 0;
                         return 1;
                     });

@@ -573,53 +573,6 @@ namespace GameRes
         }
     }
 
-    /*
-    [Export(typeof(ScriptFormat))]
-    public class BinScriptFormat : ScriptFormat
-    {
-        public override string          Tag { get { return "SCR"; } }
-        public override string  Description { get { return "Binary script format"; } }
-        public override uint      Signature { get { return  0; } }
-        public override ScriptType DataType { get { return  ScriptType.BinaryScript; } }
-
-        public BinScriptFormat()
-        {
-            Extensions = new[] { "scr", "bin", "dat" };
-        }
-
-        public override bool IsScript (IBinaryStream file)
-        {
-            var ext = Path.GetExtension (file.Name).TrimStart('.').ToLowerInvariant();
-            return Extensions != null && Extensions.Contains (ext);
-        }
-
-        public override Stream ConvertFrom (IBinaryStream file)
-        {
-            throw new NotSupportedException ("Binary script conversion not implemented");
-        }
-
-        public override Stream ConvertBack (IBinaryStream file)
-        {
-            throw new NotSupportedException ("Binary script conversion not implemented");
-        }
-
-        public override ScriptData Read (string name, Stream file)
-        {
-            throw new NotSupportedException ("Binary script reading not implemented");
-        }
-
-        public override ScriptData Read (string name, Stream file, Encoding e)
-        {
-            throw new NotSupportedException ("Binary script reading not implemented");
-        }
-
-        public override void Write (Stream file, ScriptData script)
-        {
-            throw new NotSupportedException ("Binary script writing not implemented");
-        }
-    }
-    */
-
     public class EncodingValidation
     {
         public bool      IsValid { get; set; }

@@ -1,10 +1,3 @@
-//! \file       GameRes.cs
-//! \date       Mon Jun 30 20:12:13 2014
-//! \brief      game resources browser.
-//
-// copy-pasted from some post on the stackoverflow.
-//
-
 using System;
 using System.Collections.Generic;
 
@@ -81,84 +74,5 @@ namespace GameRes.Collections
     		}
     		return toReturn;
     	}
-
-        /*
-        // hides Dictionary.GetEnumerator()
-        new public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            Enumerator e = new Enumerator();
-            e.key_enumerator = base.GetEnumerator();
-            e.current_pair = new KeyValuePair<TKey, TValue>();
-            if (e.key_enumerator.MoveNext())
-                e.value_enumerator = e.key_enumerator.Current.Value.GetEnumerator();
-            else
-                e.value_enumerator = null;
-            return e;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return (System.Collections.IEnumerator)GetEnumerator();
-        }
-
-        [SerializableAttribute]
-        new public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDisposable, System.Collections.IEnumerator
-        {
-            public Dictionary<TKey, HashSet<TValue>>.Enumerator key_enumerator;
-            public HashSet<TValue>.Enumerator? value_enumerator;
-            public KeyValuePair<TKey, TValue> current_pair;
-
-            public KeyValuePair<TKey, TValue> Current { get { return current_pair; } }
-            object System.Collections.IEnumerator.Current { get { return Current; } }
-
-            void IDisposable.Dispose() { }
-            
-            void System.Collections.IEnumerator.Reset()
-            {
-            }
-            
-            private void SetCurrent ()
-            {
-                current_pair = new KeyValuePair<TKey, TValue>(key_enumerator.Current.Key, value_enumerator.Value.Current);
-                Console.WriteLine("Enumerator.SetCurrent ({0} => {1})", current_pair.Key, current_pair.Value);
-            }
-
-            private void ResetCurrent ()
-            {
-                current_pair = new KeyValuePair<TKey, TValue>(default(TKey), default(TValue));
-            }
-
-            public bool MoveNext ()
-            {
-                if (null == value_enumerator)
-                {
-                    ResetCurrent();
-                    return false;
-                }
-                if (value_enumerator.Value.MoveNext())
-                {
-                    SetCurrent();
-                    return true;
-                }
-                if (!key_enumerator.MoveNext())
-                {
-                    value_enumerator = null;
-                    ResetCurrent();
-                    return false;
-                }
-                value_enumerator = key_enumerator.Current.Value.GetEnumerator();
-                if (value_enumerator.Value.MoveNext())
-                {
-                    SetCurrent();
-                    return true;
-                }
-                else
-                {
-                    current_pair = new KeyValuePair<TKey, TValue>(key_enumerator.Current.Key, default(TValue));
-                    return false;
-                }
-            }
-        }
-        */
     }
 }

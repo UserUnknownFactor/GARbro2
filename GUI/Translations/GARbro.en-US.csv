@@ -38,6 +38,7 @@ MsgNoExtension→File name without extension.→→→
 MsgTooManyFiles→Number of files exceeds archive limit.→→→
 MsgUpdatingIndex→Updating index...→→→
 MsgWritingIndex→Writing index...→→→
+MsgUnidentifiedData→Unidentified data file→→→
 NPACompressContents→Compress contents→→→
 NPADescription→Nitro+ resource archive→→→
 NPAKeys→Encryption keys¶

@@ -85,11 +85,15 @@ namespace GameRes.Formats.NScripter
                     if (0 == i)
                         return null;
                     var name = new string (name_buffer, 0, i);
-                    var entry = FormatCatalog.Instance.Create<Entry> (name);
-                    entry.Offset = current_offset;
-                    entry.Size   = input.ReadUInt32();
+                    var entry = new Entry {
+                        Name   = name,
+                        Offset = current_offset,
+                        Size   = input.ReadUInt32(),
+                        Type   = FormatCatalog.Instance.GetTypeFromName (name)
+                    };
                     if (!entry.CheckPlacement (file.Length))
                         return null;
+
                     current_offset += entry.Size;
                     dir.Add (entry);
                 }

@@ -67,7 +67,7 @@ namespace GameRes.Formats.KiriKiri
             Extensions = new[] { "xp3", "exe" };
             ContainedFormats = new[] { "TLG", "BMP", "PNG", "JPEG", "OGG", "WAV", "TXT" };
         }
-        
+
         static readonly byte[] s_xp3_header = {
             (byte)'X', (byte)'P', (byte)'3', 0x0d, 0x0a, 0x20, 0x0a, 0x1a, 0x8b, 0x67, 0x01
         };
@@ -228,9 +228,8 @@ namespace GameRes.Formats.KiriKiri
                         if (!string.IsNullOrEmpty (entry.Name) && entry.Segments.Any())
                         {
                             if (entry.Cipher.ObfuscatedIndex)
-                            {
                                 DeobfuscateEntry (entry);
-                            }
+
                             if (null != hx_entry_info)
                             {
                                 if (hx_entry_info.TryGetValue (entry.Name, out HxEntry info))
@@ -259,6 +258,7 @@ namespace GameRes.Formats.KiriKiri
                                 }
                             }
                             entry.Type = FormatCatalog.Instance.GetTypeFromName (entry.Name, ContainedFormats);
+                            DetectKiriKiriFileType (entry);
                             dir.Add (entry);
                         }
                     }
@@ -321,7 +321,38 @@ NextEntry:
             try
             {
                 if (crypt_algorithm.IsValueCreated)
-                    crypt_algorithm.Value.Init (arc);
+                {
+                    // pure XOR can be guessed from any standard format, no need to hardcode it
+                    var cipher = crypt_algorithm.Value;
+                    if (cipher is XorCrypt xorCrypt && xorCrypt.Key == 0)
+                    {
+                        var pngEntry = dir.OfType<Xp3Entry>()
+                            .Where(e => e.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) 
+                                     && e.UnpackedSize > 60
+                                     && e.Segments.Any())
+                            .OrderBy(e => e.Name.EndsWith("LineBreak.png", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                            .ThenBy(e => e.UnpackedSize)
+                            .FirstOrDefault();
+                        if (pngEntry != null)
+                        {
+                            var firstSegment = pngEntry.Segments.First();
+                            var encryptedSignature = file.View.ReadUInt32 (firstSegment.Offset);
+                            var xorkey = XorCrypt.GuessKey(encryptedSignature);
+                            if (xorkey != 0)
+                            {
+                                var xorCryptCopy = new XorCrypt(xorkey);
+                                Debug.WriteLine($"Found XorCrypt key: 0x{xorCryptCopy.Key:X}");
+                                foreach (var entry in dir.OfType<Xp3Entry>())
+                                {
+                                    if (entry.Cipher is XorCrypt)
+                                        entry.Cipher = xorCryptCopy;
+                                }
+                                cipher = xorCryptCopy;
+                            }
+                        }
+                    }
+                    cipher.Init (arc);
+                }
                 return arc;
             }
             catch
@@ -400,6 +431,57 @@ NextEntry:
             if (string.IsNullOrEmpty (scheme) || !KnownSchemes.TryGetValue (scheme, out algorithm))
                 algorithm = NoCryptAlgorithm;
             return algorithm;
+        }
+
+        internal static void DetectKiriKiriFileType (Xp3Entry entry)
+        {
+            var ext = VFS.GetExtension (entry.Name).ToLowerInvariant();
+            switch (ext)
+            {
+            // Script files
+            case ".ks":   // KiriKiri Script
+            case ".tjs":  // TJS Script
+            case ".tjs2": // TJS2 Script
+            case ".asd":  // Animation Script Data
+            case ".func": // Function definitions
+                entry.Type = "script";
+                break;
+
+            // Data files
+            case ".dic":  // Dictionary data
+            case ".csv":  // CSV data
+            case ".ini":  // Configuration
+            case ".cf":   // Config file
+            case ".cfu":  // Config Unicode
+                entry.Type = "script";
+                break;
+
+            // Font files
+            case ".tft":  // KiriKiri font file
+                entry.Type = "";
+                break;
+
+            // Scenario/text files  
+            case ".sli":  // Sound loop information
+            case ".scn":  // Scenario
+            case ".utf":  // UTF text
+                entry.Type = "script";
+                break;
+
+            // Image-related
+            case ".tlg":  // TLG image
+            case ".tlg5": // TLG5 image
+            case ".tlg6": // TLG6 image
+            case ".pimg": // Particle image
+                entry.Type = "image";
+                break;
+
+            // Particle/effect files
+            case ".pmag": // Particle magazine
+            case ".pdat": // Particle data
+                entry.Type = "";
+                break;
+            }
         }
 
         static uint GetFileCheckSum (Stream src)
