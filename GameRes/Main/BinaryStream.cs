@@ -166,7 +166,7 @@ namespace GameRes
             return bin;
         }
 
-        internal static int FindTerminator(byte[] buffer, int start, int length, Encoding encoding)
+        internal static int FindTerminator (byte[] buffer, int start, int length, Encoding encoding)
         {
             if (start < 0 || length < 0 || start + length > buffer.Length)
                 return -1;
@@ -175,7 +175,7 @@ namespace GameRes
             {
                 return Array.IndexOf<byte>(buffer, 0, start, length);
             }
-            else if (encoding.Equals(Encoding.Unicode) || encoding.Equals(Encoding.BigEndianUnicode))
+            else if (encoding.Equals (Encoding.Unicode) || encoding.Equals (Encoding.BigEndianUnicode))
             {
                 for (int i = start; i <= start + length - 2; i += 2)
                 {
@@ -183,7 +183,7 @@ namespace GameRes
                         return i;
                 }
             }
-            else if (encoding.Equals(Encoding.UTF32))
+            else if (encoding.Equals (Encoding.UTF32))
             {
                 for (int i = start; i <= start + length - 4; i += 4)
                 {
@@ -337,12 +337,12 @@ namespace GameRes
             m_buffer_pos += 2;
             return v;
         }
-        
+
         public ushort ReadUInt16BE ()
         {
             return (ushort)ReadInt16BE();
         }
-        
+
         public int ReadInt24BE ()
         {
             if (3 != FillBuffer (3))
@@ -353,7 +353,7 @@ namespace GameRes
             m_buffer_pos += 3;
             return v;
         }
-        
+
         public int ReadInt32BE ()
         {
             if (4 != FillBuffer (4))
@@ -365,12 +365,12 @@ namespace GameRes
             m_buffer_pos += 4;
             return v;
         }
-        
+
         public uint ReadUInt32BE ()
         {
             return (uint)ReadInt32BE();
         }
-        
+
         public long ReadInt64BE ()
         {
             if (8 != FillBuffer (8))
@@ -386,7 +386,7 @@ namespace GameRes
             m_buffer_pos += 8;
             return v;
         }
-        
+
         public ulong ReadUInt64BE ()
         {
             return (ulong)ReadInt64BE();
@@ -416,8 +416,8 @@ namespace GameRes
         {
             int count = 0;
             int term_size = enc.IsSingleByte ? 1 : 
-                           (enc.Equals(Encoding.Unicode) || enc.Equals(Encoding.BigEndianUnicode)) ? 2 : 
-                           enc.Equals(Encoding.UTF32) ? 4 : 1;
+                           (enc.Equals (Encoding.Unicode) || enc.Equals (Encoding.BigEndianUnicode)) ? 2 : 
+                            enc.Equals (Encoding.UTF32) ? 4 : 1;
 
             int cached;
             bool found = false;
@@ -428,7 +428,7 @@ namespace GameRes
                 if (cached < count + term_size)
                     break;
 
-                int term_pos = FindTerminator(m_buffer, m_buffer_pos + count, term_size, enc);
+                int term_pos = FindTerminator (m_buffer, m_buffer_pos + count, term_size, enc);
                 if (term_pos == m_buffer_pos + count)
                 {
                     found = true;
@@ -706,12 +706,12 @@ namespace GameRes
             m_position += 2;
             return v;
         }
-        
+
         public ushort ReadUInt16BE ()
         {
             return (ushort)ReadInt16BE();
         }
-        
+
         public int ReadInt24BE ()
         {
             if (m_length - m_position < 3)
@@ -722,7 +722,7 @@ namespace GameRes
             m_position += 3;
             return v;
         }
-        
+
         public int ReadInt32BE ()
         {
             if (m_length - m_position < 4)
@@ -734,12 +734,12 @@ namespace GameRes
             m_position += 4;
             return v;
         }
-        
+
         public uint ReadUInt32BE ()
         {
             return (uint)ReadInt32BE();
         }
-        
+
         public long ReadInt64BE ()
         {
             if (m_length - m_position < 8)
@@ -755,7 +755,7 @@ namespace GameRes
             m_position += 8;
             return v;
         }
-        
+
         public ulong ReadUInt64BE ()
         {
             return (ulong)ReadInt64BE();
@@ -798,8 +798,8 @@ namespace GameRes
             {
                 count = eos_pos - start;
                 int eos_size = enc.IsSingleByte ? 1 : 
-                              (enc.Equals(Encoding.Unicode) || enc.Equals(Encoding.BigEndianUnicode)) ? 2 : 
-                              enc.Equals(Encoding.UTF32) ? 4 : 1;
+                              (enc.Equals (Encoding.Unicode) || enc.Equals (Encoding.BigEndianUnicode)) ? 2 : 
+                               enc.Equals (Encoding.UTF32) ? 4 : 1;
                 m_position += count + eos_size;
             }
             return enc.GetString (m_source, start, count);
@@ -872,5 +872,179 @@ namespace GameRes
             throw new NotSupportedException ("BinMemoryStream.WriteByte method is not supported");
         }
         #endregion
+    }
+
+    /// <summary>
+    /// Shared hex dump formatting utilities for both debug output and streaming.
+    /// </summary>
+    public static class HexDumpFormatter
+    {
+        /// <summary>
+        /// Format a single hex dump line into the output buffer.
+        /// Returns the number of bytes written to output.
+        /// </summary>
+        public static int FormatHexLine (byte[] data, int length, int offset, byte[] output)
+        {
+            var sb = new StringBuilder (80);
+
+            sb.AppendFormat ("{0:X8}  ", offset);
+
+            // Hex bytes
+            for (int i = 0; i < 16; i++)
+            {
+                if (i < length)
+                    sb.AppendFormat ("{0:X2} ", data[i]);
+                else
+                    sb.Append ("   ");
+            }
+
+            sb.Append (" | ");
+
+            // ASCII
+            for (int i = 0; i < length; i++)
+            {
+                byte b = data[i];
+                if (b >= 0x20 && b < 0x7F)
+                    sb.Append((char)b);
+                else
+                    sb.Append('.');
+            }
+
+            sb.Append("\n");
+
+            string line = sb.ToString();
+            byte[] lineBytes = Encoding.UTF8.GetBytes (line);
+            Buffer.BlockCopy (lineBytes, 0, output, 0, lineBytes.Length);
+            return lineBytes.Length;
+        }
+
+        /// <summary>
+        /// Format hex dump of byte array with optional highlighting.
+        /// </summary>
+        public static string FormatHexDump (byte[] bytes, long baseOffset = 0, long highlightOffset = -1, string info = "", string format = "")
+        {
+            var sb = new StringBuilder();
+
+            if (!string.IsNullOrEmpty (info) || !string.IsNullOrEmpty (format))
+            {
+                if (!string.IsNullOrEmpty (format))
+                    sb.Append ($"[{format}] ");
+                if (!string.IsNullOrEmpty (info))
+                    sb.Append ($"Hex dump for {info}");
+                if (highlightOffset >= 0)
+                    sb.Append ($" at position 0x{highlightOffset:X8}");
+                sb.AppendLine (":");
+            }
+
+            for (int i = 0; i < bytes.Length; i += 16)
+            {
+                sb.AppendFormat ("{0:X8}  ", baseOffset + i);
+
+                // Hex bytes
+                for (int j = 0; j < 16; j++)
+                {
+                    if (i + j < bytes.Length)
+                    {
+                        long currentOffset = baseOffset + i + j;
+                        if (highlightOffset >= 0 && currentOffset == highlightOffset)
+                            sb.Append ("[");
+                        sb.AppendFormat ("{0:X2}", bytes[i + j]);
+                        if (highlightOffset >= 0 && currentOffset == highlightOffset)
+                            sb.Append ("]");
+                        else
+                            sb.Append (" ");
+                    }
+                    else
+                        sb.Append ("   ");
+                }
+
+                sb.Append (" | ");
+
+                // ASCII
+                for (int j = 0; j < 16 && i + j < bytes.Length; j++)
+                {
+                    byte b = bytes[i + j];
+                    if (b >= 0x20 && b < 0x7F)
+                        sb.Append((char)b);
+                    else
+                        sb.Append('.');
+                }
+
+                sb.Append("\n");
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Extension methods for IBinaryStream debug helpers.
+    /// </summary>
+    public static class BinaryStreamExtensions
+    {
+        /// <summary>
+        /// Print hex dump of stream context to debug output with highlighted current position.
+        /// </summary>
+        public static void PrintHexDump (this IBinaryStream stream, string info, string format = "", uint context_size = 64)
+        {
+            try
+            {
+                if (!stream.CanSeek)
+                {
+                    byte[] rbytes = stream.ReadBytes ((int)context_size);
+                    string rdump = HexDumpFormatter.FormatHexDump (rbytes, 0, -1, $"{info} [continuation]", format);
+                    System.Diagnostics.Trace.WriteLine (rdump);
+                    return;
+                }
+
+                long currentPos = stream.Position;
+                long startPos = Math.Max (0, currentPos - context_size);
+                long endPos = Math.Min (stream.Length, currentPos + context_size);
+
+                stream.Position = startPos;
+                byte[] bytes = stream.ReadBytes((int)(endPos - startPos));
+
+                string dump = HexDumpFormatter.FormatHexDump (bytes, startPos, currentPos, info, format);
+                System.Diagnostics.Trace.WriteLine (dump);
+
+                stream.Position = currentPos;
+            }
+            catch (Exception ex) 
+            { 
+                 System.Diagnostics.Trace.WriteLine (ex);
+            }
+        }
+
+        /// <summary>
+        /// Get hex dump string of a stream.
+        /// </summary>
+        public static string GetHexDump (this IBinaryStream stream, string info = "", string format = "", uint context_size = 128)
+        {
+            try
+            {
+                long currentPos = stream.Position;
+                long startPos = Math.Max (0, currentPos - context_size);
+                long endPos = Math.Min (stream.Length, currentPos + context_size);
+
+                stream.Position = startPos;
+                var bytes = stream.ReadBytes((int)(endPos - startPos));
+                stream.Position = currentPos;
+
+                return HexDumpFormatter.FormatHexDump (bytes, startPos, currentPos, info, format);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Print hex dump of raw byte array to debug output.
+        /// </summary>
+        public static void PrintHexDump (this byte[] bytes, string info = "", string format = "", long baseOffset = 0, long highlightOffset = -1)
+        {
+            string dump = HexDumpFormatter.FormatHexDump (bytes, baseOffset, highlightOffset, info, format);
+            System.Diagnostics.Trace.WriteLine (dump);
+        }
     }
 }

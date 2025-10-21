@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -51,13 +52,13 @@ namespace GARbro.GUI.Preview
         {
             var formatType = format.GetType();
 
-            var convertFromMethod = formatType.GetMethod ("ConvertFrom", 
+            var convertFromMethod = formatType.GetMethod ("ConvertFrom",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var baseConvertFromMethod = typeof(GenericScriptFormat).GetMethod ("ConvertFrom",
+            var baseConvertFromMethod = typeof (GenericScriptFormat).GetMethod ("ConvertFrom",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
-            bool isOverridden = convertFromMethod != null && 
-                convertFromMethod.DeclaringType != typeof(GenericScriptFormat);
+            bool isOverridden = convertFromMethod != null &&
+                convertFromMethod.DeclaringType != typeof (GenericScriptFormat);
             return isOverridden;
         }
 
@@ -75,17 +76,17 @@ namespace GARbro.GUI.Preview
 
                 if (stream.Length > MAX_FILE_PREVIEW)
                 {
-                    return new TextLoadResult 
-                    { 
+                    return new TextLoadResult {
                         Error = Localization.Format ("FileTooLarge", stream.Length),
-                        IsFileTooLarge = true 
+                        IsFileTooLarge = true
                     };
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
 
                 ScriptFormat format = ScriptFormat.FindFormat (binaryStream);
-                if (format != null) {
+                if (format != null)
+                {
                     // NOTE: shouldn't dispose for simplified derivatives of GenericScriptFormat
                     // other formats should create a new stream by themselves in ConvertFrom
                     bool hasCustomConverter = IsTextConverterImplemented (format);
@@ -93,8 +94,8 @@ namespace GARbro.GUI.Preview
                     return LoadScriptFile (entry, binaryStream, format, preferredEncoding, hasCustomConverter, cancellationToken);
                 }
                 else
-                { 
-                    var result =  LoadPlainTextOrBinary (entry, stream, preferredEncoding, cancellationToken);
+                {
+                    var result = LoadPlainTextOrBinary (entry, stream, preferredEncoding, cancellationToken);
                     shouldDisposeStream = !result.KeepStreamOpen;
                     return result;
                 }
@@ -125,7 +126,7 @@ namespace GARbro.GUI.Preview
             // Check for BOM
             if (read > 3)
             {
-                bool isUTF8    = (0xEF == test_buf[0] && 0xBB == test_buf[1] && 0xBF == test_buf[2]);
+                bool isUTF8 = (0xEF == test_buf[0] && 0xBB == test_buf[1] && 0xBF == test_buf[2]);
                 bool isUTF16LE = (0xFF == test_buf[0] && 0xFE == test_buf[1]);
                 bool isUTF16BE = (0xFE == test_buf[0] && 0xFF == test_buf[1]);
 
@@ -246,55 +247,17 @@ namespace GARbro.GUI.Preview
 
         private TextLoadResult GenerateHexDump (Stream stream, string filename, CancellationToken cancellationToken)
         {
-            var sb = new StringBuilder();
-            var buffer = new byte[16];
-            int offset = 0;
+            cancellationToken.ThrowIfCancellationRequested();
 
-            sb.AppendLine (Localization._T ("HexHeader0"));
-            sb.AppendLine (Localization._T ("HexHeader1"));
-
-            stream.Position = 0;
-            int bytesRead;
-
-            while ((bytesRead = stream.Read (buffer, 0, 16)) > 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                sb.AppendFormat ("{0:X8}  ", offset);
-
-                for (int i = 0; i < 16; i++)
-                {
-                    if (i < bytesRead)
-                        sb.AppendFormat ("{0:X2} ", buffer[i]);
-                    else
-                        sb.Append ("   ");
-                }
-
-                sb.Append (" | ");
-
-                for (int i = 0; i < bytesRead; i++)
-                {
-                    byte b = buffer[i];
-                    if (b >= 0x20 && b < 0x7F)
-                        sb.Append((char)b);
-                    else
-                        sb.Append('.');
-                }
-
-                sb.AppendLine();
-                offset += bytesRead;
-            }
-
-            var hexDump = sb.ToString();
-            var hexStream = new MemoryStream (Encoding.UTF8.GetBytes (hexDump));
             string displayName = VFS.GetFileName (filename);
+            var hexStream = new HexDumpStream (stream, displayName, cancellationToken);
 
-            return new TextLoadResult
-            {
+            return new TextLoadResult {
                 ContentStream = hexStream,
                 Encoding = Encoding.UTF8,
                 StatusText = Localization.Format ("HexDumpOf", displayName, stream.Length),
-                IsHexDump = true
+                IsHexDump = true,
+                KeepStreamOpen = true
             };
         }
 
@@ -303,6 +266,194 @@ namespace GARbro.GUI.Preview
             _currentLoadCts?.Cancel();
             _currentLoadCts?.Dispose();
             _currentLoadCts = null;
+        }
+    }
+
+    internal class HexDumpStream : Stream
+    {
+        private readonly Stream _sourceStream;
+        private readonly CancellationToken _cancellationToken;
+        private readonly byte[] _header;
+        private readonly byte[] _lineBuffer;
+        private readonly byte[] _sourceBuffer;
+        private readonly Dictionary<int, CachedLine> _generatedLines;
+        private readonly int _bytesPerLine;
+
+        private long _position;
+        private long _length;
+        private  int _currentSourceLine;
+        private  int _currentLineOffset;
+        private bool _disposed;
+
+        private class CachedLine
+        {
+            public byte[] Data;
+            public int Length;
+        }
+
+        public HexDumpStream (Stream sourceStream, string displayName, CancellationToken cancellationToken)
+        {
+            _sourceStream = sourceStream ?? throw new ArgumentNullException (nameof(sourceStream));
+            _cancellationToken = cancellationToken;
+            _sourceBuffer = new byte[16];
+            _lineBuffer = new byte[512];
+            _generatedLines = new Dictionary<int, CachedLine>();
+
+            var headerText = string.Format ("{0}\n{1}\n",
+                Localization._T ("HexHeader0"),
+                Localization._T ("HexHeader1"));
+            _header = Encoding.UTF8.GetBytes (headerText);
+            _bytesPerLine = 78;
+
+            long sourceLines = (_sourceStream.Length + 15) / 16;
+            _length = _header.Length + (sourceLines * _bytesPerLine);
+
+            _position = 0;
+            _currentSourceLine = 0;
+            _currentLineOffset = 0;
+        }
+
+        public override bool  CanRead { get { return  true; } }
+        public override bool  CanSeek { get { return  true; } }
+        public override bool CanWrite { get { return  false; } }
+        public override long   Length { get { return _length; } }
+        public override long Position
+        {
+            get { return _position; }
+            set 
+            { 
+                if (value < 0 || value > _length)
+                    throw new ArgumentOutOfRangeException (nameof(value));
+
+                _position = value;
+
+                if (value < _header.Length)
+                {
+                    _currentSourceLine = 0;
+                    _currentLineOffset = 0;
+                }
+                else
+                {
+                    long afterHeader = value - _header.Length;
+                    _currentSourceLine = (int)(afterHeader / _bytesPerLine);
+                    _currentLineOffset = (int)(afterHeader % _bytesPerLine);
+                }
+            }
+        }
+
+        public override int Read (byte[] buffer, int offset, int count)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+
+            if (buffer == null)
+                throw new ArgumentNullException (nameof(buffer));
+            if (offset < 0 || count < 0 || offset + count > buffer.Length)
+                throw new ArgumentOutOfRangeException();
+
+            int totalRead = 0;
+
+            if (_position < _header.Length)
+            {
+                int headerStart = (int)_position;
+                int headerBytesToCopy = Math.Min (count, _header.Length - headerStart);
+                Buffer.BlockCopy (_header, headerStart, buffer, offset, headerBytesToCopy);
+                _position += headerBytesToCopy;
+                totalRead += headerBytesToCopy;
+                offset += headerBytesToCopy;
+                count -= headerBytesToCopy;
+
+                if (_position >= _header.Length)
+                {
+                    _currentSourceLine = 0;
+                    _currentLineOffset = 0;
+                }
+            }
+
+            while (count > 0)
+            {
+                int sourceOffset = _currentSourceLine * 16;
+                if (sourceOffset >= _sourceStream.Length)
+                    break;
+
+                _cancellationToken.ThrowIfCancellationRequested();
+
+                if (!_generatedLines.TryGetValue (_currentSourceLine, out var cachedLine))
+                {
+                    _sourceStream.Position = sourceOffset;
+                    int bytesRead = _sourceStream.Read (_sourceBuffer, 0, 16);
+                    if (bytesRead == 0)
+                        break;
+
+                    int lineLength = HexDumpFormatter.FormatHexLine (_sourceBuffer, bytesRead, sourceOffset, _lineBuffer);
+
+                    cachedLine = new CachedLine
+                    {
+                        Data = new byte[lineLength],
+                        Length = lineLength
+                    };
+                    Buffer.BlockCopy (_lineBuffer, 0, cachedLine.Data, 0, lineLength);
+                    _generatedLines[_currentSourceLine] = cachedLine;
+                }
+
+                int availableInLine = cachedLine.Length - _currentLineOffset;
+                int toCopy = Math.Min (count, availableInLine);
+
+                Buffer.BlockCopy (cachedLine.Data, _currentLineOffset, buffer, offset, toCopy);
+
+                _currentLineOffset += toCopy;
+                _position += toCopy;
+                totalRead += toCopy;
+                offset += toCopy;
+                count -= toCopy;
+
+                if (_currentLineOffset >= cachedLine.Length)
+                {
+                    _currentSourceLine++;
+                    _currentLineOffset = 0;
+                }
+            }
+
+            return totalRead;
+        }
+
+        public override long Seek (long offset, SeekOrigin origin)
+        {
+            long newPosition;
+
+            if (origin == SeekOrigin.Begin)
+                newPosition = offset;
+            else if (origin == SeekOrigin.Current)
+                newPosition = _position + offset;
+            else if (origin == SeekOrigin.End)
+                newPosition = _length + offset;
+            else
+                throw new ArgumentException ("Invalid seek origin", nameof(origin));
+
+            Position = newPosition;
+            return _position;
+        }
+
+        public override void Flush() { }
+
+        public override void SetLength (long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write (byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void Dispose (bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                    _sourceStream?.Dispose();
+                _disposed = true;
+            }
+            base.Dispose (disposing);
         }
     }
 
