@@ -8,9 +8,9 @@ namespace GameRes.Formats.Silky
     {
         public override string         Tag { get { return "ARC/SILKY'S"; } }
         public override string Description { get { return "Silky's resource archive"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public ArcOpener ()
         {
@@ -22,11 +22,13 @@ namespace GameRes.Formats.Silky
             int count = file.View.ReadInt32 (0);
             if (!IsSaneCount (count))
                 return null;
+
             long index_offset = 4;
             const int name_length = 0x20;
             uint index_size = (uint)(count * (name_length + 8));
             if (index_size > file.View.Reserve (index_offset, index_size))
                 return null;
+
             var seen_offsets = new HashSet<uint>();
             var dir = new List<Entry>();
             for (int i = 0; i < count; ++i)
@@ -45,6 +47,8 @@ namespace GameRes.Formats.Silky
                 dir.Add (entry);
                 index_offset += 8;
             }
+            if (dir.Count == 0)
+                return null;
             return new ArcFile (file, this, dir);
         }
     }

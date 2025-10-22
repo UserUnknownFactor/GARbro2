@@ -106,13 +106,13 @@ namespace GameRes.Formats.SRPGStudio
     [Export(typeof(ArchiveFormat))]
     public class DtsOpener : ArchiveFormat
     {
-        private static readonly string[] KnownKeys = { "keyset", "_dynamic" };
-
         public override string         Tag { get { return "DTS/SRPG"; } }
         public override string Description { get { return "SRPG Studio data archive"; } }
         public override uint     Signature { get { return  0x53544453; } } // 'SDTS'
         public override bool  IsHierarchic { get { return  true; } }
         public override bool      CanWrite { get { return  false; } }
+
+        private static readonly string[] KnownKeys = { "keyset", "_dynamic" };
 
         public DtsOpener()
         {
@@ -136,7 +136,7 @@ namespace GameRes.Formats.SRPGStudio
             header.ProjectOffset = file.View.ReadUInt32 (20) + headerSize;
             header.ProjectSize = (uint)(file.MaxOffset - header.ProjectOffset);
 
-            //Trace.WriteLine ($"[SRPG] Archive size: {file.MaxOffset}, Version: {header.Version:X}, Sections: {numSections}, Project at: {header.ProjectOffset}, Project size: {header.ProjectSize}");
+            //Debug.WriteLine ($"[SRPG] Archive size: {file.MaxOffset}, Version: {header.Version:X}, Sections: {numSections}, Project at: {header.ProjectOffset}, Project size: {header.ProjectSize}");
 
             SrpgCrypto assetCrypto = null;
             SrpgCrypto projectCrypto = null;
@@ -160,9 +160,9 @@ namespace GameRes.Formats.SRPGStudio
             for (int i = 0; i < numSections; i++)
                 sectionOffsets[i] = file.View.ReadUInt32 (24 + i * 4);
 
-            /*Trace.WriteLine ($"[SRPG] Section offsets (raw):");
+            /*Debug.WriteLine ($"[SRPG] Section offsets (raw):");
             for (int i = 0; i < numSections; i++)
-                //Trace.WriteLine ($"  Section {i}: offset {sectionOffsets[i]:X8}");
+                //Debug.WriteLine ($"  Section {i}: offset {sectionOffsets[i]:X8}");
             */
 
             var dir = new List<Entry>();
@@ -180,14 +180,14 @@ namespace GameRes.Formats.SRPGStudio
                 else
                     sectionEnd = header.ProjectOffset - 1;
 
-                /*if (sectionEnd < sectionBegin || sectionBegin >= file.MaxOffset)
+                if (sectionEnd < sectionBegin || sectionBegin >= file.MaxOffset)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx} ({section.Path}): SKIPPED - invalid range ({sectionBegin:X8} to {sectionEnd:X8})");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx} ({section.Path}): SKIPPED - invalid range ({sectionBegin:X8} to {sectionEnd:X8})");
                     continue;
-                }*/
+                }
 
                 ulong sectionSize = sectionEnd - sectionBegin + 1;
-                //Trace.WriteLine ($"[SRPG] Section {sectionIdx} ({section.Path}): offset {sectionBegin:X8}, size {sectionSize}");
+                //Debug.WriteLine ($"[SRPG] Section {sectionIdx} ({section.Path}): offset {sectionBegin:X8}, size {sectionSize}");
 
                 bool isScriptSection = section.Path == "Script";
 
@@ -200,7 +200,7 @@ namespace GameRes.Formats.SRPGStudio
 
                 if (count > 10000)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: SKIPPED - count too large ({count})");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: SKIPPED - count too large ({count})");
                     continue;
                 }
 
@@ -209,9 +209,7 @@ namespace GameRes.Formats.SRPGStudio
 
                 if (isScriptSection)
                 {
-                    //Trace.WriteLine ($"[SRPG] Script section: parsing {count} scripts from {sectionBegin:X8} to {sectionEnd:X8}");
-
-                    // Script section - parse scripts first
+                    //Debug.WriteLine ($"[SRPG] Script section: parsing {count} scripts from {sectionBegin:X8} to {sectionEnd:X8}");
                     uint scriptSectionEnd = pos;
 
                     for (uint i = 0; i < count && pos <= sectionEnd; i++)
@@ -253,18 +251,18 @@ namespace GameRes.Formats.SRPGStudio
                         scriptSectionEnd = pos;
                     }
 
-                    //Trace.WriteLine ($"[SRPG] Scripts end at {scriptSectionEnd:X8}, section end at {sectionEnd:X8}");
+                    //Debug.WriteLine ($"[SRPG] Scripts end at {scriptSectionEnd:X8}, section end at {sectionEnd:X8}");
 
                     if (scriptSectionEnd < sectionEnd - 4)
                     {
                         uint remainingSize = sectionEnd - scriptSectionEnd + 1;
-                        //Trace.WriteLine ($"[SRPG] Found {remainingSize} bytes after scripts - checking for Materials section");
+                        //Debug.WriteLine ($"[SRPG] Found {remainingSize} bytes after scripts - checking for Materials section");
 
                         uint matSectionStart = scriptSectionEnd;
                         uint matCount = file.View.ReadUInt32 (matSectionStart);
 
-                        //Trace.WriteLine ($"[SRPG] Materials section at {matSectionStart:X8}: {matCount} files");
-                        //Trace.WriteLine ($"[SRPG] Archive encrypted: {header.IsEncrypted}, Asset crypto: {assetCrypto != null}");
+                        //Debug.WriteLine ($"[SRPG] Materials section at {matSectionStart:X8}: {matCount} files");
+                        //Debug.WriteLine ($"[SRPG] Archive encrypted: {header.IsEncrypted}, Asset crypto: {assetCrypto != null}");
 
                         if (matCount > 0 && matCount < 10000)
                         {
@@ -280,7 +278,7 @@ namespace GameRes.Formats.SRPGStudio
 
                                 if (nameLength == 0 || nameLength > 1000 || matPos + nameLength > sectionEnd)
                                 {
-                                    //Trace.WriteLine ($"[SRPG] Material {i}: invalid name length {nameLength} at {matPos-4:X8}");
+                                    //Debug.WriteLine ($"[SRPG] Material {i}: invalid name length {nameLength} at {matPos-4:X8}");
                                     break;
                                 }
 
@@ -296,7 +294,7 @@ namespace GameRes.Formats.SRPGStudio
 
                                 if (fileSize == 0 || matPos + fileSize > sectionEnd)
                                 {
-                                    //Trace.WriteLine ($"[SRPG] Material {i} '{fileName}': invalid size {fileSize}");
+                                    //Debug.WriteLine ($"[SRPG] Material {i} '{fileName}': invalid size {fileSize}");
                                     break;
                                 }
 
@@ -323,14 +321,14 @@ namespace GameRes.Formats.SRPGStudio
                                 matPos += fileSize;
                             }
 
-                            //Trace.WriteLine ($"[SRPG] Extracted {materialsExtracted} material files");
+                            //Debug.WriteLine ($"[SRPG] Extracted {materialsExtracted} material files");
                         }
                     }
                 }
                 else
                 {
                     // Regular section with offset table
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: {count} groups");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: {count} groups");
 
                     var positions = new List<uint>();
                     for (uint i = 0; i < count; i++)
@@ -407,7 +405,7 @@ namespace GameRes.Formats.SRPGStudio
                     }
                 }
 
-                //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: extracted {filesInSection} files, {bytesInSection} bytes");
+                //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: extracted {filesInSection} files, {bytesInSection} bytes");
                 totalExtractedSize += bytesInSection;
             }
 
@@ -424,8 +422,8 @@ namespace GameRes.Formats.SRPGStudio
                 totalExtractedSize += header.ProjectSize;
             }
 
-            //Trace.WriteLine ($"[SRPG] Total extracted: {dir.Count} files, {totalExtractedSize} bytes from {file.MaxOffset} byte archive");
-            //Trace.WriteLine ($"[SRPG] Missing: {file.MaxOffset - (long)totalExtractedSize} bytes");
+            //Debug.WriteLine ($"[SRPG] Total extracted: {dir.Count} files, {totalExtractedSize} bytes from {file.MaxOffset} byte archive");
+            //Debug.WriteLine ($"[SRPG] Missing: {file.MaxOffset - (long)totalExtractedSize} bytes");
 
             return new ArcFile (file, this, dir);
         }
@@ -457,18 +455,6 @@ namespace GameRes.Formats.SRPGStudio
 
             var projectHeader = file.View.ReadBytes (header.ProjectOffset, Math.Min (32, header.ProjectSize));
 
-            if (!IsEncryptedBuffer (projectHeader))
-            {
-                //Trace.WriteLine ($"[SRPG] Project is not encrypted");
-                var keysetCrypto = new SrpgCrypto (KnownKeys[0]);
-                if (TestKeyOnAssets (file, header, keysetCrypto))
-                {
-                    //Trace.WriteLine ($"[SRPG] Assets encrypted with keyset");
-                    return new Tuple<SrpgCrypto, SrpgCrypto>(keysetCrypto, null);
-                }
-                return new Tuple<SrpgCrypto, SrpgCrypto>(null, null);
-            }
-
             foreach (var key in KnownKeys)
             {
                 var crypto = new SrpgCrypto (key);
@@ -478,60 +464,47 @@ namespace GameRes.Formats.SRPGStudio
 
                 if (!IsEncryptedBuffer (testDecrypt))
                 {
-                    //Trace.WriteLine ($"[SRPG] Project decrypted successfully with key: {key}");
-
+                    //Debug.WriteLine ($"[SRPG] Project decrypted successfully with key: {key}");
                     if (key == "_dynamic")
                     {
                         var uuidBuffer = file.View.ReadBytes (header.ProjectOffset, 32);
-                        var projectCrypto = new SrpgCrypto ("_dynamic");
+                        var projectCrypto = new SrpgCrypto (key);
                         var decryptedUuidBuffer = projectCrypto.Decrypt (uuidBuffer);
 
                         var creatorUuid = new byte[16];
                         Array.Copy (decryptedUuidBuffer, 0, creatorUuid, 0, 16);
 
-                        //Trace.WriteLine ($"[SRPG] Decrypted project byte@16: {decryptedUuidBuffer[16]:X2} (should be EE)");
+                        //Debug.WriteLine ($"[SRPG] Decrypted project byte@16: {decryptedUuidBuffer[16]:X2} (should be EE)");
 
                         var assetKeyBytes = MD5.Create().ComputeHash (creatorUuid);
                         var assetCrypto = new SrpgCrypto (assetKeyBytes);
 
-                        //Trace.WriteLine ($"[SRPG] Creator UUID: {BitConverter.ToString (creatorUuid).Replace ("-", "")}");
-                        //Trace.WriteLine ($"[SRPG] Derived asset key: {BitConverter.ToString (assetKeyBytes).Replace ("-", "")}");
+                        //Debug.WriteLine ($"[SRPG] Creator UUID: {BitConverter.ToString (creatorUuid).Replace ("-", "")}");
+                        //Debug.WriteLine ($"[SRPG] Derived asset key: {BitConverter.ToString (assetKeyBytes).Replace ("-", "")}");
 
                         if (TestKeyOnAssets (file, header, assetCrypto))
                         {
-                            //Trace.WriteLine ($"[SRPG] Derived asset key works!");
-                            return new Tuple<SrpgCrypto, SrpgCrypto>(assetCrypto, projectCrypto);
+                            //Debug.WriteLine ($"[SRPG] Derived asset key validated!");
                         }
-                        else
-                        {
-                            //Trace.WriteLine ($"[SRPG] Derived key failed, trying default key for assets");
-                            var defaultAssetCrypto = new SrpgCrypto ("key");
-                            if (TestKeyOnAssets (file, header, defaultAssetCrypto))
-                            {
-                                //Trace.WriteLine ($"[SRPG] Using default 'key' for assets, _dynamic for project");
-                                return new Tuple<SrpgCrypto, SrpgCrypto>(defaultAssetCrypto, projectCrypto);
-                            }
-
-                            //Trace.WriteLine ($"[SRPG] No working asset key found");
-                            return new Tuple<SrpgCrypto, SrpgCrypto>(null, projectCrypto);
-                        }
+                        Debug.WriteLine ($"[SRPG] Using \"{key}\" for project and derived key for assets");
+                        return new Tuple<SrpgCrypto, SrpgCrypto> (assetCrypto, projectCrypto);
                     }
 
-                    //Trace.WriteLine ($"[SRPG] Using {key} for both assets and project");
+                    Debug.WriteLine ($"[SRPG] Using \"{key}\" for assets and project");
                     return new Tuple<SrpgCrypto, SrpgCrypto>(crypto, crypto);
                 }
             }
 
-            //Trace.WriteLine ($"[SRPG] No known key worked for project");
+            Debug.WriteLine ($"[SRPG] No known key worked for project");
 
             var detectedKey = TryDetectKeyFromContent (file, header);
             if (detectedKey != null)
             {
-                //Trace.WriteLine ($"[SRPG] Detected key from asset content");
+                Debug.WriteLine ($"[SRPG] Detected key from asset content");
                 return new Tuple<SrpgCrypto, SrpgCrypto>(detectedKey, detectedKey);
             }
 
-            //Trace.WriteLine ($"[SRPG] No encryption key detected");
+            Debug.WriteLine ($"[SRPG] No encryption key detected");
             return new Tuple<SrpgCrypto, SrpgCrypto>(null, null);
         }
 
@@ -540,7 +513,7 @@ namespace GameRes.Formats.SRPGStudio
             uint numSections = header.Version < 1140 ? 35u : 36u;
             uint headerSize = 24 + numSections * 4;
 
-            //Trace.WriteLine ($"[SRPG] Testing key on {numSections} sections");
+            //Debug.WriteLine ($"[SRPG] Testing key on {numSections} sections");
 
             for (int sectionIdx = 0;  sectionIdx < 16 ; sectionIdx++)
             {
@@ -553,11 +526,11 @@ namespace GameRes.Formats.SRPGStudio
                 uint count = file.View.ReadUInt32 (sectionOffset);
                 if (count == 0 || count > 1000)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: invalid count {count}");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: invalid count {count}");
                     continue;
                 }
 
-                //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: {count} groups");
+                //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: {count} groups");
 
                 if (sectionOffset + 8 > file.MaxOffset)
                     continue;
@@ -565,7 +538,7 @@ namespace GameRes.Formats.SRPGStudio
                 uint firstFileOffsetRel = file.View.ReadUInt32 (sectionOffset + 4);
                 if (firstFileOffsetRel == 0 || sectionOffset + firstFileOffsetRel > file.MaxOffset)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: invalid first file offset");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: invalid first file offset");
                     continue;
                 }
 
@@ -576,7 +549,7 @@ namespace GameRes.Formats.SRPGStudio
                 uint nameLen = file.View.ReadUInt32 (firstFileOffset);
                 if (nameLen == 0 || nameLen > 1000 || firstFileOffset + 4 + nameLen + 16 > file.MaxOffset)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: invalid name length {nameLen}");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: invalid name length {nameLen}");
                     continue;
                 }
 
@@ -587,7 +560,7 @@ namespace GameRes.Formats.SRPGStudio
                 uint fileCount = file.View.ReadUInt32 (metadataOffset);
                 if (fileCount == 0 || fileCount > 30000)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: invalid file count {fileCount}");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: invalid file count {fileCount}");
                     continue;
                 }
 
@@ -598,7 +571,7 @@ namespace GameRes.Formats.SRPGStudio
                 uint fileSize = file.View.ReadUInt32 (sizesOffset);
                 if (fileSize < 8 || fileSize > file.MaxOffset)
                 {
-                    //Trace.WriteLine ($"[SRPG] Section {sectionIdx}: invalid file size {fileSize}");
+                    //Debug.WriteLine ($"[SRPG] Section {sectionIdx}: invalid file size {fileSize}");
                     continue;
                 }
 
@@ -612,16 +585,16 @@ namespace GameRes.Formats.SRPGStudio
                 var decrypted = crypto.Decrypt (testData.ToArray());
                 var decryptedHex = BitConverter.ToString (decrypted, 0, Math.Min (8, decrypted.Length)).Replace ("-", "");
 
-                //Trace.WriteLine ($"[SRPG] Section {sectionIdx} test: {originalHex} -> {decryptedHex}");
+                //Debug.WriteLine ($"[SRPG] Section {sectionIdx} test: {originalHex} -> {decryptedHex}");
 
                 if (IsValidFileSignature (decrypted))
                 {
-                    //Trace.WriteLine ($"[SRPG] Key verified on section {sectionIdx}!");
+                    //Debug.WriteLine ($"[SRPG] Key verified on section {sectionIdx}!");
                     return true;
                 }
             }
 
-            //Trace.WriteLine ($"[SRPG] Key verification failed - no valid signatures found");
+            //Debug.WriteLine ($"[SRPG] Key verification failed - no valid signatures found");
             return false;
         }
 
@@ -701,7 +674,7 @@ namespace GameRes.Formats.SRPGStudio
 
         public override ResourceOptions GetDefaultOptions()
         {
-            return new SrpgOptions { Password = "keyset" };
+            return new SrpgOptions { Password = KnownKeys[0] };
         }
 
         public override ResourceOptions GetOptions (object widget)
@@ -1023,8 +996,6 @@ namespace GameRes.Formats.SRPGStudio
     [Export(typeof(ArchiveFormat))]
     public class LanguageDatOpener : ArchiveFormat
     {
-        SrpgOptions m_options = new SrpgOptions();
-
         public override string         Tag { get { return "DAT/SRPGLANG"; } }
         public override string Description { get { return "SRPG Studio language data"; } }
         public override uint     Signature { get { return  0; } }
@@ -1034,8 +1005,14 @@ namespace GameRes.Formats.SRPGStudio
         public LanguageDatOpener()
         {
             Extensions = new string[] { "dat" };
-            m_options.Password = "_dummy";
         }
+
+        private static readonly string[] KnownKeys = { "_dummy" };
+
+        private static byte[] XorKey = new byte[] {
+            0x54, 0x94, 0xC1, 0x58, 0xF4, 0x4C, 0x92, 0x1B,
+            0xAD, 0xE0, 0x9E, 0x3A, 0x49, 0xD1, 0xC9, 0x92
+        };
 
         public override ArcFile TryOpen (ArcView file)
         {
@@ -1044,29 +1021,29 @@ namespace GameRes.Formats.SRPGStudio
 
             try
             {
-                var crypto = new SrpgCrypto (m_options.Password, 0);
-                var xorKey = new byte[] 
-                { 
-                    0x54, 0x94, 0xC1, 0x58, 0xF4, 0x4C, 0x92, 0x1B, 
-                    0xAD, 0xE0, 0x9E, 0x3A, 0x49, 0xD1, 0xC9, 0x92 
-                };
+                SrpgCrypto crypto = null;
+                uint count = 0;
+                uint langId = 0;
+                foreach (string key in KnownKeys)
+                {
+                    crypto = new SrpgCrypto (key, 0);
 
-                var headerSize = Math.Min (16, file.MaxOffset);
-                var header = file.View.ReadBytes (0, (uint)headerSize);
+                    var headerSize = Math.Min (16, file.MaxOffset);
+                    var header = file.View.ReadBytes (0, (uint)headerSize);
+                    XorBuffer (header);
 
-                for (int i = 0; i < header.Length && i < xorKey.Length; i++)
-                    header[i] ^= xorKey[i % xorKey.Length];
+                    var decHeader = crypto.Decrypt (header);
+                    count = BitConverter.ToUInt32 (decHeader, 0);
+                    langId = BitConverter.ToUInt32 (decHeader, 4);
 
-                var decHeader = crypto.Decrypt (header);
-                uint count = BitConverter.ToUInt32 (decHeader, 0);
-                uint langId = BitConverter.ToUInt32 (decHeader, 4);
-
-                if (!IsSaneCount((int)count, 100000))
+                    if (!IsSaneCount ((int)count, 100000))
+                        continue;
+                }
+                if (crypto == null)
                     return null;
 
                 var data = file.View.ReadBytes (0, (uint)file.MaxOffset);
-                for (int i = 0; i < Math.Min (data.Length, xorKey.Length); i++)
-                    data[i] ^= xorKey[i % xorKey.Length];
+                XorBuffer (data);
 
                 var decrypted = crypto.Decrypt (data);
                 var dir = new List<Entry>();
@@ -1098,6 +1075,12 @@ namespace GameRes.Formats.SRPGStudio
             }
 
             return null;
+        }
+
+        private static void XorBuffer (byte[] buffer)
+        {
+            for (int i = 0; i < buffer.Length && i < XorKey.Length; i++)
+                buffer[i] ^= XorKey[i % XorKey.Length];
         }
 
         public override Stream OpenEntry (ArcFile arc, Entry entry)
