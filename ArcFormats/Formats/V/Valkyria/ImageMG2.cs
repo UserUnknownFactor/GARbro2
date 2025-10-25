@@ -119,9 +119,7 @@ namespace GameRes.Formats.Valkyria
 
                 int src = 0;
                 for (int dst = 3; dst < pixels.Length; dst += 4)
-                {
                     pixels[dst] = alpha[src++];
-                }
                 return BitmapSource.Create ((int)meta.Width, (int)meta.Height,
                                             ImageData.DefaultDpiX, ImageData.DefaultDpiY,
                                             PixelFormats.Bgra32, null, pixels, stride);

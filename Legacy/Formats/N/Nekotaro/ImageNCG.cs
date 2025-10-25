@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 namespace GameRes.Formats.Nekotaro
 {
     [Export(typeof(ImageFormat))]
+    [ExportMetadata("Priority", 10)]
     public class NcgFormat : ImageFormat
     {
         public override string         Tag => "NCG";
@@ -19,6 +20,9 @@ namespace GameRes.Formats.Nekotaro
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
+            if (file.Signature == 0x474e5089) // PNG can match this
+                return null;
+
             var header = file.ReadHeader (4);
             int left = header[0] << 3;
             int top  = header[1] << 1;
@@ -29,11 +33,11 @@ namespace GameRes.Formats.Nekotaro
             if (right > 640 || bottom > 400 || 0 == width || 0 == height)
                 return null;
             return new ImageMetaData {
-                Width = (uint)width,
-                Height = (uint)height,
+                Width   = (uint)width,
+                Height  = (uint)height,
                 OffsetX = left,
                 OffsetY = top,
-                BPP = 4,
+                BPP     = 4,
             };
         }
 

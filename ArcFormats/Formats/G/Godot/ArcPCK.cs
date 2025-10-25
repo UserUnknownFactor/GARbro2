@@ -305,6 +305,12 @@ namespace GameRes.Formats.Godot
             if (offset > 0)
                 return ReadPckArchive (file, offset);
 
+            offset = ExeFile.FindSignatureInSection (file, EMBEDDED_PCK_SIGNATURE, "pck", validator: SignatureValidation.AlwaysValid);
+            if (offset > 0)
+                return ReadPckArchive (file, offset);
+
+
+            //TODO: this allows finding it in more files but also loads the system, must be sure to use it
             //offset = ExeFile.AutoFindSignature (file, EMBEDDED_PCK_SIGNATURE, validator: SignatureValidation.AlwaysValid);
             //if (offset > 0)
                 //return ReadPckArchive (file, offset);
@@ -1027,6 +1033,11 @@ namespace GameRes.Formats.Godot
     [ExportMetadata("Extension", "OGGSTR")]
     [ExportMetadata("Target",    "OGG")]
     public class OggStrFormat : ResourceAlias { }
+
+    [Export(typeof(ResourceAlias))]
+    [ExportMetadata("Extension", "OGGVORBISSTR")]
+    [ExportMetadata("Target", "OGG")]
+    public class OggVorbisStrFormat : ResourceAlias { }
 
     [Export(typeof(ResourceAlias))]
     [ExportMetadata("Extension", "MP3STR")]

@@ -1002,11 +1002,6 @@ namespace GameRes.Formats.SRPGStudio
         public override bool  IsHierarchic { get { return  false; } }
         public override bool      CanWrite { get { return  false; } }
 
-        public LanguageDatOpener()
-        {
-            Extensions = new string[] { "dat" };
-        }
-
         private static readonly string[] KnownKeys = { "_dummy" };
 
         private static byte[] XorKey = new byte[] {

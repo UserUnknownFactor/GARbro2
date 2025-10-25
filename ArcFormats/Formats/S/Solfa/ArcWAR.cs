@@ -4,7 +4,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using GameRes.Utility;
 
-namespace GameRes.Formats.Sas5
+namespace GameRes.Formats.Solfa
 {
     internal class WarEntry : Entry
     {
@@ -15,10 +15,10 @@ namespace GameRes.Formats.Sas5
     public class WarOpener : ArchiveFormat
     {
         public override string         Tag { get { return "WAR/SAS5"; } }
-        public override string Description { get { return "SAS5 engine audio archive"; } }
-        public override uint     Signature { get { return 0x20726177; } } // 'war '
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override string Description { get { return "SAS engine audio archive"; } }
+        public override uint     Signature { get { return  0x20726177; } } // 'war '
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public WarOpener ()
         {

@@ -7,7 +7,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Drawing;
 
-namespace GameRes.Formats.Sas5
+namespace GameRes.Formats.Solfa
 {
     internal class IarArchive : ArcFile
     {

@@ -10,10 +10,10 @@ namespace GameRes.Formats.Valkyria
     public class DatOpener : ArchiveFormat
     {
         public override string         Tag { get { return "DAT/VALKYRIA"; } }
-        public override string Description { get { return "Valkyria resource archive"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override string Description { get { return "Valkyria DAT resource archive"; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public override ArcFile TryOpen (ArcView file)
         {

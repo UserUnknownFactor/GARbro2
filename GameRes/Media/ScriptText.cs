@@ -578,6 +578,33 @@ namespace GameRes
         public bool      IsValid { get; set; }
         public double Confidence { get; set; }
 
+        public static bool IsEncodingCompatible (Stream stream, Encoding encoding)
+        {
+            try
+            {
+                var buffer = new byte[Math.Min (1024, stream.Length)];
+                stream.Position = 0;
+                int bytesRead = stream.Read (buffer, 0, buffer.Length);
+                stream.Position = 0;
+
+                var decoder = encoding.GetDecoder();
+                var charBuffer = new char[decoder.GetCharCount (buffer, 0, bytesRead)];
+                decoder.GetChars (buffer, 0, bytesRead, charBuffer, 0);
+
+                int replacementCount = 0;
+                foreach (char c in charBuffer)
+                {
+                    if (c == '\uFFFD' || c == '\uFFFF') // Unicode Replacement or Non-character characters
+                        replacementCount++;
+                }
+                return replacementCount == 0;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         public static EncodingValidation ValidateUtf8 (byte[] data, int length)
         {
             int validChars = 0;

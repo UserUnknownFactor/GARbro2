@@ -6,13 +6,13 @@ using GameRes.Utility;
 using System.Text;
 using System.Linq;
 
-namespace GameRes.Formats.Sas5
+namespace GameRes.Formats.Solfa
 {
     [Export(typeof(ArchiveFormat))]
     public class Sec5Opener : ArchiveFormat
     {
         public override string         Tag { get { return "SEC5"; } }
-        public override string Description { get { return "SAS5 engine resource index file"; } }
+        public override string Description { get { return "SAS engine resource index file"; } }
         public override uint     Signature { get { return 0x35434553; } } // 'SEC5'
         public override bool  IsHierarchic { get { return false; } }
         public override bool      CanWrite { get { return false; } }
@@ -148,15 +148,29 @@ namespace GameRes.Formats.Sas5
                     string arc_type = resr.BaseStream.ReadCString();
                     int res_length = resr.ReadInt32();
                     var next_pos = resr.BaseStream.Position + res_length;
-                    if (arc_type == "file-war" || arc_type == "file-iar")
+                    if (arc_type == "file-sgf")
+                    {
+                        string arc_name = resr.BaseStream.ReadCString();
+                        uint offset = resr.ReadUInt32();
+
+                        var base_arc_name = Path.GetFileName(arc_name);
+                        if (!map.ContainsKey(base_arc_name))
+                            map[base_arc_name] = new Dictionary<int, Entry>();
+
+                        var entry = new Entry {
+                            Name = name,
+                            Type = type
+                        };
+                        map[base_arc_name][(int)offset] = entry;
+                    }
+                    else if (arc_type == "file-war" || arc_type == "file-iar")
                     {
                         string arc_name = resr.BaseStream.ReadCString();
                         int id = resr.ReadInt32();
                         var base_arc_name = Path.GetFileName (arc_name);
                         if (!map.ContainsKey (base_arc_name))
                             map[base_arc_name] = new Dictionary<int, Entry>();
-                        var entry = new Entry
-                        {
+                        var entry = new Entry {
                             Name = name,
                             Type = type,
                         };
@@ -217,8 +231,7 @@ namespace GameRes.Formats.Sas5
                     arc_name = Path.GetFileName (arc_name);
                     if (!map.ContainsKey (arc_name))
                         map[arc_name] = new Dictionary<int, Entry>();
-                    var entry = new Entry
-                    {
+                    var entry = new Entry {
                         Name = name,
                         Type = type,
                     };

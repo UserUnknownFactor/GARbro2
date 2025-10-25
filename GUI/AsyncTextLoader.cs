@@ -155,17 +155,23 @@ namespace GARbro.GUI.Preview
 
             Encoding encodingToUse;
 
-            if (hasCustomConverter)
-                encodingToUse = Encoding.UTF8; // custom converters must output UTF8
+            bool validated = true;
+            if (preferredEncoding != null && binaryStream.CanSeek)
+            {
+                validated = EncodingValidation.IsEncodingCompatible (binaryStream.AsStream, preferredEncoding);
+                binaryStream.Position = 0;
+            }
+            
+            if (preferredEncoding != null && validated)
+                encodingToUse = preferredEncoding;
             else
             {
-                if (preferredEncoding != null)
-                    encodingToUse = preferredEncoding;
-                else
-                {
+                if (binaryStream.CanSeek) { 
                     encodingToUse = ScriptFormat.DetectEncoding (binaryStream.AsStream, Math.Min (binaryStream.AsStream.Length, 20000));
                     binaryStream.Position = 0;
                 }
+                else
+                    encodingToUse = Encoding.UTF8;
             }
 
             var displayStream = format.ConvertFrom (binaryStream);
@@ -202,47 +208,27 @@ namespace GARbro.GUI.Preview
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            stream.Position = 0;
-            var detectedEncoding = ScriptFormat.DetectEncoding (stream, Math.Min (stream.Length, 20000));
+            Encoding encodingToUse = preferredEncoding ?? Encoding.UTF8;
+            Encoding detectedEncoding = null;
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+                detectedEncoding = ScriptFormat.DetectEncoding (stream, Math.Min (stream.Length, 10000));
+                encodingToUse = preferredEncoding ?? detectedEncoding;
+                if (!EncodingValidation.IsEncodingCompatible (stream, encodingToUse) && detectedEncoding != preferredEncoding)
+                    encodingToUse = detectedEncoding;
 
-            var encodingToUse = preferredEncoding ?? detectedEncoding;
-            if (!IsEncodingCompatible (stream, encodingToUse) && detectedEncoding != preferredEncoding)
-                encodingToUse = detectedEncoding;
+                stream.Position = 0;
+            }
 
-            stream.Position = 0;
+            cancellationToken.ThrowIfCancellationRequested();
+
             return new TextLoadResult {
                 ContentStream = stream,
                 Encoding = encodingToUse,
                 KeepStreamOpen = true,
                 AutoEncoding = detectedEncoding != preferredEncoding
             };
-        }
-
-        private bool IsEncodingCompatible (Stream stream, Encoding encoding)
-        {
-            try
-            {
-                var buffer = new byte[Math.Min (1024, stream.Length)];
-                stream.Position = 0;
-                int bytesRead = stream.Read (buffer, 0, buffer.Length);
-                stream.Position = 0;
-
-                var decoder = encoding.GetDecoder();
-                var charBuffer = new char[decoder.GetCharCount (buffer, 0, bytesRead)];
-                decoder.GetChars (buffer, 0, bytesRead, charBuffer, 0);
-
-                int replacementCount = 0;
-                foreach (char c in charBuffer)
-                {
-                    if (c == '\uFFFD' || c == '\uFFFF') // Unicode Replacement or Non-character characters
-                        replacementCount++;
-                }
-                return replacementCount == 0;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         private TextLoadResult GenerateHexDump (Stream stream, string filename, CancellationToken cancellationToken)

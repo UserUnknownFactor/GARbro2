@@ -33,10 +33,10 @@ namespace GameRes.Formats.Valkyria
     sealed public class OdnOpener : ArchiveFormat
     {
         public override string         Tag { get { return "ODN"; } }
-        public override string Description { get { return "Valkyria resource archive"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool  IsHierarchic { get { return false; } }
-        public override bool      CanWrite { get { return false; } }
+        public override string Description { get { return "Valkyria ODN resource archive"; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  false; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public OdnOpener ()
         {

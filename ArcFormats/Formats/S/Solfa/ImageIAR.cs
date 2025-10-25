@@ -5,7 +5,7 @@ using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace GameRes.Formats.Sas5
+namespace GameRes.Formats.Solfa
 {
     internal class IarMetaData : ImageMetaData
     {
@@ -14,26 +14,13 @@ namespace GameRes.Formats.Sas5
         public int  ImageSize;
     }
 
-    // This is an artificial format, used by GARbro internally. structure:
-    // 0x0000 'IAR\x00'
-    // 0x0004 'SAS5'
-    // 0x0008 Width
-    // 0x000C Height
-    // 0x0010 OffsetX
-    // 0x0014 OffsetY
-    // 0x0018 BPP
-    // 0x001C Stride
-    // 0x0020 PaletteSize
-    // 0x0024 ImageSize
-    // 0x0028 Palette [if PaletteSize > 0]
-    // ...... Image data
-
+    // NOTE: internal format
     [Export(typeof(ImageFormat))]
     public class IarFormat : ImageFormat
     {
-        public override string         Tag { get { return "IAR/IMAGE"; } }
-        public override string Description { get { return "SAS5 engine compressed image format"; } }
-        public override uint     Signature { get { return 0x00524149; } } // 'IAR'
+        public override string         Tag { get { return "IAR"; } }
+        public override string Description { get { return "SAS engine compressed image format"; } }
+        public override uint     Signature { get { return  0x00524149; } } // 'IAR'
 
         public IarFormat ()
         {
@@ -47,14 +34,14 @@ namespace GameRes.Formats.Sas5
                 return null;
             return new IarMetaData
             {
-                Width   = header.ToUInt32 (0x08),
-                Height  = header.ToUInt32 (0x0C),
-                OffsetX = -header.ToInt32 (0x10),
-                OffsetY = -header.ToInt32 (0x14),
-                BPP     = header.ToInt32 (0x18),
-                Stride  = header.ToInt32 (0x1C),
-                PaletteSize = header.ToInt32 (0x20),
-                ImageSize = header.ToInt32 (0x24),
+                Width       = header.ToUInt32 (0x08),
+                Height      = header.ToUInt32 (0x0C),
+                OffsetX     = -header.ToInt32 (0x10),
+                OffsetY     = -header.ToInt32 (0x14),
+                BPP         = header.ToInt32  (0x18),
+                Stride      = header.ToInt32  (0x1C),
+                PaletteSize = header.ToInt32  (0x20),
+                ImageSize   = header.ToInt32  (0x24),
             };
         }
 
@@ -62,14 +49,10 @@ namespace GameRes.Formats.Sas5
         {
             var meta = (IarMetaData)info;
             PixelFormat format;
-            if (32 == meta.BPP)
-                format = PixelFormats.Bgra32;
-            else if (24 == meta.BPP)
-                format = PixelFormats.Bgr24;
-            else if (0 == meta.PaletteSize)
-                format = PixelFormats.Gray8;
-            else
-                format = PixelFormats.Indexed8;
+            if (32 == meta.BPP)             format = PixelFormats.Bgra32;
+            else if (24 == meta.BPP)        format = PixelFormats.Bgr24;
+            else if (0 == meta.PaletteSize) format = PixelFormats.Gray8;
+            else                            format = PixelFormats.Indexed8;
 
             stream.Position = 0x28;
             BitmapPalette palette = null;
