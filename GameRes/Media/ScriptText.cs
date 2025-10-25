@@ -578,6 +578,19 @@ namespace GameRes
         public bool      IsValid { get; set; }
         public double Confidence { get; set; }
 
+        public static bool DoValidate (Encoding enc, byte[] data, int length = -1)
+        {
+            if (length <= 0)
+                length = data.Length;
+            if (enc == Encoding.UTF8) 
+                return ValidateUtf8 (data, length).IsValid;
+            else if (enc == Encoding.Unicode)
+                return ValidateUtf16 (data, length).IsValid;
+            else if (enc == Encodings.cp932)
+                return ValidateShiftJis (data, length).IsValid;
+            return true;
+        }
+
         public static EncodingValidation ValidateUtf8 (byte[] data, int length)
         {
             int validChars = 0;

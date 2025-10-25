@@ -19,6 +19,8 @@ You can extract files from archives by pressing `F4`. In the process, all images
 
 When displaying the contents of a file system, GARbro2 assigns types to files based on their name extensions, but it's not always correct. If the types are incorrect, they can be changed by selecting the files and assigning the type manually via the context menu `Assign file type`.
 
+You can also create image previews for any archive type by placing images with the same name as the archives in the `.thumbnails` subfolder of the archive location.
+
 ## GUI Hotkeys
 
 <table>
@@ -44,7 +46,7 @@ When displaying the contents of a file system, GARbro2 assigns types to files ba
 <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>   Hide status bar</td></tr>
 <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>                   Toggle scaling of large images</td></tr>
 <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></td><td>  Reset window size and position (alt. press <kbd>Shift</kbd> during start)</td></tr>
-<tr><td><kbd>Right Ctrl</kbd>/<kbd>F12</kbd></td><td>       Boss Key</td></tr>
+<tr><td><kbd>Right Ctrl</kbd>/<kbd>F12</kbd></td><td>           Boss Key</td></tr>
 <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td><td>       Exit</td></tr>
 </table>
 

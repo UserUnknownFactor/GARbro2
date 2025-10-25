@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -209,9 +211,12 @@ namespace GARbro.GUI
             if (_modelPreviewHandler != null && _modelPreviewHandler.IsModelFile (entry))
                 return true;
 
+            if (entry.Type == "archive" && !VFS.IsVirtual)
+                return true;
+
             return "image" == entry.Type || "script" == entry.Type || "text" == entry.Type ||
-                "config" == entry.Type || // not audio/video since they're big and slow to autoload
-                (string.IsNullOrEmpty (entry.Type) && entry.Size < 0x100000);
+                   "config" == entry.Type || // not audio/video
+                   (string.IsNullOrEmpty (entry.Type) && entry.Size < 0x100000);
         }
 
         private string GetEffectiveEntryType (Entry entry)
@@ -222,7 +227,7 @@ namespace GARbro.GUI
             return entry.Type;
         }
 
-        private void UpdatePreviewPane(Entry entry)
+        private void UpdatePreviewPane (Entry entry)
         {
             var vm = ViewModel;
             var previousPreview = m_current_preview;
@@ -235,7 +240,7 @@ namespace GARbro.GUI
 
             // Check if this is a text-like file
             bool isTextFile = entry.Type == "script" || entry.Type == "text" || entry.Type == "config" ||
-                              (string.IsNullOrEmpty(entry.Type) && entry.Size < 0x100000);
+                              (string.IsNullOrEmpty (entry.Type) && entry.Size < 0x100000);
 
             if (isTextFile)
             {
@@ -246,8 +251,7 @@ namespace GARbro.GUI
                 }
                 else
                 {
-                    // Use the priority logic from GetPreferredEncoding
-                    preferredEnc = GetPreferredEncoding(m_current_preview);
+                    preferredEnc = GetPreferredEncoding (m_current_preview);
                 }
             }
 
@@ -271,6 +275,17 @@ namespace GARbro.GUI
             try
             {
                 var eType = pf.Entry.Type;
+
+                if ("archive" == eType)
+                {
+                    var thumbnailPath = await FindArchiveThumbnail (pf.Entry);
+                    if (!string.IsNullOrEmpty (thumbnailPath))
+                        await LoadArchiveThumbnail (pf, thumbnailPath);
+                    else
+                        ResetPreviewPane();
+                    return;
+                }
+
                 if (_modelPreviewHandler != null && _modelPreviewHandler.IsModelFile (pf.Entry))
                 {
                     HideAllPreviewControls();
@@ -329,7 +344,103 @@ namespace GARbro.GUI
             }
         }
 
-        // Fix the other LoadPreviewImageAsync method
+        private static readonly string[] THUMBNAIL_FOLDERS = { ".thumbnails", "thumbnails", "_thumbs", ".thumbs" };
+        private static readonly string[] THUMBNAIL_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".webp" };
+
+        private async Task<string> FindArchiveThumbnail (Entry entry)
+        {
+            if (entry.Type != "archive" || VFS.IsVirtual)
+                return null;
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    var archivePath = Path.Combine (CurrentPath, entry.Name);
+                    var archiveDir = Path.GetDirectoryName (archivePath);
+                    var archiveNameWithoutExt = Path.GetFileNameWithoutExtension (entry.Name);
+
+                    foreach (var thumbFolder in THUMBNAIL_FOLDERS)
+                    {
+                        var thumbDir = Path.Combine (archiveDir, thumbFolder);
+                        if (!Directory.Exists (thumbDir))
+                            continue;
+
+                        foreach (var ext in THUMBNAIL_EXTENSIONS)
+                        {
+                            var thumbPath = Path.Combine (thumbDir, archiveNameWithoutExt + ext);
+                            if (File.Exists (thumbPath))
+                                return thumbPath;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine ($"Error searching for thumbnail: {ex.Message}");
+                }
+
+                return null;
+            });
+        }
+
+        private async Task LoadArchiveThumbnail (PreviewFile preview, string thumbnailPath)
+        {
+            try
+            {
+                await _previewLoader.LoadAsync (async ct =>
+                {
+                    await Task.Run(() =>
+                    {
+                        BitmapSource thumbnail = null;
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                var bitmap = new BitmapImage();
+                                bitmap.BeginInit();
+                                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                                bitmap.UriSource = new Uri (thumbnailPath, UriKind.Absolute);
+                                bitmap.EndInit();
+                                bitmap.Freeze();
+                                thumbnail = bitmap;
+                            }
+                            catch (Exception ex)
+                            {
+                                SetFileStatus ($"Failed to load thumbnail: {ex.Message}");
+                                return;
+                            }
+
+                            if (thumbnail != null)
+                            {
+                                ShowImagePreview();
+                                ImageCanvas.Source = thumbnail;
+
+                                double dpiScaleX = thumbnail.DpiX / Desktop.DpiX;
+                                double dpiScaleY = thumbnail.DpiY / Desktop.DpiY;
+
+                                if (Math.Abs (dpiScaleX - 1.0) > 0.001 || Math.Abs (dpiScaleY - 1.0) > 0.001)
+                                    ImageCanvas.LayoutTransform = new ScaleTransform (dpiScaleX, dpiScaleY);
+                                else
+                                    ImageCanvas.LayoutTransform = Transform.Identity;
+
+                                ApplyDownScaleSetting();
+                            }
+                        });
+                    }, ct);
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation
+            }
+            catch (Exception ex)
+            {
+                SetFileStatus ($"Thumbnail load error: {ex.Message}");
+                ResetPreviewPane();
+            }
+        }
+
         private async Task LoadPreviewImageAsync (PreviewFile preview)
         {
             try
@@ -525,7 +636,6 @@ namespace GARbro.GUI
             }
         }
 
-        // UI Element management methods used by PreviewStateMachine
         internal void ShowImagePreview ()
         {
             m_animated_image_viewer.Visibility = Visibility.Collapsed;

@@ -156,15 +156,28 @@ namespace GARbro.GUI.Preview
             Encoding encodingToUse;
 
             if (hasCustomConverter)
-                encodingToUse = Encoding.UTF8; // custom converters must output UTF8
+                encodingToUse = Encoding.UTF8; // custom converters _must_ output UTF8 to avoid confusion
             else
             {
-                if (preferredEncoding != null)
+                
+                bool validated = true;
+                if (preferredEncoding != null && binaryStream.CanSeek)
+                {
+                    var test = binaryStream.ReadBytes (256);
+                    validated = EncodingValidation.DoValidate (preferredEncoding, test);
+                    binaryStream.Position = 0;
+                }
+                
+                if (preferredEncoding != null && validated)
                     encodingToUse = preferredEncoding;
                 else
                 {
-                    encodingToUse = ScriptFormat.DetectEncoding (binaryStream.AsStream, Math.Min (binaryStream.AsStream.Length, 20000));
-                    binaryStream.Position = 0;
+                    if (binaryStream.CanSeek) { 
+                        encodingToUse = ScriptFormat.DetectEncoding (binaryStream.AsStream, Math.Min (binaryStream.AsStream.Length, 20000));
+                        binaryStream.Position = 0;
+                    }
+                    else
+                        encodingToUse = Encoding.UTF8;
                 }
             }
 
