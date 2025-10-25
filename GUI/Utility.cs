@@ -11,7 +11,7 @@ using System.Windows.Input;
 namespace GARbro
 {
     #region  Native Methods
-    internal class NativeMethods
+    internal static partial class NativeMethods
     {
         public static readonly bool IsWindowsVistaOrLater = Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version >= new Version (6, 0, 6000);
 

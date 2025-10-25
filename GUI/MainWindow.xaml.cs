@@ -102,6 +102,8 @@ namespace GARbro.GUI
                 ResetWindowPosition();
             lv_SetSortMode (Settings.Default.lvSortColumn, Settings.Default.lvSortDirection);
 
+            InitializeBossKey();
+
             Dispatcher.InvokeAsync(() => {
                 LoadEncodingHistory();
                 if (EncodingChoice.SelectedItem == null && EncodingChoice.Items.Count > 0)
@@ -170,6 +172,7 @@ namespace GARbro.GUI
                 SaveSettings();
                 DisposeAllStreams();
                 DisposePreviewHandlers();
+                CleanupBossKey();
             }
             catch (Exception ex)
             {

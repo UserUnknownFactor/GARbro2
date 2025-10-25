@@ -76,6 +76,7 @@
 
   <!-- References -->
   <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
     <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
     <PackageReference Include="WPFToolkit" Version="3.5.50211.1" />
