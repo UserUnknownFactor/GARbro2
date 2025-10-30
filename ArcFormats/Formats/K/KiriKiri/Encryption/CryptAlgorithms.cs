@@ -234,7 +234,7 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= 0x36;
+                values[pos+i] ^= 0x36;
             }
             if (offset > 0x2EA29)
                 return;
@@ -263,7 +263,7 @@ namespace GameRes.Formats.KiriKiri
                 values[pos +  0x103 - offset]--;
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= 0xB6;
+                values[pos+i] ^= 0xB6;
             }
             if (offset > 0x3F82)
                 return;
@@ -279,7 +279,7 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= 0xB6;
+                values[pos+i] ^= 0xB6;
             }
             if (offset <= 0x3F82 && offset + count > 0x3F82)
                 values[pos + 0x3F82 - offset] ^= 1;
@@ -303,7 +303,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)entry.Hash;
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -356,7 +356,7 @@ namespace GameRes.Formats.KiriKiri
         public override void Decrypt (Xp3Entry entry, long offset, byte[] values, int pos, int count)
         {
             for (int i = 0; i < count; ++i)
-                values[pos + i] ^= m_key;
+                values[pos+i] ^= m_key;
         }
 
         public override void Encrypt (Xp3Entry entry, long offset, byte[] values, int pos, int count)
@@ -410,7 +410,7 @@ namespace GameRes.Formats.KiriKiri
         {
             byte hashKey = (byte)entry.Hash;
             for (int i = 0; i < count; ++i)
-                values[pos + i] ^= (byte)(m_key ^ hashKey);
+                values[pos+i] ^= (byte)(m_key ^ hashKey);
         }
 
         public override void Encrypt(Xp3Entry entry, long offset, byte[] values, int pos, int count)
@@ -444,8 +444,8 @@ namespace GameRes.Formats.KiriKiri
             byte xor = Adjust (entry.Hash, out shift);
             for (int i = 0; i < count; ++i)
             {
-                byte data = (byte)(values[pos + i] ^ xor);
-                values[pos + i] = Binary.RotByteR (data, shift);
+                byte data = (byte)(values[pos+i] ^ xor);
+                values[pos+i] = Binary.RotByteR (data, shift);
             }
         }
 
@@ -455,8 +455,8 @@ namespace GameRes.Formats.KiriKiri
             byte xor = Adjust (entry.Hash, out shift);
             for (int i = 0; i < count; ++i)
             {
-                byte data = Binary.RotByteL (values[pos + i], shift);
-                values[pos + i] = (byte)(data ^ xor);
+                byte data = Binary.RotByteL (values[pos+i], shift);
+                values[pos+i] = (byte)(data ^ xor);
             }
         }
     }
@@ -489,7 +489,7 @@ namespace GameRes.Formats.KiriKiri
             {
                 int shift;
                 uint key = entry.Hash ^ (uint)offset;
-                byte v = buffer[pos + i];
+                byte v = buffer[pos+i];
                 if (0 != (key & 2))
                 {
                     shift = (int)key & 0x18;
@@ -506,7 +506,7 @@ namespace GameRes.Formats.KiriKiri
                     shift = (int)key & 0x10;
                     v -= (byte)(key >> shift);
                 }
-                buffer[pos + i] = v;
+                buffer[pos+i] = v;
                 ++offset;
             }
         }
@@ -517,13 +517,13 @@ namespace GameRes.Formats.KiriKiri
             {
                 uint key = entry.Hash ^ (uint)offset;
                 if (0 != (key & 8))
-                    values[pos + i] += (byte)(key >> (int)(key & 0x10));
+                    values[pos+i] += (byte)(key >> (int)(key & 0x10));
                 if (0 != (key & 4))
-                    values[pos + i] -= (byte)key;
+                    values[pos+i] -= (byte)key;
                 if (0 != (key & 2))
                 {
                     int mkey = (int)key & 0x18;
-                    values[pos + i] ^= (byte)((key >> mkey) | (key >> (mkey & 8)));
+                    values[pos+i] ^= (byte)((key >> mkey) | (key >> (mkey & 8)));
                 }
             }
         }
@@ -553,7 +553,7 @@ namespace GameRes.Formats.KiriKiri
                 int limit = Math.Min (count, (int)(0x65 - offset));
                 for (; i < limit; ++i)
                 {
-                    values[pos + i] ^= (byte)key;
+                    values[pos+i] ^= (byte)key;
                     ++offset;
                 }
             }
@@ -565,7 +565,7 @@ namespace GameRes.Formats.KiriKiri
                     | ((key & 0xFF00) >> 8)   | ((key & 0xFF) << 8);
                 do
                 {
-                    values[pos + i] ^= (byte)(key >> (8 * ((int)offset & 3)));
+                    values[pos+i] ^= (byte)(key >> (8 * ((int)offset & 3)));
                     ++offset;
                 }
                 while (++i < count);
@@ -601,13 +601,13 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count && offset <= 0xFFFFFFFFL; ++i, ++offset)
             {
                 if (offset < 123)
-                    values[pos + i] ^= (byte)(21 * key);
+                    values[pos+i] ^= (byte)(21 * key);
                 else if (offset < 246)
-                    values[pos + i] += (byte)(-32 * key);
+                    values[pos+i] += (byte)(-32 * key);
                 else if (offset < 369)
-                    values[pos + i] ^= (byte)(43 * key);
+                    values[pos+i] ^= (byte)(43 * key);
                 else
-                    values[pos + i] += (byte)(-54 * key);
+                    values[pos+i] += (byte)(-54 * key);
             }
         }
 
@@ -617,13 +617,13 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count && offset <= 0xFFFFFFFFL; ++i, ++offset)
             {
                 if (offset < 123)
-                    values[pos + i] ^= (byte)(21  * key);
+                    values[pos+i] ^= (byte)(21  * key);
                 else if (offset < 246)
-                    values[pos + i] -= (byte)(-32 * key);
+                    values[pos+i] -= (byte)(-32 * key);
                 else if (offset < 369)
-                    values[pos + i] ^= (byte)(43  * key);
+                    values[pos+i] ^= (byte)(43  * key);
                 else
-                    values[pos + i] -= (byte)(-54 * key);
+                    values[pos+i] -= (byte)(-54 * key);
             }
         }
     }
@@ -644,9 +644,9 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count; ++i, ++offset)
             {
                 if (0 != (offset & 1))
-                    values[pos + i] ^= (byte)entry.Hash;
+                    values[pos+i] ^= (byte)entry.Hash;
                 else
-                    values[pos + i] ^= (byte)offset;
+                    values[pos+i] ^= (byte)offset;
             }
         }
 
@@ -672,9 +672,9 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count; ++i, ++offset)
             {
                 if (0 != (offset & 1))
-                    values[pos + i] ^= (byte)offset;
+                    values[pos+i] ^= (byte)offset;
                 else
-                    values[pos + i] ^= (byte)entry.Hash;
+                    values[pos+i] ^= (byte)entry.Hash;
             }
         }
 
@@ -715,7 +715,7 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= KeyTable[(offset+i) & 0xFF];
+                values[pos+i] ^= KeyTable[(offset+i) & 0xFF];
             }
         }
 
@@ -738,7 +738,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash >> 3);
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -761,8 +761,8 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash + 1);
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
-                values[pos + i] = (byte)~values[pos + i];
+                values[pos+i] ^= key;
+                values[pos+i] = (byte)~values[pos+i];
             }
         }
 
@@ -792,7 +792,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash >> 12);
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -812,7 +812,7 @@ namespace GameRes.Formats.KiriKiri
             uint limit = GetParameters (entry, out uint key);
             for (int i = 0; i < count && offset < limit; ++i, ++offset)
             {
-                values[pos + i] ^= (byte)(key >> (((int)offset & 3) << 3));
+                values[pos+i] ^= (byte)(key >> (((int)offset & 3) << 3));
             }
         }
 
@@ -852,7 +852,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash ^ 0xCD);
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -880,9 +880,9 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count; ++i, ++offset)
             {
                 if (0 != (offset & 4) || offset <= 0x64)
-                    buffer[pos + i] ^= key1;
+                    buffer[pos+i] ^= key1;
                 else
-                    buffer[pos + i] ^= key2;
+                    buffer[pos+i] ^= key2;
             }
         }
 
@@ -920,7 +920,7 @@ namespace GameRes.Formats.KiriKiri
             int key_pos = (int)offset;
             for (int i = 0; i < count; ++i)
             {
-                buffer[pos + i] ^= key[key_pos++ & 0x1F];
+                buffer[pos+i] ^= key[key_pos++ & 0x1F];
             }
         }
 
@@ -954,7 +954,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash ^ (entry.Hash >> 8));
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -988,8 +988,8 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= m_key;
-                values[pos + i]++;
+                values[pos+i] ^= m_key;
+                values[pos+i]++;
             }
         }
 
@@ -997,8 +997,8 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i]--;
-                values[pos + i] ^= m_key;
+                values[pos+i]--;
+                values[pos+i] ^= m_key;
             }
         }
     }
@@ -1016,7 +1016,7 @@ namespace GameRes.Formats.KiriKiri
             int shift = (int)(offset % 5);
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= (byte)(entry.Hash >> ((shift+i) % 5));
+                values[pos+i] ^= (byte)(entry.Hash >> ((shift+i) % 5));
             }
         }
 
@@ -1054,7 +1054,7 @@ namespace GameRes.Formats.KiriKiri
             }
             for (int i = 0; i < count; ++i)
             {
-                values[pos + i] ^= key;
+                values[pos+i] ^= key;
             }
         }
 
@@ -1076,7 +1076,7 @@ namespace GameRes.Formats.KiriKiri
             if (0 == key)
                 key = 0xD0;
             for (int i = 0; i < count; ++i)
-                data[pos + i] ^= key;
+                data[pos+i] ^= key;
         }
 
         public override void Encrypt (Xp3Entry entry, long offset, byte[] data, int pos, int count)
@@ -1096,7 +1096,7 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count; ++i)
             {
                 if ((offset + i) % key != 0)
-                    data[pos + i] ^= key;
+                    data[pos+i] ^= key;
             }
         }
 
@@ -1123,7 +1123,7 @@ namespace GameRes.Formats.KiriKiri
                 ++i;
             while (i < count)
             {
-                data[pos + i] ^= (byte)(key ^ (offset + i));
+                data[pos+i] ^= (byte)(key ^ (offset + i));
                 i += 0x10;
             }
         }
@@ -1193,7 +1193,7 @@ namespace GameRes.Formats.KiriKiri
             int k = (int)(offset % 12);
             for (int i = 0; i < count; ++i)
             {
-                buffer[pos + i] ^= key[k++];
+                buffer[pos+i] ^= key[k++];
                 if (12 == k)
                     k = 0;
             }
@@ -1283,7 +1283,7 @@ namespace GameRes.Formats.KiriKiri
             int key_pos = (int)offset;
             for (int i = 0; i < count; ++i)
             {
-                buffer[pos + i] ^= key[key_pos++ % 0x1F];
+                buffer[pos+i] ^= key[key_pos++ % 0x1F];
             }
         }
 
@@ -1318,9 +1318,9 @@ namespace GameRes.Formats.KiriKiri
             for (int i = 0; i < count; ++i)
             {
                 if ((offset + i) <= 100)
-                    buffer[pos + i] ^= start_key;
+                    buffer[pos+i] ^= start_key;
                 else
-                    buffer[pos + i] ^= key[(int)(offset + i) & Mask];
+                    buffer[pos+i] ^= key[(int)(offset + i) & Mask];
             }
         }
 
@@ -1357,7 +1357,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)~(entry.Hash >> 7);
             for (int i = 0; i < count; ++i)
             {
-                data[pos + i] ^= key;
+                data[pos+i] ^= key;
             }
         }
 
@@ -1374,12 +1374,12 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                byte val = data[pos + i];
+                byte val = data[pos+i];
                 int bit_count = CountSetBits (val);
                 if (bit_count > 0)
                 {
                     val = Binary.RotByteL (val, bit_count);
-                    data[pos + i] = val;
+                    data[pos+i] = val;
                 }
             }
         }
@@ -1388,12 +1388,12 @@ namespace GameRes.Formats.KiriKiri
         {
             for (int i = 0; i < count; ++i)
             {
-                byte val = data[pos + i];
+                byte val = data[pos+i];
                 int bit_count = CountSetBits (val);
                 if (bit_count > 0)
                 {
                     val = Binary.RotByteR (val, bit_count);
-                    data[pos + i] = val;
+                    data[pos+i] = val;
                 }
             }
         }
@@ -1420,7 +1420,7 @@ namespace GameRes.Formats.KiriKiri
             byte key = (byte)(entry.Hash >> 5);
             for (int i = 0; i < count; ++i, ++offset)
             {
-                buffer[pos + i] ^= key;
+                buffer[pos+i] ^= key;
             }
         }
 
@@ -1445,7 +1445,7 @@ namespace GameRes.Formats.KiriKiri
             var key = InitKey (entry.Hash);
             for (int i = 0; i < count; ++i)
             {
-                buffer[pos + i] ^= key[(offset + i) % 31];
+                buffer[pos+i] ^= key[(offset + i) % 31];
             }
         }
 
@@ -1549,8 +1549,8 @@ namespace GameRes.Formats.KiriKiri
 
             for (var i = 0; i < count; i++)
             {
-                buffer[pos + i] ^= tbl1[(offset + i) % 0x1F];
-                buffer[pos + i] += (byte)(m_tbl2[(offset + i) % 0x3D] ^ m_tbl3[(offset + i) % 0x3D]);
+                buffer[pos+i] ^= tbl1[(offset + i) % 0x1F];
+                buffer[pos+i] += (byte)(m_tbl2[(offset + i) % 0x3D] ^ m_tbl3[(offset + i) % 0x3D]);
             }
         }
     }
@@ -1585,9 +1585,9 @@ namespace GameRes.Formats.KiriKiri
             for (var i = 0; i < count; i++)
             {
                 if (offset+i <= 0x64)
-                    buffer[pos + i] ^= key[4];
+                    buffer[pos+i] ^= key[4];
                 else
-                    buffer[pos + i] ^= key[(offset+i) & 3];
+                    buffer[pos+i] ^= key[(offset+i) & 3];
             }
         }
 
@@ -1615,7 +1615,7 @@ namespace GameRes.Formats.KiriKiri
             ushort off16 = (ushort)offset;
             for (int i = 0; i < count; ++i)
             {
-                buffer[pos + i] ^= (byte)(Key1[(Key2[off16 >> 3] >> ((off16 & 7) << 2)) & 0xF]
+                buffer[pos+i] ^= (byte)(Key1[(Key2[off16 >> 3] >> ((off16 & 7) << 2)) & 0xF]
                                         ^ ((Key2[off16 >> 3] ^ entry.Hash) >> ((off16 & 3) << 3)));
                 off16++;
             }
@@ -1646,9 +1646,7 @@ namespace GameRes.Formats.KiriKiri
 
             // XOR every 8th byte in the buffer range
             for (int i = start; i < count; i += 8)
-            {
                 buffer[i + pos] ^= bhash;
-            }
         }
 
         public override void Encrypt(Xp3Entry entry, long offset, byte[] buffer, int pos, int count)
@@ -1656,4 +1654,36 @@ namespace GameRes.Formats.KiriKiri
             Decrypt(entry, offset, buffer, pos, count);
         }
     }
+
+    [Serializable]
+    public class MiburoCrypt : ICrypt 
+    {
+        private const int KeySize = 29;
+
+        public override void Decrypt(Xp3Entry entry, long offset, byte[] buffer, int pos, int count)
+        {
+            byte[] key = InitKey(entry.Hash);
+            for (int i = 0; i < count; ++i)
+                buffer[pos+i] ^= key[(offset + i) % KeySize];
+        }
+
+        public override void Encrypt(Xp3Entry entry, long offset, byte[] buffer, int pos, int count)
+        {
+            Decrypt(entry, offset, buffer, pos, count);
+        }
+
+        private byte[] InitKey(uint hash)
+        {
+            hash = hash & 0x1FFFFFFF;
+            hash |= ((hash & 1) << KeySize);
+            byte[] key = new byte[KeySize];
+            for (int i = 0; i < KeySize; i++)
+            {
+                key[i] = (byte)hash;
+                hash = (hash >> 8) | ((hash << 0x15) & 0xFF000000);
+            }
+            return key;
+        }
+    }
+
 }

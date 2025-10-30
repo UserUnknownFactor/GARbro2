@@ -23,8 +23,8 @@ namespace GARbro.GUI
         private EntryViewModel m_last_selected = null;
 
         // Filtering
-        private string _filterText = string.Empty;
-        private bool _isFilterActive = false;
+        private string _filterText     = string.Empty;
+        private bool   _isFilterActive = false;
 
         // Sorting
         private GridViewColumnHeader m_lvSortByColumn = null;
@@ -39,7 +39,7 @@ namespace GARbro.GUI
         public static readonly DependencyProperty SortModeProperty =
             DependencyProperty.RegisterAttached ("SortMode", typeof (string), typeof (MainWindow), new UIPropertyMetadata());
 
-        internal string CurrentPath { get { return ViewModel.Path.First(); } }
+        internal string CurrentPath { get { return ViewModel?.Path?.First() ?? ""; } }
 
         public DirectoryViewModel ViewModel
         {

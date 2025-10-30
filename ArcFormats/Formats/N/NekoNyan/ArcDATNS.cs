@@ -5,19 +5,20 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
+
 using GameRes.Utility;
 
 namespace GameRes.Formats.NekoNyan
 {
     public class SpriteArcEntry : PackedEntry
     {
-        public SpriteGameDatabase.Item Game { get; set; }
-        public uint Key { get; set; }
+        public NekoParams Params { get; set; }
+        public uint          Key { get; set; }
     }
 
     [Export(typeof(ArchiveFormat))]
     public class SpriteArcDAT : ArchiveFormat
-    {        
+    {
         public override string         Tag { get { return "NEKO/SPR"; } }
         public override string Description { get { return "NEKONYAN/SPRITE resource archive"; } }
         public override uint     Signature { get { return  0; } }
@@ -25,67 +26,68 @@ namespace GameRes.Formats.NekoNyan
 
         public override ArcFile TryOpen (ArcView view)
         {
-            const int headerSize = 1024;
-            if (view.MaxOffset < headerSize)
+            const int header_size = 1024;
+            if (view.MaxOffset < header_size)
                 return null;
 
             if (!TryIdentifyGame (view, out var game))
                 return null;
 
-            var fileCount = 0;
-            for (var i = game.DecryParam.fileCountBeginByte; i < headerSize - 4; i += 4)
-                fileCount += view.View.ReadInt32 (i);
-            if (fileCount == 0)
-                return new ArcFile(view, this, Array.Empty<Entry>()); // why?
+            int file_count = 0;
+            for (long i = game.FileCountBeginByte; i < header_size - 4; i += 4)
+                file_count += view.View.ReadInt32 (i);
 
-            var entries = new List<Entry>();
-            var seed1   = view.View.ReadUInt32 (0xD4);
-            var seed2   = view.View.ReadUInt32 (0x5C);
-
-            // table of contents is encrypted, need to decrypt it first
-            var tocSize = 16 * fileCount;
-            if (tocSize > view.MaxOffset - headerSize)
+            if (file_count == 0)
                 return null;
 
-            using (var tocBuffer = ArrayPool<byte>.Shared.RentSafe (tocSize))
+            var entries = new List<Entry>();
+            uint seed1 = view.View.ReadUInt32 (0xD4);
+            uint seed2 = view.View.ReadUInt32 (0x5C);
+
+            // table of contents is encrypted, need to decrypt it first
+            int toc_size = 16 * file_count;
+            if (toc_size > view.MaxOffset - header_size)
+                return null;
+
+            using (var toc_buffer = ArrayPool<byte>.Shared.RentSafe (toc_size))
             {
-                if (view.View.Read (headerSize, tocBuffer, 0, (uint)tocSize) != tocSize)
+                if (view.View.Read (header_size, toc_buffer, 0, (uint)toc_size) != toc_size)
                     return null;
 
-                SpriteDecryptionUtils.Decrypt (new Span<byte>(tocBuffer, 0, tocSize), seed1, game.DecryParam);
+                SpriteDecryptionUtils.Decrypt (new Span<byte>(toc_buffer, 0, toc_size), seed1, game);
 
-                var contentOffset = BitConverter.ToInt32 (tocBuffer, 12);
-                var constSize = contentOffset - (headerSize + tocSize);
-                if (contentOffset > view.MaxOffset)
+                int content_offset = BitConverter.ToInt32 (toc_buffer, 12);
+                int const_size = content_offset - (header_size + toc_size);
+
+                if (content_offset > view.MaxOffset)
                     return null;
 
-                using (var constBuffer = ArrayPool<byte>.Shared.RentSafe (constSize))
+                using (var const_buffer = ArrayPool<byte>.Shared.RentSafe (const_size))
                 {
-                    if (view.View.Read (headerSize + tocSize, constBuffer, 0, (uint)constSize) != constSize)
+                    if (view.View.Read (header_size + toc_size, const_buffer, 0, (uint)const_size) != const_size)
                         return null;
 
-                    SpriteDecryptionUtils.Decrypt (new Span<byte>(constBuffer, 0, constSize), seed2, game.DecryParam);
+                    SpriteDecryptionUtils.Decrypt (new Span<byte>(const_buffer, 0, const_size), seed2, game);
 
-                    for (var i = 0; i < fileCount; i++)
+                    for (int i = 0; i < file_count; i++)
                     {
-                        var entryOffset = 16 * i;
-                        var size = BitConverter.ToUInt32 (tocBuffer, entryOffset);
-                        var constAddr = BitConverter.ToInt32 (tocBuffer, entryOffset + 4);
-                        var key = BitConverter.ToUInt32 (tocBuffer, entryOffset + 8);
-                        var dataAddr = BitConverter.ToUInt32 (tocBuffer, entryOffset + 12);
+                        int entry_offset = 16 * i;
+                        uint size      = BitConverter.ToUInt32 (toc_buffer, entry_offset);
+                        int const_addr = BitConverter.ToInt32  (toc_buffer, entry_offset + 4);
+                        uint key       = BitConverter.ToUInt32 (toc_buffer, entry_offset + 8);
+                        uint data_addr = BitConverter.ToUInt32 (toc_buffer, entry_offset + 12);
 
-                        var cnt = 0;
-                        for (; constAddr + cnt < constSize && constBuffer[constAddr + cnt] != 0; cnt++) { }
+                        int cnt = 0;
+                        for (; const_addr + cnt < const_size && const_buffer[const_addr + cnt] != 0; cnt++) { }
 
-                        var name = Encoding.ASCII.GetString (constBuffer, constAddr, cnt);
-                        entries.Add (new SpriteArcEntry
-                        {
-                            Game   = game,
+                        string name = Encoding.ASCII.GetString (const_buffer, const_addr, cnt);
+                        entries.Add (new SpriteArcEntry {
+                            Params = game,
                             Name   = name,
-                            Offset = dataAddr,
+                            Offset = data_addr,
                             Size   = size,
                             Key    = key,
-                            Type = FormatCatalog.Instance.GetTypeFromName (name)
+                            Type   = FormatCatalog.Instance.GetTypeFromName (name)
                         });
                     }
                 }
@@ -96,31 +98,97 @@ namespace GameRes.Formats.NekoNyan
 
         public override Stream OpenEntry (ArcFile arc, Entry entry)
         {
-            if (!(entry is SpriteArcEntry spriteEntry))
+            if (!(entry is SpriteArcEntry sprite_entry))
                 return arc.File.CreateStream (entry.Offset, entry.Size);
 
-            return new SpriteDecryptionStream (arc.File.CreateStream (entry.Offset, entry.Size), spriteEntry.Key, spriteEntry.Game.DecryParam);
+            return new SpriteDecryptionStream (arc.File.CreateStream (entry.Offset, entry.Size), sprite_entry.Key, sprite_entry.Params);
         }
 
-        private static bool TryIdentifyGame (ArcView view, out SpriteGameDatabase.Item game)
+        private bool TryIdentifyGame (ArcView view, out NekoParams decrypt_params)
         {
-            game = null;
-            var info_name = VFS.CombinePath (VFS.GetDirectoryName (view.Name), "app.info");
-            if (!File.Exists (info_name))
+            decrypt_params = null;
+            string info_path = VFS.CombinePath (VFS.GetDirectoryName (view.Name), "app.info");
+            if (!File.Exists (info_path))
                 return false;
 
-            using (var sr = new StreamReader (info_name, Encoding.UTF8))
+            using (var sr = new StreamReader (info_path, Encoding.UTF8))
             {
-                var company = sr.ReadLine();
-                var product = sr.ReadLine();
+                string company = sr.ReadLine().Trim();
+                string product = sr.ReadLine().Trim();
 
                 if (string.IsNullOrEmpty (company) || string.IsNullOrEmpty (product))
                     return false;
 
-                game = SpriteGameDatabase.Games.FirstOrDefault (item => item.AppInfoCompany == company && item.AppInfoProduct == product);
+                return KnownGames.TryGetValue (product, out decrypt_params);
             }
+        }
 
-            return game != null;
+        /*public override ResourceScheme Scheme
+        {
+            get { return DefaultScheme; }
+            set { DefaultScheme = (NekoScheme)value; }
+        }*/
+
+        static NekoScheme DefaultScheme = new NekoScheme {
+            KnownGames = new Dictionary<string, NekoParams> {
+                { "Aokana",       new NekoParams (16, 0x1CDFU, 0xA74CU, 17, 56U, 239U, 1, 0xFD, 3, 0x59, 0x99) },
+                { "AokanaEXTRA1", new NekoParams (16, 0x1CDFU, 0xA74CU, 17, 56U, 239U, 1, 0xFD, 3, 0x59, 0x99) },
+                { "AokanaEXTRA2", new NekoParams (12, 0x131CU, 0xA740U, 7,  0x9CU, 0xCEU, 3, 0xB3, 3, 0x59, 0x77) },
+                { "KoiChoco",     new NekoParams (12, 0x1704U, 0xA140U, 7,  0x155U, 0xDCU, 2, 0xEB, 31, 0x57, 0xA5) }
+            }
+        };
+
+        internal Dictionary<string, NekoParams> KnownGames { get { return DefaultScheme.KnownGames; } }
+    }
+
+    [Serializable]
+    public class NekoScheme : ResourceScheme
+    {
+        public Dictionary<string, NekoParams> KnownGames = new Dictionary<string, NekoParams>();
+    }
+
+    [Serializable]
+    public class NekoParams
+    {
+        public long FileCountBeginByte;
+        public uint GenKeyInitMul;
+        public uint GenKeyInitAdd;
+        public  int GenKeyInitShift;
+        public uint GenKeyRoundAdd;
+        public uint GenKeyRoundAnd;
+        public  int GenKeyRoundShift;
+
+        public long DecryMod1;
+        public byte DecryAdd;
+        public long DecryMod2;
+        public byte DecryXor;
+
+        public NekoParams () { }
+
+        public NekoParams (
+            long fileCountBeginByte,
+            uint genKeyInitMul,
+            uint genKeyInitAdd,
+            int genKeyInitShift,
+            uint genKeyRoundAdd,
+            uint genKeyRoundAnd,
+            int genKeyRoundShift,
+            long decryMod1,
+            byte decryAdd,
+            long decryMod2,
+            byte decryXor)
+        {
+            this.FileCountBeginByte = fileCountBeginByte;
+            this.GenKeyInitMul    = genKeyInitMul;
+            this.GenKeyInitAdd    = genKeyInitAdd;
+            this.GenKeyInitShift  = genKeyInitShift;
+            this.GenKeyRoundAdd   = genKeyRoundAdd;
+            this.GenKeyRoundAnd   = genKeyRoundAnd;
+            this.GenKeyRoundShift = genKeyRoundShift;
+            this.DecryMod1        = decryMod1;
+            this.DecryAdd         = decryAdd;
+            this.DecryMod2        = decryMod2;
+            this.DecryXor         = decryXor;
         }
     }
 
@@ -128,45 +196,45 @@ namespace GameRes.Formats.NekoNyan
     {
         public const int KeyTableSize = 256;
 
-        public static void Decrypt (Span<byte> data, uint key, in SpriteGameDatabase.DecryParams decryParams, long baseIndex = 0)
+        public static void Decrypt (Span<byte> data, uint key, NekoParams decry_params, long base_index = 0)
         {
-            Span<byte> keyTable = stackalloc byte[KeyTableSize];
-            GenerateKeyTable (keyTable, key, decryParams);
-            Decrypt (data, keyTable, decryParams, baseIndex);
+            Span<byte> key_table = stackalloc byte[KeyTableSize];
+            GenerateKeyTable (key_table, key, decry_params);
+            Decrypt (data, key_table, decry_params, base_index);
         }
 
-        public static void Decrypt (Span<byte> data, Span<byte> keyTable, in SpriteGameDatabase.DecryParams decryParams, long baseIndex = 0)
+        public static void Decrypt (Span<byte> data, Span<byte> key_table, NekoParams decry_params, long base_index = 0)
         {
-            if (keyTable.Length != KeyTableSize)
+            if (key_table.Length != KeyTableSize)
                 ThrowInvalidKeyTable();
 
-            for (var i = 0; i < data.Length; i++)
+            for (int i = 0; i < data.Length; i++)
             {
-                var keyIndex = baseIndex + i;
-                var currentByte = data[i];
-                currentByte ^= keyTable[(int)(keyIndex % decryParams.decryMod1)];
-                currentByte += decryParams.decryAdd;
-                currentByte += keyTable[(int)(keyIndex % decryParams.decryMod2)];
-                currentByte ^= decryParams.decryXor;
-                data[i] = currentByte;
+                long key_index = base_index + i;
+                byte current_byte = data[i];
+                current_byte ^= key_table[(int)(key_index % decry_params.DecryMod1)];
+                current_byte += decry_params.DecryAdd;
+                current_byte += key_table[(int)(key_index % decry_params.DecryMod2)];
+                current_byte ^= decry_params.DecryXor;
+                data[i] = current_byte;
             }
         }
 
-        public static void GenerateKeyTable (Span<byte> keyTable, uint seed, in SpriteGameDatabase.DecryParams decryParams)
+        public static void GenerateKeyTable (Span<byte> key_table, uint seed, in NekoParams decry_params)
         {
-            if (keyTable.Length != KeyTableSize)
+            if (key_table.Length != KeyTableSize)
                 ThrowInvalidKeyTable();
 
-            var state1 = seed * decryParams.genKeyInitMul + decryParams.genKeyInitAdd;
-            var state2 = (state1 << decryParams.genKeyInitShift) ^ state1;
-            for (var i = 0; i < KeyTableSize; i++)
+            uint state1 = seed * decry_params.GenKeyInitMul + decry_params.GenKeyInitAdd;
+            uint state2 = (state1 << decry_params.GenKeyInitShift) ^ state1;
+            for (int i = 0; i < KeyTableSize; i++)
             {
                 state1 -= seed;
                 state1 += state2;
-                state2 = state1 + decryParams.genKeyRoundAdd;
-                state1 *= state2 & decryParams.genKeyRoundAnd;
-                keyTable[i] = (byte)state1;
-                state1 >>= decryParams.genKeyRoundShift;
+                state2 = state1 + decry_params.GenKeyRoundAdd;
+                state1 *= state2 & decry_params.GenKeyRoundAnd;
+                key_table[i] = (byte)state1;
+                state1 >>= decry_params.GenKeyRoundShift;
             }
         }
 
@@ -181,46 +249,46 @@ namespace GameRes.Formats.NekoNyan
 
     public class SpriteDecryptionStream : Stream
     {
-        private Stream m_baseStream;
-        private byte[] m_keyTable;
-        private SpriteGameDatabase.DecryParams m_decryptParams;
+        private readonly Stream m_base_stream;
+        private readonly byte[] m_key_table;
+        private readonly NekoParams m_decry_params;
 
-        public SpriteDecryptionStream (Stream encryptedSource, uint decryptionKey, in SpriteGameDatabase.DecryParams decryParams)
+        public SpriteDecryptionStream (Stream encrypted_source, uint decryption_key, NekoParams decry_params)
         {
-            m_baseStream = encryptedSource;
-            m_decryptParams = decryParams;
+            m_base_stream = encrypted_source;
+            m_decry_params = decry_params;
 
-            m_keyTable = new byte[SpriteDecryptionUtils.KeyTableSize];
-            SpriteDecryptionUtils.GenerateKeyTable (m_keyTable, decryptionKey, decryParams);
+            m_key_table = new byte[SpriteDecryptionUtils.KeyTableSize];
+            SpriteDecryptionUtils.GenerateKeyTable (m_key_table, decryption_key, decry_params);
         }
 
         public override void Flush()
         {
-            m_baseStream.Flush();
+            m_base_stream.Flush();
         }
 
         public override long Seek (long offset, SeekOrigin origin)
         {
-            return m_baseStream.Seek (offset, origin);
+            return m_base_stream.Seek (offset, origin);
         }
 
         public override void SetLength (long value)
         {
-            m_baseStream.SetLength (value);
+            m_base_stream.SetLength (value);
         }
 
         public override int Read (byte[] buffer, int offset, int count)
         {
-            var initPosition = m_baseStream.Position;
-            var bytesRead = m_baseStream.Read (buffer, offset, count);
+            long init_position = m_base_stream.Position;
+            int bytes_read     = m_base_stream.Read (buffer, offset, count);
 
-            if (bytesRead == 0)
+            if (bytes_read == 0)
                 return 0;
 
-            var span = new Span<byte>(buffer, offset, bytesRead);
-            SpriteDecryptionUtils.Decrypt (span, m_keyTable, m_decryptParams, (int)initPosition);
+            var span = new Span<byte>(buffer, offset, bytes_read);
+            SpriteDecryptionUtils.Decrypt (span, m_key_table, m_decry_params, (int)init_position);
 
-            return bytesRead;
+            return bytes_read;
         }
 
         public override void Write (byte[] buffer, int offset, int count)
@@ -228,81 +296,16 @@ namespace GameRes.Formats.NekoNyan
             throw new NotImplementedException ("SpriteDecryptionStream does not support writing yet.");
         }
 
-        public override bool  CanRead => m_baseStream.CanRead;
-        public override bool  CanSeek => m_baseStream.CanSeek;
+        public override bool CanRead => m_base_stream.CanRead;
+        public override bool CanSeek => m_base_stream.CanSeek;
         public override bool CanWrite => false;
 
-        public override long Length => m_baseStream.Length;
+        public override long Length => m_base_stream.Length;
 
         public override long Position
         {
-            get => m_baseStream.Position;
-            set => m_baseStream.Position = value;
+            get => m_base_stream.Position;
+            set => m_base_stream.Position = value;
         }
-    }
-
-    public static class SpriteGameDatabase
-    {
-        public struct DecryParams
-        {
-            public long fileCountBeginByte;
-            public readonly uint genKeyInitMul;
-            public readonly uint genKeyInitAdd;
-            public readonly  int genKeyInitShift;
-            public readonly uint genKeyRoundAdd;
-            public readonly uint genKeyRoundAnd;
-            public readonly  int genKeyRoundShift;
-
-            public readonly long decryMod1;
-            public readonly byte decryAdd;
-            public readonly long decryMod2;
-            public readonly byte decryXor;
-
-            public DecryParams (long fileCountBeginByte,
-                uint genKeyInitMul,
-                uint genKeyInitAdd,
-                int genKeyInitShift,
-                uint genKeyRoundAdd,
-                uint genKeyRoundAnd,
-                int genKeyRoundShift,
-                long decryMod1,
-                byte decryAdd,
-                long decryMod2,
-                byte decryXor)
-            {
-                this.fileCountBeginByte = fileCountBeginByte;
-                this.genKeyInitMul    = genKeyInitMul;
-                this.genKeyInitAdd    = genKeyInitAdd;
-                this.genKeyInitShift  = genKeyInitShift;
-                this.genKeyRoundAdd   = genKeyRoundAdd;
-                this.genKeyRoundAnd   = genKeyRoundAnd;
-                this.genKeyRoundShift = genKeyRoundShift;
-                this.decryMod1        = decryMod1;
-                this.decryAdd         = decryAdd;
-                this.decryMod2        = decryMod2;
-                this.decryXor         = decryXor;
-            }
-        }
-
-        public class Item
-        {
-            public string  AppInfoCompany { get; } = "NekoNyanSoft";
-            public string  AppInfoProduct { get; set; }
-            public DecryParams DecryParam { get; } 
-
-            public Item (string appInfoProduct, DecryParams param)
-            {
-                AppInfoProduct = appInfoProduct;
-                DecryParam = param;
-            }
-        }
-
-        public static readonly Item[] Games =
-        {
-            new Item ("Aokana",       new DecryParams (16, 0x1CDFU, 0xA74CU, 17, 56U, 239U, 1, 0xFD, 3, 0x59, 0x99)),
-            new Item ("AokanaEXTRA2", new DecryParams (16, 0x1CDFU, 0xA74CU, 17, 56U, 239U, 1, 0xFD, 3, 0x59, 0x99)),
-            new Item ("AokanaEXTRA2", new DecryParams (12, 0x131CU, 0xA740U, 7,  0x9CU, 0xCEU, 3, 0xB3, 3, 0x59, 0x77)),
-            new Item ("KoiChoco",     new DecryParams (12, 0x1704U, 0xA140U, 7,  0x155U, 0xDCU, 2, 0xEB, 31, 0x57, 0xA5))
-        };
     }
 }

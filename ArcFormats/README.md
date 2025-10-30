@@ -216,8 +216,7 @@ public override ArcFile TryOpen (ArcView file)
     var dir = new List<Entry>();
 
     // When reading the archive index
-    var entry = new MyEncryptedEntry
-    {
+    var entry = new MyEncryptedEntry {
         Name        = "file.dat",
         Offset      =  0x100,
         Size        =  0x100,
@@ -249,8 +248,7 @@ public override ArcFile TryOpen (ArcView file)
     var dir = new List<Entry>();
 
     // When reading the archive index
-    var entry = new PackedEntry
-    {
+    var entry = new PackedEntry {
         Name         = "file.dat",
         Offset       =  0x100,
         Size         =  0x100,
@@ -293,8 +291,7 @@ public class MyImageFormat : ImageFormat
     {
         var header = file.ReadHeader (0x10);
 
-        return new ImageMetaData
-        {
+        return new ImageMetaData {
             Width  = header.ToUInt32 (4),
             Height = header.ToUInt32 (8),
             BPP    = header.ToInt32 (12)
@@ -375,8 +372,7 @@ public class MyAudioFormat : AudioFormat
         if (!header.AsciiEqual (0, "MAAU\0"))
             return null;
 
-        var format = new WaveFormat
-        {
+        var format = new WaveFormat {
             FormatTag        = 1,  // PCM
             Channels         = header.ToUInt16 (4),
             SamplesPerSecond = header.ToUInt32 (6),
@@ -408,8 +404,7 @@ public class MyAudioDecoder : SoundInput
     public MyAudioDecoder (Stream input) : base (input)
     {
         // Initialize format
-        this.Format = new WaveFormat
-        {
+        this.Format = new WaveFormat {
             FormatTag        = 1,
             Channels         = 2,
             SamplesPerSecond = 44100,
@@ -455,8 +450,7 @@ public class MyVideoFormat : VideoFormat
         if (!header.AsciiEqual (0, "MVD\0"))
             return null;
 
-        return new VideoMetaData
-        {
+        return new VideoMetaData {
             Width           = header.ToUInt32 (4),
             Height          = header.ToUInt32 (8),
             Duration        = header.ToInt64  (12),
@@ -540,10 +534,9 @@ public class MyFormatScheme : ResourceScheme
 }
 
     // In your format class
-    static readonly MyFormatScheme DefaultScheme = new MyFormatScheme
+    static MyFormatScheme DefaultScheme = new MyFormatScheme
     {
-        KnownKeys = new Dictionary<string, byte[]>
-        {
+        KnownKeys = new Dictionary<string, byte[]> {
             // If no Formats.dat scheme is provided we'll take data from here
             { "GameTitle1", new byte[] { 0x12, 0x34, 0x56 } },
             { "GameTitle2", new byte[] { 0xAB, 0xCD, 0xEF } }

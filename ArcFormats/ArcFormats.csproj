@@ -54,6 +54,7 @@
   <ItemGroup>
     <Reference Include="WindowsBase" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime.Serialization" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
     <PackageReference Include="System.Buffers" Version="4.6.1" />
