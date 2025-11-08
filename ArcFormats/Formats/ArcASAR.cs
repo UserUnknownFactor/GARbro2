@@ -19,9 +19,11 @@ namespace GameRes.Formats.Electron
     {
         public override string         Tag { get { return "ASAR"; } }
         public override string Description { get { return "Electron ASAR archive"; } }
-        public override uint     Signature { get { return 0; } }
-        public override bool  IsHierarchic { get { return true; } }
-        public override bool      CanWrite { get { return false; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  true; } }
+        public override bool      CanWrite { get { return  false; } }
+
+        const uint MIN_JSON_LENGTH = 64;
 
         public AsarOpener ()
         {
@@ -30,7 +32,7 @@ namespace GameRes.Formats.Electron
 
         public override ArcFile TryOpen (ArcView file)
         {
-            if (file.MaxOffset < 24)
+            if (file.MaxOffset < 16 + MIN_JSON_LENGTH)
                 return null;
 
             int header_size = file.View.ReadInt32 (0);
@@ -38,6 +40,8 @@ namespace GameRes.Formats.Electron
                 return null;
 
             uint json_length = file.View.ReadUInt32(4) - 8;
+            if (json_length < MIN_JSON_LENGTH || json_length >= file.MaxOffset - MIN_JSON_LENGTH)
+                return null;
             var json_data = file.View.ReadBytes (16, json_length);
 
             byte zeros = 0;
@@ -101,27 +105,19 @@ namespace GameRes.Formats.Electron
                     var entry = new AsarEntry { Name = full_path };
 
                     if (value.ContainsKey ("size"))
-                    {
                         entry.Size = value["size"].Value<uint>();
-                    }
 
                     if (value.ContainsKey ("offset"))
                     {
                         var offset_token = value["offset"];
                         if (offset_token.Type == JTokenType.String)
-                        {
                             entry.Offset = base_offset + long.Parse (offset_token.Value<string>());
-                        }
                         else
-                        {
                             entry.Offset = base_offset + offset_token.Value<long>();
-                        }
                     }
 
                     if (value.ContainsKey ("unpacked"))
-                    {
                         entry.IsUnpacked = value["unpacked"].Value<bool>();
-                    }
 
                     entry.Type = FormatCatalog.Instance.GetTypeFromName (full_path);
 
@@ -138,13 +134,9 @@ namespace GameRes.Formats.Electron
                 string unpacked_path = arc.File.Name + ".unpacked";
                 string file_path = Path.Combine (unpacked_path, entry.Name.Replace ('/', Path.DirectorySeparatorChar));
                 if (File.Exists (file_path))
-                {
                     return new FileStream (file_path, FileMode.Open, FileAccess.Read);
-                }
                 else
-                {
                     throw new FileNotFoundException ($"Unpacked file not found: {file_path}");
-                }
             }
 
             return base.OpenEntry (arc, entry);

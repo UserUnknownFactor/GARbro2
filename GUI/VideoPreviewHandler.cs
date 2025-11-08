@@ -51,39 +51,57 @@ namespace GARbro.GUI
         public VideoPreviewControl (MainWindow mainWindow)
         {
             _mainWindow = mainWindow;
+
             try
             {
                 MFStartup (MF_VERSION, MFSTARTUP_FULL);
             }
-            catch { }
-
-            mediaPlayer = new MediaElement
+            catch (Exception ex)
             {
-                LoadedBehavior   = MediaState.Manual,
-                UnloadedBehavior = MediaState.Stop,
-                Stretch          = Stretch.Uniform,
-                IsMuted          = false,
-                Volume           = Math.Min (Math.Max (lastVolume, 0f), 1f),
-                ScrubbingEnabled = true
-            };
+                Trace.WriteLine ($"Media Foundation initialization failed:\n  {ex.Message}");
+            }
 
-            // Enable hardware acceleration if available
-            RenderOptions.SetBitmapScalingMode (mediaPlayer, BitmapScalingMode.HighQuality);
-
-            mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
-            mediaPlayer.MediaEnded  += MediaPlayer_MediaEnded;
-            mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
-
-            mediaPlayer.Loaded += (s, e) =>
+            try
             {
-                if (IsPlaying && _mainWindow != null)
+                mediaPlayer = new MediaElement
                 {
-                    Task.Delay(400).ContinueWith(_ => 
-                        _mainWindow?.Dispatcher.Invoke(() => _mainWindow.SetFileStatus("")));
-                }
-            };
+                    LoadedBehavior   = MediaState.Manual,
+                    UnloadedBehavior = MediaState.Stop,
+                    Stretch          = Stretch.Uniform,
+                    IsMuted          = false,
+                    Volume           = Math.Min (Math.Max (lastVolume, 0f), 1f),
+                    ScrubbingEnabled = true
+                };
 
-            Children.Add (mediaPlayer);
+                // Enable hardware acceleration if available
+                RenderOptions.SetBitmapScalingMode (mediaPlayer, BitmapScalingMode.HighQuality);
+
+                mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
+                mediaPlayer.MediaEnded  += MediaPlayer_MediaEnded;
+                mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
+
+                mediaPlayer.Loaded += (s, e) =>
+                {
+                    if (IsPlaying && _mainWindow != null)
+                    {
+                        Task.Delay(400).ContinueWith(_ => 
+                            _mainWindow?.Dispatcher.Invoke(() => _mainWindow.SetFileStatus("")));
+                    }
+                };
+
+                Children.Add (mediaPlayer);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine ($"Failed to initialize video preview:\n  {ex.Message}");
+                var errorText = new TextBlock {
+                    Text = "Video preview unavailable:\n" + ex.Message,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = Brushes.Red,
+                    Margin = new Thickness(10)
+                };
+                Children.Add(errorText);
+            }
 
             positionTimer = new DispatcherTimer();
             positionTimer.Interval = TimeSpan.FromMilliseconds (DISPLAY_TIMER_MS);
@@ -271,7 +289,6 @@ namespace GARbro.GUI
                 });
             }
         }
-               
 
         private async void CleanupPendingFiles ()
         {
@@ -364,14 +381,14 @@ namespace GARbro.GUI
                 if (e.ErrorException.HResult == unchecked((int)0xC00D11B1))
                     errorMsg += "\n\n" + Localization._T ("AdditionalCodecsNeeded");
             }
-
             if (!string.IsNullOrEmpty (currentVideoFile))
                 TryAlternativePlayer (currentVideoFile, errorMsg);
             else
             {
                 CleanupVideoAsync();
-                throw new InvalidFormatException (errorMsg);
+                SetVideoStatus (errorMsg);
             }
+            e.Handled = true;
         }
 
         private void PositionTimer_Tick (object sender, EventArgs e)
