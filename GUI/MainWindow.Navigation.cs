@@ -363,7 +363,15 @@ namespace GARbro.GUI
             }
             catch (Exception ex)
             {
-                SetFileStatus (string.Format ("{0}: {1}", Path.GetFileName (path), ex.Message));
+                try  { 
+                    if (path.Length >= 32768) throw new Exception("Impossibly long path");
+                    path = string.Format ("{0}: ", Path.GetFileName (path)); 
+                } 
+                catch 
+                { 
+                    path = "";
+                }
+                SetFileStatus (string.Format ("{0}{1}", path, ex.Message));
                 return null;
             }
         }

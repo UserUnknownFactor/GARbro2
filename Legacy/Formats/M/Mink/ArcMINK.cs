@@ -24,7 +24,7 @@ namespace GameRes.Formats.Mink
         public override ArcFile TryOpen (ArcView file)
         {
             int count = file.View.ReadInt32 (0);
-            if (!IsSaneCount (count))
+            if (!IsSaneCount (count) || count < 5)
                 return null;
             uint index_offset = file.View.ReadUInt32 (4);
             if (index_offset < 8 || index_offset>= file.MaxOffset)

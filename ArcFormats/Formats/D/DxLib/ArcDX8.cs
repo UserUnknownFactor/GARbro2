@@ -38,6 +38,7 @@ namespace GameRes.Formats.DxLib
     }
 
     [Export(typeof(ArchiveFormat))]
+    [ExportMetadata("Priority", -1)]
     public class Dx8Opener : DxOpener
     {
         public override string         Tag { get { return "DXLIB"; } }

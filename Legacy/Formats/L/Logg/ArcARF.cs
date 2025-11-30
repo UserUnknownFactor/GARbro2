@@ -1,7 +1,9 @@
-using GameRes.Utility;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Text;
+using GameRes.Utility;
 
 // [980417][Logg] Tenshi Kourin
 // [980828][Logg] Kazeiro no Romance
@@ -11,14 +13,17 @@ namespace GameRes.Formats.Logg
     [Export(typeof(ArchiveFormat))]
     public class ArfOpener : ArchiveFormat
     {
-        public override string         Tag => "ARF";
-        public override string Description => "Logg archive file";
-        public override uint     Signature => 0;
-        public override bool  IsHierarchic => true;
-        public override bool      CanWrite => false;
+        public override string         Tag { get { return "ARF"; } }
+        public override string Description { get { return "Logg resource archive"; } }
+        public override uint     Signature { get { return  0; } }
+        public override bool  IsHierarchic { get { return  true; } }
+        public override bool      CanWrite { get { return  false; } }
 
         public override ArcFile TryOpen (ArcView file)
         {
+            if (!file.Name.HasExtension ("ARF"))
+                return null;
+
             int count = file.View.ReadInt32 (0);
             if (!IsSaneCount (count))
                 return null;

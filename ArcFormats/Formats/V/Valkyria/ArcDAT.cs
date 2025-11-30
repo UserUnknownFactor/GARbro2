@@ -17,6 +17,8 @@ namespace GameRes.Formats.Valkyria
 
         public override ArcFile TryOpen (ArcView file)
         {
+            if (!file.Name.HasExtension ("DAT"))
+                return null;
             uint index_size = file.View.ReadUInt32 (0);
             if (0 == index_size)
                 return TryOpenV1 (file);
