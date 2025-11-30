@@ -1,19 +1,19 @@
 # GARbro2 - Visual Novels Resource Browser
 
-Requires [.NET Framework v4.8](https://dotnet.microsoft.com) or newer.
+Requires [.NET Framework v4.8](https://dotnet.microsoft.com).
 
 [Supported formats](https://morkt.github.io/GARbro/supported.html)
 
 [Download latest release](/../../releases/latest)
 
 ## Operation
-Browse through the file system to find the file you're looking for.  If you think it's a game archive, try entering it by pressing the `Enter` key. If GARbro2 recognizes the format, including all formats supported by 7-zip and ImageMagick, its contents will be displayed just like a regular file system.
+Browse through the file system to find the file you're looking for.  If you think it's a game archive, try entering it by pressing the `Enter` key. If GARbro2 recognizes the format, including all formats supported by 7-zip, its contents will be displayed just like a regular file system.
 
-Then, you can preview images, see what spritesheets would look like when animated, and view multiple overlay images combined together.
+Then, you can preview images, including rare formats supported by ImageMagick, see what sprite-sheets would look like when animated and how multiple overlay images would look when combined.
 
-You can also preview sound effects and listen to background music in playback mode similar to a playlist.
+You can also check sound effects and listen to background music in playback mode similar to a playlist.
 
-Some archives are encrypted, so you may be asked for credentials or the name of the game.  If the game is not listed among the presented options, then the archive most likely cannot be opened by the current version of GARbro2.
+Some archives are encrypted, so you may be asked for credentials or the name of the game.  If the game is not listed among the presented options, then the archive likely cannot be opened by the current version of GARbro2.
 
 You can extract files from archives by pressing `F4`. In the process, all images and audio can be converted to common formats if the original format is recognized and the corresponding option is set.
 

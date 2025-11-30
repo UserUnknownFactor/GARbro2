@@ -1,5 +1,7 @@
+using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -15,23 +17,29 @@ namespace GameRes.Formats.Nekotaro
 
         public NcgFormat ()
         {
+            Extensions = new[] { "ncg" }; // NOTE: this format is just too broken to be kept as is
             Signatures = new[] { 0xC8500000u, 0u };
         }
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
+            if (!Extensions.Any (ext => string.Equals (ext,
+                    VFS.GetExtension (file.Name, true), StringComparison.OrdinalIgnoreCase)))
+                return null;
             if (file.Signature == 0x474e5089) // PNG can match this
                 return null;
 
             var header = file.ReadHeader (4);
-            int left = header[0] << 3;
-            int top  = header[1] << 1;
-            int width = header[2] << 3;
+ 
+            int left   = header[0] << 3;
+            int top    = header[1] << 1;
+            int width  = header[2] << 3;
             int height = header[3] << 1;
-            int right = left + width;
+            int right  = left + width;
             int bottom = top + height;
             if (right > 640 || bottom > 400 || 0 == width || 0 == height)
                 return null;
+
             return new ImageMetaData {
                 Width   = (uint)width,
                 Height  = (uint)height,

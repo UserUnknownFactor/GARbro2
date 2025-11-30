@@ -1137,6 +1137,11 @@ namespace GameRes
             return m_vfs.Top.CombinePath (paths);
         }
 
+        public static string Combine (params string[] paths)
+        {
+            return CombinePath (paths);
+        }
+
         public static string GetRelativePath (string fullPath, string basePath)
         {
             if (fullPath.StartsWith (basePath, StringComparison.OrdinalIgnoreCase))

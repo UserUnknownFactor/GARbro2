@@ -1011,7 +1011,7 @@ namespace GameRes.Formats.SRPGStudio
 
         public override ArcFile TryOpen (ArcView file)
         {
-            if (!file.Name.HasExtension (".dat") || !file.Name.Contains ("language"))
+            if (!file.Name.EndsWith ("language.dat"))
                 return null;
 
             try

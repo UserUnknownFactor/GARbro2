@@ -12,7 +12,7 @@ namespace GameRes.Formats.Iso
     /// Pure ISO 9660/Joliet format handler
     /// </summary>
     [Export(typeof(ArchiveFormat))]
-    [ExportMetadata("Priority", 50)]
+    [ExportMetadata("Priority", 10)]
     public class IsoOpener : DiscImageOpener
     {
         public override string         Tag { get { return "ISO"; } }
@@ -62,6 +62,13 @@ namespace GameRes.Formats.Iso
 
         protected override DiscInfo ParseDiscImage (ArcView file)
         {
+            string filePath = file.Name;
+            if (filePath.EndsWith(".mdf", StringComparison.OrdinalIgnoreCase))
+            {
+                string mdsPath = Path.ChangeExtension(filePath, ".mds");
+                if (VFS.FileExists (mdsPath))
+                    return null; // Let MdfOpener handle it
+            }
             long fileLength = file.MaxOffset;
 
             // Need at least 4 seconds worth of data (minimum track size per INF8090)
