@@ -1,5 +1,6 @@
 Original→Singular→Plural1→Plural2→Plural3
 // ArcFormats strings  
+AFAEncryptAffLabel→AFF 암호화→→→
 AMIBaseArchive→기본 아카이브→→→
 AMIBaseTooltip→새 아카이브에는 기본 아카이브의 항목도 포함됩니다.→→→
 AMIChooseBase→기본 아카이브 선택→→→
@@ -7,9 +8,11 @@ AMIDescription→Amaterasu Translations 무브러브 아카이브→→→
 AMINoFiles→AMI 아카이브에 적합한 파일을 찾을 수 없습니다.→→→
 ArcEncryptedNotice→아카이브 내용이 암호화되어 있습니다.¶
 적절한 암호화 방식을 선택하세요.→→→
+DCFMergeWithBase→이미지를 베이스와 결합→→→
+BaseImage→ [베이스: {0}]→→→
 ArcNoEncryption→암호화 없음→→→
 ArcReset→재설정→→→
-GRPDescription→âge 독점 이미지 형식→→→
+GRPDescription→Age 독점 이미지 형식→→→
 GSCDescription→Liar-soft 독점 스크립트 형식→→→
 INTCreationNotice→암호화된 아카이브 생성이 구현되지 않았습니다.→→→
 INTDescription→CatSystem2 엔진 리소스 아카이브→→→
@@ -27,6 +30,7 @@ MsgCreationKeyRequired→아카이브 생성에는 암호화 키가 필요합니
 MsgEncNotImplemented→암호화 방법이 구현되지 않음→→→
 MsgExtensionTooLong→파일 이름 확장자가 너무 깁니다.→→→
 MsgFileNameTooLong→파일 이름이 너무 깁니다→→→
+MsgFileAlreadyExists→파일이 이미 존재합니다→→→
 MsgIllegalCharacters→파일 이름에 잘못된 문자가 포함되어 있습니다→→→
 MsgInvalidImageFormat→{0}: 이미지 형식을 인식할 수 없습니다.→→→
 MsgInvalidVersion→잘못된 아카이브 버전이 지정되었습니다.→→→
@@ -34,6 +38,7 @@ MsgNoExtension→확장자가 없는 파일 이름.→→→
 MsgTooManyFiles→파일 수가 아카이브 제한을 초과합니다.→→→
 MsgUpdatingIndex→색인 업데이트 중...→→→
 MsgWritingIndex→색인 쓰기 중...→→→
+MsgUnidentifiedData→식별되지 않은 데이터 파일→→→
 NPACompressContents→내용 압축→→→
 NPADescription→Nitro+ 리소스 아카이브→→→
 NPAKeys→암호화 키¶
@@ -45,6 +50,12 @@ ONSCompression→압축→→→
 ONSCompressionNone→없음→→→
 PDDescription→Flying Shine 리소스 아카이브→→→
 PDScrambleContents→내용 스크램블→→→
+CompressionLevelLabel→아카이브 압축:→→→
+VersionLabel→아카이브 버전:→→→
+SchemeLabel→암호화 방식:→→→
+KeyLabel→게임 키:→→→
+QLIECompressLabel→파일 압축 (BPE; 매우 느림)→→→
+DefaultScheme→(없음)→→→
 RPADescription→Ren'Py 게임 엔진 아카이브→→→
 RPALabelKey→32비트 키→→→
 SCRDescription→Amaterasu Translations 무브러브 스크립트 파일→→→
@@ -74,7 +85,6 @@ ArcTitleOrPassword→제목을 선택하거나 암호를 입력→→→
 RPMEncryptedNotice→파일이 RPM 리소스 아카이브와 유사하지만¶
 암호화 키 추측에 실패했습니다.¶
 적절한 암호화 방식을 선택하세요.→→→
-QLIEDefaultScheme→기본 암호화 방식 사용→→→
 INTChooseExe→게임 실행 파일 선택→→→
 INTExeButton→EXE 확인→→→
 INTExeFiles→실행 파일→→→
@@ -104,6 +114,9 @@ DefaultEncoding→기본 파일 이름 인코딩→→→
 ODNAudioSampleRate→기본 오디오 샘플링 속도→→→
 Tim2AlphaFormat→Tim2 이미지 알파 형식을 선택하세요.¶
 파일에서 올바르게 읽을 수 없습니다.→→→
+Output Format→출력 형식→→→
+Image format to use→사용할 이미지 형식→→→
+Cannot locate Texture2D data→Texture2D 데이터를 찾을 수 없습니다→→→
 // GUI strings
 ButtonCancel→취소→→→
 ButtonExtract→추출→→→
@@ -132,7 +145,7 @@ LabelArchiveName→아카이브 이름→→→
 LabelArchiveOptions→아카이브 옵션→→→
 LabelExtractAllTo→{0}에서 파일 추출 위치→→→
 LabelExtractFileTo→{0} 추출 위치→→→
-MenuAbout→Game Resource browser 정보→→→
+MenuAbout→Game Resource browser 2 정보→→→
 MsgDeletedItem→{0} 삭제됨→→→
 MsgDirectoryNotFound→디렉터리를 찾을 수 없음→→→
 MsgEmptyArchive→아카이브가 비어 있음→→→
@@ -152,14 +165,14 @@ MsgVersion→버전 {0}→→→
 TextAboutBuiltin→[내장]→→→
 TextAboutArchives→아카이브→→→
 TextAboutImages→이미지→→→
-TextAboutTitle→Game Resource browser 정보→→→
+TextAboutTitle→Game Resource browser 2 정보→→→
 TextAllFiles→모든 파일→→→
 TextAsIs→그대로→→→
 TextChooseArchive→아카이브 위치 선택→→→
 TextChooseDestDir→대상 디렉터리 선택→→→
 TextCreateArchive→아카이브 만들기→→→
 TextCreateArchiveError→아카이브 생성 오류→→→
-Type_directory→<디렉터리>→→→
+Type_directory→<폴더>→→→
 TextEncoding→텍스트 인코딩→→→
 TextExtractImages→이미지 추출→→→
 TextExtractText→텍스트 추출→→→
@@ -179,17 +192,18 @@ MsgCreatingArchive→아카이브 {0} 만드는 중→→→
 MenuOpen→열기...→→→
 MenuRecent→최근 파일→→→
 MsgChooseFiles→추출할 파일 선택→→→
-MenuExit→종료(_X)→→→
+MenuExit→종료→→→
 MenuFile→파일(_F)→→→
 MenuHelp→도움말(_H)→→→
 MsgFiles→{0}개 파일→→→
 MsgConfirmDeleteFiles→이 파일들을 삭제하시겠습니까?→→→
 TextDeleteFiles→파일 삭제→→→
 MsgDeletedItems→{0}개 파일 삭제됨→→→
-MenuFitWindow→미리보기 창을 이미지에 맞춤(_W)→→→
-MenuToggleMenuBar→주 메뉴 표시줄 표시/숨기기(_M)→→→
-MenuToggleStatusBar→상태 표시줄 표시/숨기기(_S)→→→
-MenuToggleToolBar→도구 모음 표시/숨기기(_T)→→→
+MenuFitWindow→미리보기 창을 이미지에 맞춤→→→
+MenuCropTransparent→투명한 이미지 영역 자르기→→→
+MenuToggleMenuBar→주 메뉴 표시줄 표시/숨기기→→→
+MenuToggleStatusBar→상태 표시줄 표시/숨기기→→→
+MenuToggleToolBar→도구 모음 표시/숨기기→→→
 MenuView→보기(_V)→→→
 CtxMenuConvert→멀티미디어 변환...→→→
 ButtonConvert→변환→→→
@@ -203,6 +217,7 @@ TextConvertAudio→오디오를 일반 형식으로 변환→→→
 TextExtractAudio→오디오 추출→→→
 TooltipAudioFormats→WAV, MP3 또는 OGG→→→
 TextAboutAudio→오디오→→→
+TextAboutVideo→비디오→→→
 TextAboutLicense→라이센스→→→
 MsgUnableInterpretAudio→오디오 형식을 해석할 수 없음→→→
 MsgNoMediaFiles→선택된 미디어 파일이 없습니다.→→→
@@ -233,7 +248,7 @@ TextExtractionError→파일 추출 오류→→→
 ButtonOverwrite→덮어쓰기(_O)→→→
 ButtonRename→이름 바꾸기(_R)→→→
 ButtonSkip→건너뛰기(_S)→→→
-LabelApplyToAll→모든 중복 파일에 적용(_P)→→→
+LabelApplyToAll→모든 중복 파일에 적용→→→
 LabelDuplicateFileQuestion→어떻게 하시겠습니까?→→→
 TextErrorConverting→파일 변환 중 오류 발생¶
 {0}¶
@@ -252,11 +267,12 @@ TextUpdateTitle→응용 프로그램 업데이트→→→
 TextVisitPage→다운로드 페이지 방문→→→
 MsgDownloadFailed→업데이트 다운로드 실패.→→→
 ButtonApply→적용→→→
-MenuPreferences→기본 설정(_P)→→→
+MenuPreferences→기본 설정→→→
 TextFormats→형식→→→
 TextPreferences→기본 설정→→→
 TextViewer→이미지 뷰어→→→
-winDownScaleImage→큰 이미지를 창에 맞게 축소→→→
+winDownScaleImage→큰 이미지를 창에 맞게 축소     →→→
+winAutoCropTransparent→이미지 픽셀 주변의 큰 투명 영역 자르기→→→
 MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
 TooltipStop→중지→→→
 TooltipPause→일시 정지→→→
@@ -276,11 +292,14 @@ ErrorLoadingVideo→비디오 로드 오류: {0}→→→
 Stream→스트림→→→
 VideoInfo→비디오: {0}→→→
 VideoCodecInfo→비디오: {0} | 코덱: {1} | 해상도: {2}x{3} | FPS: {4:F1}→→→
-VideoPlaybackErrorText→내부 플레이어로 비디오를 재생할 수 없습니다: {0}. 기본 비디오 플레이어로 열시겠습니까?→→→
+VideoPlaybackErrorText→내부 플레이어로 비디오를 재생할 수 없습니다: {0}.¶
+기본 비디오 플레이어로 열시겠습니까?→→→
 VideoPlaybackError→비디오 재생 오류→→→
 MediaFailedToLoad→미디어 로드 실패→→→
+CodecNotFound→비디오 코덱을 찾을 수 없습니다→→→
 AdditionalCodecsNeeded→이 비디오 형식은 시스템에 추가 코덱을 설치해야 합니다. K-Lite Codec Pack과 같은 코덱 팩 설치를 고려하세요.→→→
 Unknown→알 수 없음→→→
+FailedToReadScript→스크립트 데이터 읽기 실패→→→
 FailedToGenerateHexDump→16진수 덤프 생성 실패: →→→
 HexHeader0→ 오프셋   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
 HexHeader1→--------  -----------------------------------------------  | ----------------→→→
@@ -291,6 +310,8 @@ Archive name is empty→아카이브 이름이 비어 있습니다→→→
 Format is not selected→형식이 선택되지 않았습니다→→→
 Converted→{0} 변환됨→→→
 FilterItems→필터: {1}개 항목 중 {0}→→→
+FilterNoMatchingEntries→일치하는 항목 없음→→→
+DeleteFailed→삭제 작업 실패.→→→
 PlayAnimation→애니메이션 재생→→→
 PauseAnimation→애니메이션 일시 정지→→→
 SpriteSheetFrames→스프라이트 시트: {0}프레임 추출됨→→→
@@ -351,3 +372,12 @@ MsgInvalidFileName→잘못된 파일 이름→→→
 MsgInvalidFormat→잘못된 파일 형식→→→
 MsgUnknownEncryption→알 수 없는 암호화 방식→→→
 MsgUnknownFormat→파일을 리소스 아카이브로 열 수 없음→→→
+PackingFileN→{0} 패킹 중→→→
+PackingFiles→파일 패킹 중...→→→
+PackingTagFailed→{0} 아카이브에 파일 패킹 실패→→→
+PNGSaveMetadataToFile→사용자 정의 메타데이터를 폴더별 .metadata 파일에 저장→→→
+WritingArchive→아카이브 쓰는 중...→→→
+FinalizingArchive→아카이브 마무리 중...→→→
+PackingComplete→패킹 완료→→→
+FileIofN→ - 파일 {0}/{1}→→→
+NoImageDecoder→이미지 디코더를 찾을 수 없습니다→→→

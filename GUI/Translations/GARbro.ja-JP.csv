@@ -1,5 +1,6 @@
 Original→Singular→Plural1→Plural2→Plural3
 // ArcFormats strings
+AFAEncryptAffLabel→AFFを暗号化→→→
 AMIBaseArchive→ベースアーカイブ→→→
 AMIBaseTooltip→新しいアーカイブには、ベースアーカイブのエントリも含まれます。→→→
 AMIChooseBase→ベースアーカイブを選択→→→
@@ -7,6 +8,8 @@ AMIDescription→アマテラス翻訳 マブラヴアーカイブ→→→
 AMINoFiles→AMIアーカイブに適したファイルが見つかりません。→→→
 ArcEncryptedNotice→アーカイブのコンテンツは暗号化されています。¶
 適切な暗号化スキームを選択してください。→→→
+DCFMergeWithBase→画像をベースと結合→→→
+BaseImage→ [ベース：{0}]→→→
 ArcNoEncryption→暗号化なし→→→
 ArcReset→リセット→→→
 GRPDescription→âge独自の画像形式→→→
@@ -21,19 +24,21 @@ LabelPassphrase→パスワード：→→→
 LabelScheme→スキーム→→→
 LWGDescription→Liar-soft画像アーカイブ→→→
 MsgAddingFile→ファイルを追加中→→→
-MsgCalculatingChecksum→チェックサムを計算中...→→→
-MsgCompressingIndex→インデックスを圧縮中...→→→
+MsgCalculatingChecksum→チェックサムを計算中…→→→
+MsgCompressingIndex→インデックスを圧縮中…→→→
 MsgCreationKeyRequired→アーカイブ作成には暗号化キーが必要です。→→→
 MsgEncNotImplemented→暗号化方式は実装されていません→→→
 MsgExtensionTooLong→ファイル名の拡張子が長すぎます。→→→
 MsgFileNameTooLong→ファイル名が長すぎます→→→
+MsgFileAlreadyExists→ファイルは既に存在します→→→
 MsgIllegalCharacters→ファイル名に無効な文字が含まれています→→→
 MsgInvalidImageFormat→{0}：画像形式が認識されません。→→→
 MsgInvalidVersion→無効なアーカイブバージョンが指定されました。→→→
 MsgNoExtension→拡張子のないファイル名。→→→
 MsgTooManyFiles→ファイル数がアーカイブの制限を超えています。→→→
-MsgUpdatingIndex→インデックスを更新中...→→→
-MsgWritingIndex→インデックスを書き込み中...→→→
+MsgUpdatingIndex→インデックスを更新中…→→→
+MsgWritingIndex→インデックスを書き込み中…→→→
+MsgUnidentifiedData→不明なデータファイル→→→
 NPACompressContents→コンテンツを圧縮→→→
 NPADescription→Nitro+リソースアーカイブ→→→
 NPAKeys→暗号化キー¶
@@ -45,6 +50,12 @@ ONSCompression→圧縮→→→
 ONSCompressionNone→なし→→→
 PDDescription→Flying Shineリソースアーカイブ→→→
 PDScrambleContents→コンテンツをスクランブル→→→
+CompressionLevelLabel→アーカイブ圧縮：→→→
+VersionLabel→アーカイブバージョン：→→→
+SchemeLabel→暗号化方式：→→→
+KeyLabel→ゲームキー：→→→
+QLIECompressLabel→ファイルを圧縮(BPE;非常に遅い)→→→
+DefaultScheme→(なし)→→→
 RPADescription→Ren'Pyゲームエンジンアーカイブ→→→
 RPALabelKey→32ビットキー→→→
 SCRDescription→アマテラス翻訳 マブラヴスクリプトファイル→→→
@@ -74,7 +85,6 @@ ArcTitleOrPassword→タイトルを選択するかパスワードを入力→�
 RPMEncryptedNotice→ファイルはRPMリソースアーカイブに似ていますが、¶
 暗号化キーの推測に失敗しました。¶
 適切な暗号化スキームを選択してください。→→→
-QLIEDefaultScheme→デフォルトの暗号化スキームを使用→→→
 INTChooseExe→ゲーム実行ファイルを選択→→→
 INTExeButton→EXEをチェック→→→
 INTExeFiles→実行可能ファイル→→→
@@ -104,13 +114,16 @@ DefaultEncoding→デフォルトファイル名エンコーディング→→�
 ODNAudioSampleRate→デフォルトオーディオサンプリングレート→→→
 Tim2AlphaFormat→Tim2画像アルファ形式を選択してください。¶
 ファイルから正しく読み取ることができません。→→→
+Output Format→出力形式→→→
+Image format to use→使用する画像形式→→→
+Cannot locate Texture2D data→Texture2Dデータが見つかりません→→→
 // GUI strings
 ButtonCancel→キャンセル→→→
 ButtonExtract→抽出→→→
 ButtonOK→OK→→→
 CtxMenuClose→閉じる(_C)→→→
 CtxMenuCopy→コピー→→→
-CtxMenuCreate→アーカイブを作成...→→→
+CtxMenuCreate→アーカイブを作成…→→→
 CtxMenuCut→切り取り→→→
 CtxMenuDelete→削除(_D)→→→
 CtxMenuExplorer→エクスプローラで参照(_E)→→→
@@ -132,7 +145,7 @@ LabelArchiveName→アーカイブ名→→→
 LabelArchiveOptions→アーカイブオプション→→→
 LabelExtractAllTo→{0}からファイルを抽出先：→→→
 LabelExtractFileTo→{0}を抽出先：→→→
-MenuAbout→Game Resource browserについて→→→
+MenuAbout→Game Resource browser 2について→→→
 MsgDeletedItem→{0}を削除しました→→→
 MsgDirectoryNotFound→ディレクトリが見つかりません→→→
 MsgEmptyArchive→アーカイブは空です→→→
@@ -152,14 +165,14 @@ MsgVersion→バージョン {0}→→→
 TextAboutBuiltin→[組み込み]→→→
 TextAboutArchives→アーカイブ→→→
 TextAboutImages→画像→→→
-TextAboutTitle→Game Resource browserについて→→→
+TextAboutTitle→Game Resource browser 2について→→→
 TextAllFiles→すべてのファイル→→→
 TextAsIs→そのまま→→→
 TextChooseArchive→アーカイブの場所を選択→→→
 TextChooseDestDir→宛先ディレクトリを選択→→→
 TextCreateArchive→アーカイブを作成→→→
 TextCreateArchiveError→アーカイブ作成エラー→→→
-Type_directory→<DIR>→→→
+Type_directory→<ディレクトリ>→→→
 TextEncoding→テキストエンコーディング→→→
 TextExtractImages→画像を抽出→→→
 TextExtractText→テキストを抽出→→→
@@ -167,7 +180,7 @@ TextExtractTitle→アーカイブから抽出→→→
 TextParametersTitle→アーカイブパラメータ→→→
 TextSaveAs→名前を付けて保存→→→
 TextSaveImagesAs→画像を名前を付けて保存→→→
-TextTitle→Game Resource browser→→→
+TextTitle→Game Resource browser 2→→→
 TooltipBack→戻る→→→
 TooltipForward→進む→→→
 MsgOverwrite→ファイル {0}¶
@@ -176,22 +189,23 @@ MsgOverwrite→ファイル {0}¶
 上書きしますか？→→→
 TextConfirmOverwrite→上書きの確認→→→
 MsgCreatingArchive→アーカイブ{0}を作成中→→→
-MenuOpen→開く...→→→
+MenuOpen→開く…→→→
 MenuRecent→最近使ったファイル→→→
 MsgChooseFiles→抽出するファイルを選択→→→
-MenuExit→終了(_X)→→→
+MenuExit→終了→→→
 MenuFile→ファイル(_F)→→→
 MenuHelp→ヘルプ(_H)→→→
 MsgFiles→{0}個のファイル→→→
 MsgConfirmDeleteFiles→これらのファイルを削除してもよろしいですか？→→→
 TextDeleteFiles→ファイルを削除→→→
 MsgDeletedItems→{0}個のファイルを削除しました→→→
-MenuFitWindow→プレビューウィンドウを画像に合わせる(_W)→→→
-MenuToggleMenuBar→メインメニューバーの表示/非表示(_M)→→→
-MenuToggleStatusBar→ステータスバーの表示/非表示(_S)→→→
-MenuToggleToolBar→ツールバーの表示/非表示(_T)→→→
+MenuFitWindow→プレビューウィンドウを画像に合わせる→→→
+MenuCropTransparent→透明な画像領域を切り取る→→→
+MenuToggleMenuBar→メインメニューバーの表示/非表示→→→
+MenuToggleStatusBar→ステータスバーの表示/非表示→→→
+MenuToggleToolBar→ツールバーの表示/非表示→→→
 MenuView→表示(_V)→→→
-CtxMenuConvert→マルチメディアを変換...→→→
+CtxMenuConvert→マルチメディアを変換…→→→
 ButtonConvert→変換→→→
 LabelImageDestinationFormat→画像の変換先形式を選択：→→→
 LabelAudioDestinationFormat→オーディオの変換先形式を選択：→→→
@@ -203,6 +217,7 @@ TextConvertAudio→オーディオを一般形式に変換→→→
 TextExtractAudio→オーディオを抽出→→→
 TooltipAudioFormats→WAV、MP3、またはOGG→→→
 TextAboutAudio→オーディオ→→→
+TextAboutVideo→ビデオ→→→
 TextAboutLicense→ライセンス→→→
 MsgUnableInterpretAudio→オーディオ形式を解釈できません→→→
 MsgNoMediaFiles→メディアファイルが選択されていません。→→→
@@ -225,7 +240,7 @@ Type_video→ビデオ→→→
 Type_NONE→なし→→→
 LabelDestinationDir→宛先ディレクトリ：→→→
 LabelDevSite→開発サイト→→→
-CtxMenuSelectByMask→マスクでファイルを選択...→→→
+CtxMenuSelectByMask→マスクでファイルを選択…→→→
 ButtonAbort→中止(_A)→→→
 ButtonContinue→続行(_C)→→→
 LabelIgnoreErrors→以降のエラーを無視(_I)→→→
@@ -233,7 +248,7 @@ TextExtractionError→ファイル抽出エラー→→→
 ButtonOverwrite→上書き(_O)→→→
 ButtonRename→名前変更(_R)→→→
 ButtonSkip→スキップ(_S)→→→
-LabelApplyToAll→すべての重複ファイルに適用(_P)→→→
+LabelApplyToAll→すべての重複ファイルに適用→→→
 LabelDuplicateFileQuestion→どうしますか？→→→
 TextErrorConverting→ファイルの変換中にエラーが発生しました¶
 {0}¶
@@ -241,7 +256,7 @@ TextErrorConverting→ファイルの変換中にエラーが発生しました�
 TextFileAlreadyExists→ファイル{0}は宛先フォルダに既に存在します。→→→
 ButtonDownload→ダウンロード(_D)→→→
 LabelReleaseNotes→リリースノート→→→
-MenuCheckUpdates→更新を確認(_C)...→→→
+MenuCheckUpdates→更新を確認(_C)…→→→
 MsgNoUpdates→現在利用可能な更新はありません。→→→
 MsgUpdateAvailable→形式データベースの更新が利用可能です。→→→
 MsgUpdateComplete→形式データベースが更新されました。→→→
@@ -252,11 +267,12 @@ TextUpdateTitle→アプリケーション更新→→→
 TextVisitPage→ダウンロードページを訪問→→→
 MsgDownloadFailed→更新のダウンロードに失敗しました。→→→
 ButtonApply→適用→→→
-MenuPreferences→設定(_P)→→→
+MenuPreferences→設定→→→
 TextFormats→形式→→→
 TextPreferences→設定→→→
 TextViewer→画像ビューア→→→
 winDownScaleImage→大きな画像をウィンドウに合わせて縮小→→→
+winAutoCropTransparent→画像ピクセル周囲の大きな透明領域を切り取る→→→
 MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
 TooltipStop→停止→→→
 TooltipPause→一時停止→→→
@@ -276,11 +292,14 @@ ErrorLoadingVideo→ビデオの読み込みエラー：{0}→→→
 Stream→ストリーム→→→
 VideoInfo→ビデオ：{0}→→→
 VideoCodecInfo→ビデオ：{0} | コーデック：{1} | 解像度：{2}x{3} | FPS：{4:F1}→→→
-VideoPlaybackErrorText→内部プレーヤーでビデオを再生できませんでした：{0}。デフォルトのビデオプレーヤーで開きますか？→→→
+VideoPlaybackErrorText→内部プレーヤーでビデオを再生できませんでした：{0}。¶
+デフォルトのビデオプレーヤーで開きますか？→→→
 VideoPlaybackError→ビデオ再生エラー→→→
 MediaFailedToLoad→メディアの読み込みに失敗しました→→→
+CodecNotFound→ビデオコーデックが見つかりません→→→
 AdditionalCodecsNeeded→このビデオ形式には、システムに追加のコーデックをインストールする必要があります。K-Lite Codec Packなどのコーデックパックのインストールを検討してください。→→→
 Unknown→不明→→→
+FailedToReadScript→スクリプトデータの読み取りに失敗しました→→→
 FailedToGenerateHexDump→16進ダンプの生成に失敗しました：→→→
 HexHeader0→ オフセット  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
 HexHeader1→--------  -----------------------------------------------  | ----------------→→→
@@ -291,12 +310,14 @@ Archive name is empty→アーカイブ名が空です→→→
 Format is not selected→フォーマットが選択されていません→→→
 Converted→{0}を変換しました→→→
 FilterItems→フィルタ：{1}項目中{0}→→→
+FilterNoMatchingEntries→一致するエントリがありません→→→
+DeleteFailed→削除操作に失敗しました。→→→
 PlayAnimation→アニメーションを再生→→→
 PauseAnimation→アニメーションを一時停止→→→
 SpriteSheetFrames→スプライトシート：{0}フレーム抽出→→→
 AutoDetectedGrid→自動検出：{0}x{1}グリッドの{2}x{3}画像→→→
 CouldNotDetectSprite→スプライトレイアウトを検出できませんでした→→→
-LoadingFile→{0}を読み込み中...→→→
+LoadingFile→{0}を読み込み中…→→→
 LoadingFailure→{0}の読み込みに失敗しました：{1}→→→
 NoImagesSelected→画像が選択されていません→→→
 AnimationText→アニメーション：→→→
@@ -325,7 +346,7 @@ ImageSaveFilter→PNG 画像|*.png|BMP 画像|*.bmp|JPEG 画像|*.jpg→→→
 MsgExportedTo→{0} にエクスポートされました→→→
 MsgExportFail→エクスポートに失敗しました：{0}→→→
 SelectOverlayImages→オーバーレイする画像を選択してください→→→
-OverlayLayers→オーバーレイモード： {0} レイヤー→→→
+OverlayLayers→オーバーレイモード：{0}レイヤー→→→
 nth_layer→{0}レイヤー→→→
 n_frames→（{0}フレーム）→→→
 Real encoding→実際のエンコード→→→
@@ -340,8 +361,7 @@ Overlays→オーバーレイ→→→
 Opacity→不透明度：→→→
 KnownPasswords→--- 既知のパスワード ---→→→
 // GameRes strings
-BMPExtensionsDesc→透明度サポートなど、¶
-さまざまな拡張機能を有効にします。→→→
+BMPExtensionsDesc→透明度サポートなど、さまざまな拡張機能を有効にします。→→→
 BMPExtensionsText→BMP形式拡張機能を有効にする→→→
 JPEGQualityText→JPEG圧縮品質→→→
 MsgFileIsEmpty→ファイルが空です→→→
@@ -351,3 +371,12 @@ MsgInvalidFileName→無効なファイル名→→→
 MsgInvalidFormat→無効なファイル形式→→→
 MsgUnknownEncryption→不明な暗号化スキーム→→→
 MsgUnknownFormat→ファイルをリソースアーカイブとして開けませんでした→→→
+PackingFileN→{0}をパック中→→→
+PackingFiles→ファイルをパック中…→→→
+PackingTagFailed→{0}アーカイブへのファイルのパックに失敗しました→→→
+PNGSaveMetadataToFile→カスタムメタデータをフォルダごとの.metadataファイルに保存→→→
+WritingArchive→アーカイブを書き込み中…→→→
+FinalizingArchive→アーカイブを完了中…→→→
+PackingComplete→パック完了→→→
+FileIofN→-ファイル{0}/{1}→→→
+NoImageDecoder→画像デコーダーが見つかりません→→→

@@ -1,6 +1,7 @@
 ﻿using GameRes.Compression;
 using GameRes.Utility;
 using System;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,15 +15,19 @@ namespace GameRes.Formats.KiriKiri
     [Serializable]
     public class HxIndexKey
     {
-        public byte[] Key1; // 32 bytes
-        public byte[] Key2; // 16 bytes
+        [Description("32 bytes index key 1")]
+        public byte[] Key1;
+        [Description("16 bytes index key 2")]
+        public byte[] Key2;
     }
 
     [Serializable]
     public class HxCrypt : CxEncryption
     {
-        public byte[]  IndexKey1; // 32 bytes
-        public byte[]  IndexKey2; // 16 bytes
+        [Description("32 bytes index key 1")]
+        public byte[]  IndexKey1;
+        [Description("16 bytes index key 2")]
+        public byte[]  IndexKey2;
         public ulong   FilterKey;
         public int     RandomType;
         public string  NamesFile;

@@ -1,5 +1,6 @@
 Original→Singular→Plural1→Plural2→Plural3
 // ArcFormats strings
+AFAEncryptAffLabel→Шифровать AFF→→→
 AMIBaseArchive→Базовый архив→→→
 AMIBaseTooltip→Новый архив будет содержать записи из базового.→→→
 AMIChooseBase→Выберите базовый архив→→→
@@ -7,6 +8,8 @@ AMIDescription→Архив Amaterasu Translations Muv-Luv→→→
 AMINoFiles→Не найдено файлов, подходящих для архива AMI.→→→
 ArcEncryptedNotice→Содержимое архива зашифровано.¶
 Выберите подходящую схему шифрования.→→→
+DCFMergeWithBase→Объединять изображения с их основой→→→
+BaseImage→ [Основа: {0}]→→→
 ArcNoEncryption→Без шифрования→→→
 ArcReset→Сброс→→→
 GRPDescription→Проприетарный формат изображений âge→→→
@@ -27,6 +30,7 @@ MsgCreationKeyRequired→Для создания требуется ключ ш�
 MsgEncNotImplemented→Метод шифрования не реализован→→→
 MsgExtensionTooLong→Расширение имени файла слишком длинное.→→→
 MsgFileNameTooLong→Имя файла слишком длинное→→→
+MsgFileAlreadyExists→Файл уже существует→→→
 MsgIllegalCharacters→Имя файла содержит недопустимые символы→→→
 MsgInvalidImageFormat→{0}: формат изображения не распознан.→→→
 MsgInvalidVersion→Указана недопустимая версия архива.→→→
@@ -34,6 +38,7 @@ MsgNoExtension→Имя файла без расширения.→→→
 MsgTooManyFiles→Количество файлов превышает лимит архива.→→→
 MsgUpdatingIndex→Обновление индекса...→→→
 MsgWritingIndex→Запись индекса...→→→
+MsgUnidentifiedData→Неопознанный файл данных→→→
 NPACompressContents→Сжать содержимое→→→
 NPADescription→Архив ресурсов Nitro+→→→
 NPAKeys→Ключи шифрования¶
@@ -45,6 +50,12 @@ ONSCompression→Сжатие→→→
 ONSCompressionNone→Нет→→→
 PDDescription→Архив ресурсов Flying Shine→→→
 PDScrambleContents→Скремблировать содержимое→→→
+CompressionLevelLabel→Сжатие архива:→→→
+VersionLabel→Версия архива:→→→
+SchemeLabel→Схема шифрования:→→→
+KeyLabel→Ключ игры:→→→
+QLIECompressLabel→Сжимать файлы (BPE; медленно)→→→
+DefaultScheme→(Нет)→→→
 RPADescription→Архив игрового движка Ren'Py→→→
 RPALabelKey→32-битный ключ→→→
 SCRDescription→Файл скрипта Amaterasu Translations Muv-Luv→→→
@@ -74,7 +85,6 @@ ArcTitleOrPassword→Выберите название или введите п�
 RPMEncryptedNotice→Файл похож на архив ресурсов RPM,¶
 но попытка угадать ключ шифрования не удалась.¶
 Выберите подходящую схему шифрования.→→→
-QLIEDefaultScheme→Использовать схему шифрования по умолчанию→→→
 INTChooseExe→Выберите исполняемый файл игры→→→
 INTExeButton→Проверить EXE→→→
 INTExeFiles→Исполняемые файлы→→→
@@ -104,6 +114,9 @@ DefaultEncoding→Кодировка имён файлов по умолчани
 ODNAudioSampleRate→Частота дискретизации аудио по умолчанию→→→
 Tim2AlphaFormat→Выберите формат альфа-канала изображения Tim2.¶
 Он не может быть правильно прочитан из файла.→→→
+Output Format→Формат вывода→→→
+Image format to use→Используемый формат изображения→→→
+Cannot locate Texture2D data→Невозможно найти данные Texture2D→→→
 // GUI strings
 ButtonCancel→Отмена→→→
 ButtonExtract→Извлечь→→→
@@ -132,7 +145,7 @@ LabelArchiveName→Имя архива→→→
 LabelArchiveOptions→Параметры архива→→→
 LabelExtractAllTo→Извлечь файлы из {0} в→→→
 LabelExtractFileTo→Извлечь {0} в →→→
-MenuAbout→О программе Game Resource browser→→→
+MenuAbout→О программе Game Resource browser 2→→→
 MsgDeletedItem→Удалён {0}→→→
 MsgDirectoryNotFound→Каталог не найден→→→
 MsgEmptyArchive→Архив пуст→→→
@@ -152,7 +165,7 @@ MsgVersion→Версия {0}→→→
 TextAboutBuiltin→[встроенный]→→→
 TextAboutArchives→Архивы→→→
 TextAboutImages→Изображения→→→
-TextAboutTitle→О программе Game Resource browser→→→
+TextAboutTitle→О программе Game Resource browser 2→→→
 TextAllFiles→Все файлы→→→
 TextAsIs→Как есть→→→
 TextChooseArchive→Выберите расположение архива→→→
@@ -187,6 +200,7 @@ MsgConfirmDeleteFiles→Вы уверены, что хотите удалить 
 TextDeleteFiles→Удалить файлы→→→
 MsgDeletedItems→Удалён {0} файл→Удалено {0} файла→Удалено {0} файлов→
 MenuFitWindow→Подогнать изображение под окно→→→
+MenuCropTransparent→Обрезка прозрачных областей→→→
 MenuToggleMenuBar→Показать/скрыть главное _меню→→→
 MenuToggleStatusBar→Показать/скрыть _строку состояния→→→
 MenuToggleToolBar→Показать/скрыть панель _инструментов→→→
@@ -203,6 +217,7 @@ TextConvertAudio→Конвертировать аудио в стандартн
 TextExtractAudio→Извлечь аудио→→→
 TooltipAudioFormats→WAV, MP3 или OGG→→→
 TextAboutAudio→Аудио→→→
+TextAboutVideo→Видео→→→
 TextAboutLicense→Лицензия→→→
 MsgUnableInterpretAudio→невозможно интерпретировать формат аудио→→→
 MsgNoMediaFiles→Медиафайлы не выбраны.→→→
@@ -257,6 +272,7 @@ TextFormats→Форматы→→→
 TextPreferences→Настройки→→→
 TextViewer→Просмотр изображений→→→
 winDownScaleImage→Масштабировать изображения по размеру окна→→→
+winAutoCropTransparent→Обрезать большие прозрачные области изображений→→→
 MsgPlaying→{0} | {1} | {2}Гц {3}Кбит/с | {4}/{5}→→→
 TooltipStop→Стоп→→→
 TooltipPause→Пауза→→→
@@ -276,11 +292,14 @@ ErrorLoadingVideo→Ошибка загрузки видео: {0}→→→
 Stream→Поток→→→
 VideoInfo→Видео: {0}→→→
 VideoCodecInfo→Видео: {0} | Кодек: {1} | Разрешение: {2}x{3} | FPS: {4:F1}→→→
-VideoPlaybackErrorText→Не удалось воспроизвести видео встроенным плеером: {0}. Хотите открыть его в видеоплеере по умолчанию?→→→
+VideoPlaybackErrorText→Не удалось воспроизвести видео: {0}.¶
+Хотите открыть его в видеоплеере по умолчанию?→→→
 VideoPlaybackError→Ошибка воспроизведения видео→→→
 MediaFailedToLoad→Не удалось загрузить медиа→→→
+CodecNotFound→Video codec not found→→→
 AdditionalCodecsNeeded→Этот видео-формат требует установки дополнительных кодеков в системе, например пакета кодеков K-Lite Codec Pack.→→→
 Unknown→Неизвестно→→→
+FailedToReadScript→Не удалось прочитать данные сценария→→→
 FailedToGenerateHexDump→Не удалось создать шестнадцатеричный дамп: →→→
 HexHeader0→Смещение  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
 HexHeader1→--------  -----------------------------------------------  | ----------------→→→
@@ -291,6 +310,8 @@ Archive name is empty→Archive name is empty→→→
 Format is not selected→Format is not selected→→→
 Converted→Конвертирован {0}→→→
 FilterItems→Фильтр: {0} из {1} элементов→→→
+FilterNoMatchingEntries→Нет соответствующих элементов→→→
+DeleteFailed→Операция удаления не удалась.→→→
 PlayAnimation→Воспроизвести анимацию→→→
 PauseAnimation→Приостановить анимацию→→→
 SpriteSheetFrames→Спрайт-лист: извлечено {0} кадров→→→
@@ -351,3 +372,12 @@ MsgInvalidFileName→Недопустимое имя файла→→→
 MsgInvalidFormat→Недопустимый формат файла→→→
 MsgUnknownEncryption→Неизвестная схема шифрования→→→
 MsgUnknownFormat→Файл не может быть открыт как архив ресурсов→→→
+PackingFileN→Упаковка {0}→→→
+PackingFiles→Упаковывается файл...→Упаковывается файлы...→→
+PackingTagFailed→Не удалось упаковать файлы в архив {0}→→→
+PNGSaveMetadataToFile→Сохранение метаданных в файле .pngmetadata для каждой папки→→→
+WritingArchive→Записывается архив...→→→
+FinalizingArchive→Финализация архива...→→→
+PackingComplete→Упаковка завершена→→→
+FileIofN→ - Файл {0}/{1}→→→
+NoImageDecoder→Декодер изображения не найден→→→

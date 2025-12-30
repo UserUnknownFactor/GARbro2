@@ -1,5 +1,6 @@
 Original→Singular→Plural1→Plural2→Plural3
 // ArcFormats strings
+AFAEncryptAffLabel→加密AFF→→→
 AMIBaseArchive→基础档案→→→
 AMIBaseTooltip→新档案还将包含基础档案中的条目。→→→
 AMIChooseBase→选择基础档案→→→
@@ -7,6 +8,8 @@ AMIDescription→Amaterasu Translations Muv-Luv 档案→→→
 AMINoFiles→未找到适合AMI档案的文件。→→→
 ArcEncryptedNotice→档案内容已加密。¶
 请选择适当的加密方案。→→→
+DCFMergeWithBase→將圖像與其底圖合併→→→
+BaseImage→ [底圖：{0}]→→→
 ArcNoEncryption→无加密→→→
 ArcReset→重置→→→
 GRPDescription→âge专有图像格式→→→
@@ -21,19 +24,21 @@ LabelPassphrase→密码：→→→
 LabelScheme→方案→→→
 LWGDescription→Liar-soft图像档案→→→
 MsgAddingFile→添加文件→→→
-MsgCalculatingChecksum→计算校验和...→→→
-MsgCompressingIndex→压缩索引...→→→
+MsgCalculatingChecksum→计算校验和…→→→
+MsgCompressingIndex→压缩索引…→→→
 MsgCreationKeyRequired→创建档案需要加密密钥。→→→
 MsgEncNotImplemented→加密方法未实现→→→
 MsgExtensionTooLong→文件扩展名太长。→→→
 MsgFileNameTooLong→文件名太长→→→
+MsgFileAlreadyExists→檔案已存在→→→
 MsgIllegalCharacters→文件名包含非法字符→→→
 MsgInvalidImageFormat→{0}：无法识别图像格式。→→→
 MsgInvalidVersion→指定的档案版本无效。→→→
 MsgNoExtension→文件名无扩展名。→→→
 MsgTooManyFiles→文件数超出档案限制。→→→
-MsgUpdatingIndex→更新索引...→→→
-MsgWritingIndex→写入索引...→→→
+MsgUpdatingIndex→更新索引…→→→
+MsgWritingIndex→写入索引…→→→
+MsgUnidentifiedData→無法識別的資料檔案→→→
 NPACompressContents→压缩内容→→→
 NPADescription→Nitro+资源档案→→→
 NPAKeys→加密密钥¶
@@ -45,6 +50,12 @@ ONSCompression→压缩→→→
 ONSCompressionNone→无→→→
 PDDescription→Flying Shine资源档案→→→
 PDScrambleContents→加扰内容→→→
+CompressionLevelLabel→封存壓縮：→→→
+VersionLabel→封存版本：→→→
+SchemeLabel→加密方案：→→→
+KeyLabel→遊戲金鑰：→→→
+QLIECompressLabel→壓縮檔案(BPE;非常慢)→→→
+DefaultScheme→(無)→→→
 RPADescription→Ren'Py游戏引擎档案→→→
 RPALabelKey→32位密钥→→→
 SCRDescription→Amaterasu Translations Muv-Luv脚本文件→→→
@@ -74,7 +85,6 @@ ArcTitleOrPassword→选择标题或输入密码→→→
 RPMEncryptedNotice→文件类似RPM资源档案，¶
 但加密密钥猜测失败。¶
 选择适当的加密方案。→→→
-QLIEDefaultScheme→使用默认加密方案→→→
 INTChooseExe→选择游戏可执行文件→→→
 INTExeButton→检查EXE→→→
 INTExeFiles→可执行文件→→→
@@ -104,15 +114,18 @@ DefaultEncoding→默认文件名编码→→→
 ODNAudioSampleRate→默认音频采样率→→→
 Tim2AlphaFormat→选择Tim2图像alpha格式。¶
 无法从文件正确读取。→→→
+Output Format→輸出格式→→→
+Image format to use→要使用的圖像格式→→→
+Cannot locate Texture2D data→無法找到Texture2D資料→→→
 // GUI strings
 ButtonCancel→取消→→→
 ButtonExtract→提取→→→
 ButtonOK→确定→→→
 CtxMenuClose→关闭(_C)→→→
 CtxMenuCopy→复制→→→
-CtxMenuCreate→创建档案...→→→
+CtxMenuCreate→创建档案…→→→
 CtxMenuCut→剪切→→→
-CtxMenuDelete→删除(_D)→→→
+CtxMenuDelete→删除→→→
 CtxMenuExplorer→在资源管理器中浏览(_E)→→→
 CtxMenuExtract→提取→→→
 CtxMenuOpen→打开→→→
@@ -132,7 +145,7 @@ LabelArchiveName→档案名称→→→
 LabelArchiveOptions→档案选项→→→
 LabelExtractAllTo→从{0}提取文件到→→→
 LabelExtractFileTo→提取{0}到→→→
-MenuAbout→关于游戏资源浏览器→→→
+MenuAbout→关于游戏资源浏览器 2→→→
 MsgDeletedItem→已删除{0}→→→
 MsgDirectoryNotFound→找不到目录→→→
 MsgEmptyArchive→档案为空→→→
@@ -152,14 +165,14 @@ MsgVersion→版本 {0}→→→
 TextAboutBuiltin→[内置]→→→
 TextAboutArchives→档案→→→
 TextAboutImages→图像→→→
-TextAboutTitle→关于游戏资源浏览器→→→
+TextAboutTitle→关于游戏资源浏览器2→→→
 TextAllFiles→所有文件→→→
 TextAsIs→原样→→→
 TextChooseArchive→选择档案位置→→→
 TextChooseDestDir→选择目标目录→→→
 TextCreateArchive→创建档案→→→
 TextCreateArchiveError→档案创建错误→→→
-Type_directory→<目录>→→→
+Type_directory→<資料夾>→→→
 TextEncoding→文本编码→→→
 TextExtractImages→提取图像→→→
 TextExtractText→提取文本→→→
@@ -167,7 +180,7 @@ TextExtractTitle→从档案提取→→→
 TextParametersTitle→档案参数→→→
 TextSaveAs→另存为→→→
 TextSaveImagesAs→图像另存为→→→
-TextTitle→游戏资源浏览器→→→
+TextTitle→游戏资源浏览器 2→→→
 TooltipBack→后退→→→
 TooltipForward→前进→→→
 MsgOverwrite→文件{0}¶
@@ -176,22 +189,23 @@ MsgOverwrite→文件{0}¶
 覆盖？→→→
 TextConfirmOverwrite→确认覆盖→→→
 MsgCreatingArchive→创建档案{0}→→→
-MenuOpen→打开...→→→
+MenuOpen→打开…→→→
 MenuRecent→最近的文件→→→
 MsgChooseFiles→选择要提取的文件→→→
-MenuExit→退出(_X)→→→
+MenuExit→退出→→→
 MenuFile→文件(_F)→→→
 MenuHelp→帮助(_H)→→→
 MsgFiles→{0}个文件→→→
 MsgConfirmDeleteFiles→确定要删除这些文件吗？→→→
 TextDeleteFiles→删除文件→→→
 MsgDeletedItems→已删除{0}个文件→→→
-MenuFitWindow→预览窗口适应图像(_W)→→→
-MenuToggleMenuBar→显示/隐藏主菜单栏(_M)→→→
-MenuToggleStatusBar→显示/隐藏状态栏(_S)→→→
-MenuToggleToolBar→显示/隐藏工具栏(_T)→→→
+MenuFitWindow→预览窗口适应图像→→→
+MenuCropTransparent→裁剪透明圖像區域→→→
+MenuToggleMenuBar→显示/隐藏主菜单栏→→→
+MenuToggleStatusBar→显示/隐藏状态栏→→→
+MenuToggleToolBar→显示/隐藏工具栏→→→
 MenuView→查看(_V)→→→
-CtxMenuConvert→转换多媒体...→→→
+CtxMenuConvert→转换多媒体…→→→
 ButtonConvert→转换→→→
 LabelImageDestinationFormat→选择图像的目标格式：→→→
 LabelAudioDestinationFormat→选择音频的目标格式：→→→
@@ -203,6 +217,7 @@ TextConvertAudio→将音频转换为通用格式→→→
 TextExtractAudio→提取音频→→→
 TooltipAudioFormats→WAV、MP3或OGG→→→
 TextAboutAudio→音频→→→
+TextAboutVideo→影片→→→
 TextAboutLicense→许可证→→→
 MsgUnableInterpretAudio→无法解释音频格式→→→
 MsgNoMediaFiles→未选择媒体文件。→→→
@@ -225,7 +240,7 @@ Type_video→视频→→→
 Type_NONE→无→→→
 LabelDestinationDir→目标目录：→→→
 LabelDevSite→开发站点→→→
-CtxMenuSelectByMask→按掩码选择文件...→→→
+CtxMenuSelectByMask→按掩码选择文件…→→→
 ButtonAbort→中止(_A)→→→
 ButtonContinue→继续(_C)→→→
 LabelIgnoreErrors→忽略后续错误(_I)→→→
@@ -233,7 +248,7 @@ TextExtractionError→文件提取错误→→→
 ButtonOverwrite→覆盖(_O)→→→
 ButtonRename→重命名(_R)→→→
 ButtonSkip→跳过(_S)→→→
-LabelApplyToAll→应用于所有重复文件(_P)→→→
+LabelApplyToAll→应用于所有重复文件→→→
 LabelDuplicateFileQuestion→应该怎么做？→→→
 TextErrorConverting→转换文件时发生错误¶
 {0}¶
@@ -241,7 +256,7 @@ TextErrorConverting→转换文件时发生错误¶
 TextFileAlreadyExists→文件{0}已存在于目标文件夹中。→→→
 ButtonDownload→下载(_D)→→→
 LabelReleaseNotes→发布说明→→→
-MenuCheckUpdates→检查更新(_C)...→→→
+MenuCheckUpdates→检查更新…→→→
 MsgNoUpdates→当前没有可用的更新。→→→
 MsgUpdateAvailable→格式数据库更新可用。→→→
 MsgUpdateComplete→格式数据库已更新。→→→
@@ -252,11 +267,12 @@ TextUpdateTitle→应用程序更新→→→
 TextVisitPage→访问下载页面→→→
 MsgDownloadFailed→更新下载失败。→→→
 ButtonApply→应用→→→
-MenuPreferences→首选项(_P)→→→
+MenuPreferences→首选项→→→
 TextFormats→格式→→→
 TextPreferences→首选项→→→
 TextViewer→图像查看器→→→
-winDownScaleImage→缩放大图像以适应窗口→→→
+winDownScaleImage→缩放大图像以适应窗口     →→→
+winAutoCropTransparent→裁剪圖像像素周圍的大面積透明區域→→→
 MsgPlaying→{0} | {1} | {2}Hz {3}Kbps | {4}/{5}→→→
 TooltipStop→停止→→→
 TooltipPause→暂停→→→
@@ -276,11 +292,14 @@ ErrorLoadingVideo→加载视频错误：{0}→→→
 Stream→流→→→
 VideoInfo→视频：{0}→→→
 VideoCodecInfo→视频：{0} | 编解码器：{1} | 分辨率：{2}x{3} | FPS：{4:F1}→→→
-VideoPlaybackErrorText→无法使用内部播放器播放视频：{0}。是否要使用默认视频播放器打开？→→→
+VideoPlaybackErrorText→无法使用内部播放器播放视频：{0}。¶
+是否要使用默认视频播放器打开？→→→
 VideoPlaybackError→视频播放错误→→→
 MediaFailedToLoad→媒体加载失败→→→
+CodecNotFound→找不到影片編解碼器→→→
 AdditionalCodecsNeeded→此视频格式需要在系统上安装其他编解码器。考虑安装K-Lite Codec Pack等编解码器包。→→→
 Unknown→未知→→→
+FailedToReadScript→讀取腳本資料失敗→→→
 FailedToGenerateHexDump→生成十六进制转储失败：→→→
 HexHeader0→  偏移     00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  |      ASCII→→→
 HexHeader1→--------  -----------------------------------------------  | ----------------→→→
@@ -291,12 +310,14 @@ Archive name is empty→存档名称为空→→→
 Format is not selected→未选择格式→→→
 Converted→已转换{0}→→→
 FilterItems→过滤器：{1}项中的{0}→→→
+FilterNoMatchingEntries→沒有符合的項目→→→
+DeleteFailed→刪除操作失敗。→→→
 PlayAnimation→播放动画→→→
 PauseAnimation→暂停动画→→→
 SpriteSheetFrames→精灵表：提取了{0}帧→→→
 AutoDetectedGrid→自动检测：{0}x{1}网格的{2}x{3}图像→→→
 CouldNotDetectSprite→无法检测精灵布局→→→
-LoadingFile→加载{0}...→→→
+LoadingFile→加载{0}…→→→
 LoadingFailure→加载 {0} 失败：{1}→→→
 NoImagesSelected→未选择图片→→→
 AnimationText→动画：→→→
@@ -331,7 +352,8 @@ n_frames→（{0} 帧）→→→
 Real encoding→实际编码→→→
 Assumed encoding→假定编码→→→
 ISO filename encoding→ISO 文件名编码→→→
-DropImagesHere将图片拖放到此处以添加图层→→→
+DropImagesHere→將圖像拖放到此處¶
+以添加圖層→→→
 MoveLayerUp→上移图层→→→
 MoveLayerDown→下移图层→→→
 RemoveLayer→移除图层→→→
@@ -339,7 +361,7 @@ Overlays→叠加→→→
 Opacity→不透明度：→→→
 KnownPasswords→--- 已知密码 ---→→→
 // GameRes strings
-BMPExtensionsDesc→启用各种扩展，如透明度支持。→→→
+BMPExtensionsDesc→启用各种扩展，如透明度支持→→→
 BMPExtensionsText→启用BMP格式扩展→→→
 JPEGQualityText→JPEG压缩质量→→→
 MsgFileIsEmpty→文件为空→→→
@@ -349,3 +371,12 @@ MsgInvalidFileName→无效的文件名→→→
 MsgInvalidFormat→无效的文件格式→→→
 MsgUnknownEncryption→未知的加密方案→→→
 MsgUnknownFormat→文件无法作为资源档案打开→→→
+PackingFileN→正在打包{0}→→→
+PackingFiles→正在打包檔案…→→→
+PackingTagFailed→將檔案打包到{0}封存失敗→→→
+PNGSaveMetadataToFile→將自訂中繼資料儲存到各資料夾的.metadata檔案→→→
+WritingArchive→正在寫入封存…→→→
+FinalizingArchive→正在完成封存…→→→
+PackingComplete→打包完成→→→
+FileIofN→ - 檔案 {0}/{1}→→→
+NoImageDecoder→找不到圖像解碼器→→→

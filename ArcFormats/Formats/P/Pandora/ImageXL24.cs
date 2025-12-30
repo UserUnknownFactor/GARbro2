@@ -9,8 +9,8 @@ namespace GameRes.Formats.Terios
     public class Xl24Format : ImageFormat
     {
         public override string         Tag { get { return "XL24"; } }
-        public override string Description { get { return "\"Pandora.box\" image format"; } }
-        public override uint     Signature { get { return 0x34324C58; } } // 'XL24'
+        public override string Description { get { return "Pandora.box image format"; } }
+        public override uint     Signature { get { return  0x34324C58; } } // 'XL24'
 
         public Xl24Format ()
         {
@@ -24,9 +24,9 @@ namespace GameRes.Formats.Terios
             uint height = file.ReadUInt32();
             return new ImageMetaData
             {
-                Width = width,
+                Width  = width,
                 Height = height,
-                BPP = 24,
+                BPP    = 24,
             };
         }
 

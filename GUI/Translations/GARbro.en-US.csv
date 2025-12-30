@@ -116,6 +116,7 @@ Tim2AlphaFormat→Choose Tim2 image alpha format.¶
 It can't be read correctly from the file.→→→
 Output Format→Output Format→→→
 Image format to use→Image format to use→→→
+Cannot locate Texture2D data→Cannot locate Texture2D data→→→
 // GUI strings
 ButtonCancel→Cancel→→→
 ButtonExtract→Extract→→→
@@ -144,7 +145,7 @@ LabelArchiveName→Archive name→→→
 LabelArchiveOptions→Archive options→→→
 LabelExtractAllTo→Extract files from {0} to→→→
 LabelExtractFileTo→Extract {0} to→→→
-MenuAbout→About Game Resource browser→→→
+MenuAbout→About Game Resource browser 2→→→
 MsgDeletedItem→Deleted {0}→→→
 MsgDirectoryNotFound→directory not found→→→
 MsgEmptyArchive→archive is empty→→→
@@ -164,7 +165,7 @@ MsgVersion→Version {0}→→→
 TextAboutBuiltin→[builtin]→→→
 TextAboutArchives→Archives→→→
 TextAboutImages→Images→→→
-TextAboutTitle→About Game Resource browser→→→
+TextAboutTitle→About Game Resource browser 2→→→
 TextAllFiles→All Files→→→
 TextAsIs→as is→→→
 TextChooseArchive→Choose archive location→→→

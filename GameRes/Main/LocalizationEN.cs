@@ -5,7 +5,7 @@ public static partial class Localization
 {
     private static readonly ConcurrentDictionary<string, LocalizationEntry> _csvResources = InitializeResources();
 
-    private const int DEFAULT_CSV_SIZE = 17997; // Only load GARbro.en-US.csv if the size is not this
+    private const int DEFAULT_CSV_SIZE = 18069; // Only load GARbro.en-US.csv if the size is not this
 
     private static ConcurrentDictionary<string, LocalizationEntry> InitializeResources()
     {
@@ -115,6 +115,7 @@ public static partial class Localization
                 { "Tim2AlphaFormat", new LocalizationEntry { Singular = "Choose Tim2 image alpha format.\nIt can't be read correctly from the file." } },
                 { "Output Format", new LocalizationEntry { Singular = "Output Format" } },
                 { "Image format to use", new LocalizationEntry { Singular = "Image format to use" } },
+                { "Cannot locate Texture2D data", new LocalizationEntry { Singular = "Cannot locate Texture2D data" } },
                 { "ButtonCancel", new LocalizationEntry { Singular = "Cancel" } },
                 { "ButtonExtract", new LocalizationEntry { Singular = "Extract" } },
                 { "ButtonOK", new LocalizationEntry { Singular = "OK" } },
@@ -142,7 +143,7 @@ public static partial class Localization
                 { "LabelArchiveOptions", new LocalizationEntry { Singular = "Archive options" } },
                 { "LabelExtractAllTo", new LocalizationEntry { Singular = "Extract files from {0} to" } },
                 { "LabelExtractFileTo", new LocalizationEntry { Singular = "Extract {0} to" } },
-                { "MenuAbout", new LocalizationEntry { Singular = "About Game Resource browser" } },
+                { "MenuAbout", new LocalizationEntry { Singular = "About Game Resource browser 2" } },
                 { "MsgDeletedItem", new LocalizationEntry { Singular = "Deleted {0}" } },
                 { "MsgDirectoryNotFound", new LocalizationEntry { Singular = "directory not found" } },
                 { "MsgEmptyArchive", new LocalizationEntry { Singular = "archive is empty" } },
@@ -162,7 +163,7 @@ public static partial class Localization
                 { "TextAboutBuiltin", new LocalizationEntry { Singular = "[builtin]" } },
                 { "TextAboutArchives", new LocalizationEntry { Singular = "Archives" } },
                 { "TextAboutImages", new LocalizationEntry { Singular = "Images" } },
-                { "TextAboutTitle", new LocalizationEntry { Singular = "About Game Resource browser" } },
+                { "TextAboutTitle", new LocalizationEntry { Singular = "About Game Resource browser 2" } },
                 { "TextAllFiles", new LocalizationEntry { Singular = "All Files" } },
                 { "TextAsIs", new LocalizationEntry { Singular = "as is" } },
                 { "TextChooseArchive", new LocalizationEntry { Singular = "Choose archive location" } },
